@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+  <property name="APP_NAME" value="kyou"/>
+  <property name="KYOU_LOG_HOME" value="./logs"/>
+
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!--这里替换成AspectLogbackEncoder-->
+    <encoder class="com.yomahub.tlog.core.enhance.logback.AspectLogbackEncoder">
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <File>${KYOU_LOG_HOME}/${APP_NAME}.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <FileNamePattern>${KYOU_LOG_HOME}/${APP_NAME}.log.%d{yyyy-MM-dd}.%i.log</FileNamePattern>
+      <MaxHistory>9999</MaxHistory>
+      <maxFileSize>10MB</maxFileSize>
+    </rollingPolicy>
+    <!--这里替换成AspectLogbackEncoder-->
+    <encoder class="com.yomahub.tlog.core.enhance.logback.AspectLogbackEncoder">
+      <charset>UTF-8</charset>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT"/>
+<!--    先不需要文件日志, 如果需要的话手动放开注释-->
+<!--    <appender-ref ref="FILE"/>-->
+  </root>
+</configuration>

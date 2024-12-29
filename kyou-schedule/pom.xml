@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.github.link2fun</groupId>
+    <artifactId>kyou-solon</artifactId>
+    <version>0.0.1</version>
+  </parent>
+
+  <artifactId>kyou-schedule</artifactId>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-support</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.easy-query</groupId>
+      <artifactId>sql-solon-plugin</artifactId>
+      <version>${easy-query.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.scheduling.simple</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+      <dependency>
+          <groupId>com.github.link2fun</groupId>
+          <artifactId>kyou-tlog-solon-plugin</artifactId>
+      </dependency>
+  </dependencies>
+
+</project>

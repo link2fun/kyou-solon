@@ -1,0 +1,196 @@
+package ${packageName}.service.impl;
+
+import java.util.List;
+    #foreach ($column in $columns)
+        #if($column.javaField == 'createTime' || $column.javaField == 'updateTime')
+        import cn.hutool.core.util.ObjectUtil;
+        import cn.hutool.core.util.StrUtil;
+        import com.github.link2fun.support.utils.DateUtils;
+            #break
+        #end
+    #end
+import lombok.extern.slf4j.Slf4j;
+import org.noear.solon.annotation.Component;
+import org.noear.solon.annotation.Inject;
+    #if($table.sub)
+    import java.util.ArrayList;
+
+    import com.ruoyi.common.utils.StringUtils;
+    import ${packageName}.domain.${subClassName};
+    #end
+import ${packageName}.mapper.${ClassName}Mapper;
+import ${packageName}.entity.${ClassName};
+import ${packageName}.service.I${ClassName}Service;
+import com.baomidou.mybatisplus.solon.service.impl.ServiceImpl;
+import org.noear.solon.data.annotation.Tran;
+
+/**
+ * ${functionName}Service业务层处理
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+@Slf4j
+@Component
+public class ${ClassName}ServiceImpl extends ServiceImpl<${ClassName}Mapper,${ClassName}> implements I${ClassName}Service {
+
+  @Inject
+  private I${ClassName}Service self;
+
+  /**
+   * 分页查询 ${functionName}
+   *
+   * @param Page 分页适配器
+   * @param searchReq   筛选条件
+   * @return 分页数据
+   */
+  @Override
+  public Page<${ClassName}> pageSearch(Page<${ClassName}> Page, ${ClassName} searchReq) {
+    return queryChain()
+    #foreach ($column in $columns)
+      #set($queryType=$column.queryType)
+      #set($javaField=$column.javaField)
+      #set($javaType=$column.javaType)
+      #set($columnName=$column.columnName)
+      #set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+      #if($column.query)
+        #if($column.queryType == "EQ")
+          .eq(${ClassName}::get$AttrName,
+          searchReq.get$AttrName(), ObjectUtil.isNotEmpty(searchReq.get$AttrName())) // ${column.columnComment}
+        #elseif($queryType == "NE")
+          .
+          ne(${ClassName}::get$AttrName, searchReq.get$AttrName(), ObjectUtil.isNotEmpty(searchReq.get$AttrName())) // ${column.columnComment}
+        #elseif($queryType == "GT")
+          .
+          gt(${ClassName}::get$AttrName, searchReq.get$AttrName(), ObjectUtil.isNotEmpty(searchReq.get$AttrName())) // ${column.columnComment}
+        #elseif($queryType == "GTE")
+          .
+          ge(${ClassName}::get$AttrName, searchReq.get$AttrName(), ObjectUtil.isNotEmpty(searchReq.get$AttrName())) // ${column.columnComment}
+        #elseif($queryType == "LT")
+          .
+          lt(${ClassName}::get$AttrName, searchReq.get$AttrName(), ObjectUtil.isNotEmpty(searchReq.get$AttrName())) // ${column.columnComment}
+        #elseif($queryType == "LTE")
+          .
+          le(${ClassName}::get$AttrName, searchReq.get$AttrName(), ObjectUtil.isNotEmpty(searchReq.get$AttrName())) // ${column.columnComment}
+        #elseif($queryType == "LIKE")
+          .
+          like(${ClassName}::get$AttrName, searchReq.get$AttrName(), ObjectUtil.isNotEmpty(searchReq.get$AttrName())) // ${column.columnComment}
+          ##        #elseif($queryType == "BETWEEN")
+          ##          <if test="params.begin$AttrName != null and params.begin$AttrName != '' and params.end$AttrName != null and params.end$AttrName != ''">
+          ##          and $columnName between #{params.begin$AttrName} and #{params.end$AttrName}
+          ##                        </if>
+        #end
+      #end
+    #end
+    .page(Page.getPage());
+
+  }
+
+  /**
+   * 新增${functionName}
+   *
+   * @param ${className} ${functionName}
+   * @return 结果
+   */
+  @Deprecated
+    #if($table.sub)
+    @Tran
+
+    #end
+  public int insert${ClassName}(${ClassName} ${className}) {
+    #foreach ($column in $columns)
+      #if($column.javaField == 'createTime')
+        ${className}.setCreateTime(DateUtils.getNowDate());
+      #end
+    #end
+    #if($table.sub)
+      int rows = ((${ClassName}Mapper) getMapper()).insert${ClassName}(${className});
+      insert${subClassName}(${className});
+      return rows;
+    #else
+      return ((${ClassName}Mapper) getMapper()).insert${ClassName}(${className});
+    #end
+  }
+
+  /**
+   * 修改${functionName}
+   *
+   * @param ${className} ${functionName}
+   * @return 结果
+   */
+    #if($table.sub)
+    @Tran
+    @Deprecated
+    #end
+  public int update${ClassName}(${ClassName} ${className}) {
+    #foreach ($column in $columns)
+      #if($column.javaField == 'updateTime')
+        ${className}.setUpdateTime(DateUtils.getNowDate());
+      #end
+    #end
+    #if($table.sub)
+      ((${ClassName}Mapper) getMapper()).delete${subClassName}By${subTableFkClassName}(${className}.get${pkColumn.capJavaField}())
+      ;
+      insert${subClassName}(${className});
+    #end
+    return ((${ClassName}Mapper) getMapper()).update${ClassName}(${className});
+  }
+
+  /**
+   * 批量删除${functionName}
+   *
+   * @param ${pkColumn.javaField}s 需要删除的${functionName}主键
+   * @return 结果
+   */
+  @Deprecated
+    #if($table.sub)
+    @Tran
+    #end
+  public int delete${ClassName}By${pkColumn.capJavaField}s(${pkColumn.javaType}[] ${pkColumn.javaField}s) {
+    #if($table.sub)
+      ((${ClassName}Mapper) getMapper()).delete${subClassName}By${subTableFkClassName}s(${pkColumn.javaField}s);
+    #end
+    return ((${ClassName}Mapper) getMapper()).delete${ClassName}By${pkColumn.capJavaField}s(${pkColumn.javaField}s);
+  }
+
+  /**
+   * 删除${functionName}信息
+   *
+   * @param ${pkColumn.javaField} ${functionName}主键
+   * @return 结果
+   */
+    #if($table.sub)
+    @Tran
+    #end
+  @Deprecated
+  public int delete${ClassName}By${pkColumn.capJavaField}(${pkColumn.javaType} ${pkColumn.javaField}) {
+    #if($table.sub)
+      ((${ClassName}Mapper) getMapper()).delete${subClassName}By${subTableFkClassName}(${pkColumn.javaField});
+    #end
+    return ((${ClassName}Mapper) getMapper()).delete${ClassName}By${pkColumn.capJavaField}(${pkColumn.javaField});
+  }
+  #if($table.sub)
+
+    /**
+     * 新增${subTable.functionName}信息
+     *
+     * @param ${className} ${functionName}对象
+     */
+    @Deprecated
+    public void insert${subClassName}(${ClassName} ${className}) {
+      List<${subClassName}> ${subclassName}List = ${className}.get${subClassName}List();
+      ${pkColumn.javaType} ${pkColumn.javaField} = ${className}.get${pkColumn.capJavaField}();
+      if (StringUtils.isNotNull(${subclassName}List)) {
+        List<${subClassName}> list = new ArrayList<${subClassName}>();
+        for (${subClassName} ${subclassName} :${subclassName}List)
+        {
+          ${subclassName}.set${subTableFkClassName}(${pkColumn.javaField});
+          list.add(${subclassName});
+        }
+        if (list.size() > 0) {
+          ((${ClassName}Mapper) getMapper()).batch${subClassName}(list);
+        }
+      }
+    }
+  #end
+}

@@ -1,0 +1,39 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+*.log
+*.flattened-pom.xml
+
+### NetBeans ###
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+### Mac files ###
+*.DS_Store
+
+logs
+
+kyou-file-ui-vue2-js/node_modules
+
+doc/pdmaner/.back_kyou-solon
+.vscode
+
+
+app*local.yml

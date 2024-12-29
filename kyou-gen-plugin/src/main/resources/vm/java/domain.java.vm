@@ -1,0 +1,86 @@
+package ${packageName}.entity;
+
+#foreach ($import in $importList)
+import ${import};
+#end
+
+import com.easy.query.core.annotation.Column;
+import io.swagger.annotations.ApiModel;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
+import com.github.link2fun.support.annotation.Excel;
+#if($table.crud || $table.sub)
+import com.github.link2fun.support.core.domain.BaseEntity;
+#elseif($table.tree)
+import com.github.link2fun.support.core.domain.TreeEntity;
+
+import java.io.Serial;
+#end
+
+/**
+ * ${functionName}对象 ${tableName}
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+#if($table.crud || $table.sub)
+  #set($Entity="BaseEntity")
+#elseif($table.tree)
+  #set($Entity="TreeEntity")
+#end
+@ApiModel(value = "${functionName}")
+@Table("${tableName}")
+@EntityProxy
+@FieldNameConstants
+@EasyAlias("${className}")
+public class ${ClassName} extends ${Entity} {
+@Serial
+private static final long serialVersionUID = 1L;
+/** 表名 */
+public static final String TABLE_NAME = "${tableName}";
+
+#foreach ($column in $columns)
+
+    #if(!$table.isSuperColumn($column.javaField))
+  /** $column.columnComment */
+      #if($column.list)
+        #set($parentheseIndex=$column.columnComment.indexOf("（"))
+        #if($parentheseIndex != -1)
+          #set($comment=$column.columnComment.substring(0, $parentheseIndex))
+        #else
+          #set($comment=$column.columnComment)
+        #end
+        #if($parentheseIndex != -1)
+  @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
+        #elseif($column.javaType == 'Date' || $column.javaType == 'LocalDate' )
+  @JsonFormat(pattern = "yyyy-MM-dd")
+  @Excel(name = "${comment}", width = 30, dateFormat = "yyyy-MM-dd")
+        #else
+  @Excel(name = "${comment}")
+        #end
+      #end
+  @Column(value = "${column.columnName}"#if($column.isPk == 1) ,primaryKey = true#end#if($column.isIncrement==1) ,generatedKey = true#end)
+    #end
+  private $column.javaType $column.javaField;
+
+#end
+  #if($table.sub)
+  /** $table.subTable.functionName信息 */
+  private List<${subClassName}> ${subclassName}List;
+
+  #end
+
+
+  #if($table.sub)
+  public List<${subClassName}> get${subClassName}List() {
+    return ${subclassName}List;
+  }
+
+  public void set${subClassName}List(List<${subClassName}> ${subclassName}List) {
+    this.${subclassName}List = ${subclassName}List;
+  }
+
+  #end
+
+}

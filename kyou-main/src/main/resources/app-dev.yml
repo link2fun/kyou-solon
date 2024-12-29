@@ -1,0 +1,21 @@
+
+kyou:
+    # 上传路径
+    profile: /app/apps/kyou/profile
+    # redis 配置
+    redis:
+        config: |
+            singleServerConfig:
+              address: "redis://127.0.0.1:6379"
+              database: 15
+
+
+
+# 数据源
+datasource:
+    default:
+        type: com.zaxxer.hikari.HikariDataSource
+        driverClassName: com.mysql.cj.jdbc.Driver
+        jdbcUrl: jdbc:mysql://DB_HOST:DB_PORT/DB_NAME?useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&rewriteBatchedStatements=true
+        username: DB_USERNAME
+        password: DB_PASSWORD

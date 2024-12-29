@@ -1,0 +1,108 @@
+package ${packageName}.controller;
+
+import java.util.List;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.github.link2fun.support.annotation.Log;
+import com.github.link2fun.support.core.controller.BaseController;
+import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.support.core.page.TableDataInfo;
+import com.github.link2fun.support.utils.poi.ExcelUtil;
+import org.noear.solon.annotation.*;
+
+import org.noear.solon.annotation.Controller;
+import org.noear.solon.core.handle.Context;
+import org.noear.solon.core.handle.MethodType;
+import ${packageName}.entity.${ClassName};
+import ${packageName}.service.I${ClassName}Service;
+#if($table.crud || $table.sub)
+import org.noear.solon.validation.annotation.Valid;
+import org.noear.solon.validation.annotation.Validated;
+#elseif($table.tree)
+#end
+
+/**
+ * ${functionName}Controller
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+@Valid
+@org.noear.solon.annotation.Controller
+@Mapping("/${moduleName}/${businessName}")
+public class ${ClassName}Controller extends BaseController {
+
+  @Inject
+  private I${ClassName}Service ${className}Service;
+
+/**
+ * 查询${functionName}列表
+ */
+@SaCheckPermission("${permissionPrefix}:list")
+@Mapping(value = "/list", method = MethodType.GET)
+  #if($table.crud || $table.sub)
+  public TableDataInfo list(${ClassName} ${className}) {
+    // 1. 从上下文中获取分页参数
+    // 2. 查询数据
+    final Page<${ClassName}> page = ${className}Service.pageSearch(Page.ofCurrentContext(),${className});
+    // 3. 返回结果
+    return getDataTable(page);
+  }
+  #elseif($table.tree)
+    public AjaxResult list(${ClassName} ${className}) {
+      List<${ClassName}> list = ${className}Service.select${ClassName}List(${className});
+      return success(list);
+    }
+  #end
+
+  /**
+   * 导出${functionName}列表
+   */
+  @SaCheckPermission("${permissionPrefix}:export")
+  @Log(title = "${functionName}", businessType = BusinessType.EXPORT)
+  @Mapping(value = "/export", method = MethodType.POST)
+  public void export(Context context, ${ClassName} searchReq) {
+    Page<${ClassName}> list = ${className}Service.pageSearch(Page.ofAll(), searchReq);
+    ExcelUtil<${ClassName}> util = new ExcelUtil<${ClassName}>(${ClassName}. class);
+    util.exportExcel(context, list.getRecords(), "${functionName}数据");
+  }
+
+  /**
+   * 获取${functionName}详细信息
+   */
+  @SaCheckPermission("${permissionPrefix}:query")
+  @Mapping(value = "/{${pkColumn.javaField}}", method = MethodType.GET)
+  public AjaxResult getInfo(@Path("${pkColumn.javaField}") ${pkColumn.javaType} ${pkColumn.javaField}) {
+    return success(${className}Service.getById(${pkColumn.javaField}));
+  }
+
+  /**
+   * 新增${functionName}
+   */
+  @SaCheckPermission("${permissionPrefix}:add")
+  @Log(title = "${functionName}", businessType = BusinessType.INSERT)
+  @Mapping(method = MethodType.POST)
+  public AjaxResult add(@Validated @Body ${ClassName} ${className}) {
+    return toAjax(${className}Service.save(${className}));
+  }
+
+  /**
+   * 修改${functionName}
+   */
+  @SaCheckPermission("${permissionPrefix}:edit")
+  @Log(title = "${functionName}", businessType = BusinessType.UPDATE)
+  @Mapping(method = MethodType.PUT)
+  public AjaxResult edit(@Validated @Body ${ClassName} ${className}) {
+    return toAjax(${className}Service.updateById(${className}));
+  }
+
+  /**
+   * 删除${functionName}
+   */
+  @SaCheckPermission("${permissionPrefix}:remove")
+  @Log(title = "${functionName}", businessType = BusinessType.DELETE)
+  @Mapping(value = "/{${pkColumn.javaField}s}", method = MethodType.DELETE)
+  public AjaxResult remove(@Path List<${pkColumn.javaType}> ${pkColumn.javaField}s) {
+    return toAjax(${className}Service.removeByIds(${pkColumn.javaField}s));
+  }
+}

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.github.link2fun</groupId>
+    <artifactId>kyou-solon</artifactId>
+    <version>0.0.1</version>
+  </parent>
+
+  <artifactId>kyou-support</artifactId>
+  <version>${kyou.version}</version>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+
+  <dependencies>
+    <!-- excel工具 -->
+    <dependency>
+      <groupId>cn.idev.excel</groupId>
+      <artifactId>fastexcel</artifactId>
+    </dependency>
+
+    <!-- lombok -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.serialization.jackson</artifactId>
+    </dependency>
+
+    <!-- mysql方言 -->
+    <dependency>
+      <groupId>com.easy-query</groupId>
+      <artifactId>sql-mysql</artifactId>
+      <version>${easy-query.version}</version>
+    </dependency>
+    <!-- entity-query的api包 -->
+    <dependency>
+      <groupId>com.easy-query</groupId>
+      <artifactId>sql-api-proxy</artifactId>
+      <version>${easy-query.version}</version>
+    </dependency>
+    <!-- entity-query的apt包 如果你是多模块只需要在生成apt的对象模块处需要引入 -->
+    <dependency>
+      <groupId>com.easy-query</groupId>
+      <artifactId>sql-processor</artifactId>
+      <version>${easy-query.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>4.0.3</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.cache.redisson</artifactId>
+    </dependency>
+
+    <!-- solon.logging.logback  https://solon.noear.org/article/437 -->
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.logging.logback</artifactId>
+    </dependency>
+
+    <!-- redisson -->
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>redisson-solon-plugin</artifactId>
+    </dependency>
+
+    <!-- 数据校验 -->
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.validation</artifactId>
+    </dependency>
+
+    <!-- sa-token -->
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>sa-token-solon-plugin</artifactId>
+    </dependency>
+
+
+    <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-to-slf4j -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-slf4j</artifactId>
+      <version>2.22.1</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>cn.hutool</groupId>
+      <artifactId>hutool-all</artifactId>
+      <version>5.8.25</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>33.0.0-jre</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.github.ben-manes.caffeine/caffeine -->
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>3.1.8</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.i18n</artifactId>
+    </dependency>
+
+
+    <!-- https://mvnrepository.com/artifact/org.noear/solon-test-junit5 -->
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-test</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>objenesis</artifactId>
+          <groupId>org.objenesis</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.web.staticfiles</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-openapi2-knife4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.javassist</groupId>
+      <artifactId>javassist</artifactId>
+      <version>3.30.2-GA</version>
+      <scope>compile</scope>
+    </dependency>
+
+
+  </dependencies>
+</project>

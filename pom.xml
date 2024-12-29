@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.noear</groupId>
+    <artifactId>solon-parent</artifactId>
+    <version>3.0.5</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.github.link2fun</groupId>
+  <artifactId>kyou-solon</artifactId>
+  <version>0.0.1</version>
+
+  <packaging>pom</packaging>
+
+  <description>Solon + EasyQuery + Tlog 脚手架</description>
+  <modules>
+    <module>kyou-support</module>
+    <module>kyou-system</module>
+    <module>kyou-schedule</module>
+    <module>kyou-gen-plugin</module>
+    <module>kyou-main</module>
+    <module>kyou-tlog-solon-plugin</module>
+    <module>kyou-biz</module>
+  </modules>
+
+  <properties>
+    <kyou.version>0.0.1</kyou.version>
+    <java.version>17</java.version>
+    <jackson.version>2.17.0</jackson.version>
+    <mysql.connector.version>8.0.30</mysql.connector.version>
+    <sa-token.redisson.version>1.36.0</sa-token.redisson.version>
+    <poi.version>5.1.0</poi.version>
+    <easy-query.version>2.3.3</easy-query.version>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!--        打包跳过单元测试-->
+    <skipTests>true</skipTests>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Mysql驱动包 -->
+      <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+        <version>${mysql.connector.version}</version>
+      </dependency>
+
+      <!-- 结合 redisson 实现 SaTokenDao -->
+      <dependency>
+        <groupId>cn.dev33</groupId>
+        <artifactId>sa-token-redisson-jackson2</artifactId>
+        <version>${sa-token.redisson.version}</version>
+      </dependency>
+
+      <!-- hutool工具 -->
+      <dependency>
+        <groupId>cn.hutool</groupId>
+        <artifactId>hutool-bom</artifactId>
+        <version>${hutool.version}</version>
+        <type>pom</type>
+        <!-- 注意这里是import -->
+        <scope>import</scope>
+      </dependency>
+      <!-- Apache POI -->
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>${poi.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>cn.idev.excel</groupId>
+        <artifactId>fastexcel</artifactId>
+        <version>1.0.0</version>
+      </dependency>
+
+
+      <!-- 通用模块 -->
+      <dependency>
+        <groupId>com.github.link2fun</groupId>
+        <artifactId>kyou-support</artifactId>
+        <version>${kyou.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.link2fun</groupId>
+        <artifactId>kyou-tlog-solon-plugin</artifactId>
+        <version>${kyou.version}</version>
+      </dependency>
+
+      <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-yaml</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <!-- 代码生成 -->
+      <dependency>
+        <groupId>com.github.link2fun</groupId>
+        <artifactId>kyou-gen-plugin</artifactId>
+        <version>${kyou.version}</version>
+      </dependency>
+      <!-- 任务调度 -->
+      <dependency>
+        <groupId>com.github.link2fun</groupId>
+        <artifactId>kyou-schedule</artifactId>
+        <version>${kyou.version}</version>
+      </dependency>
+      <!-- 系统模块 -->
+      <dependency>
+        <groupId>com.github.link2fun</groupId>
+        <artifactId>kyou-system</artifactId>
+        <version>${kyou.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>2.22.1</version>
+        <scope>compile</scope>
+      </dependency>
+
+      <!-- https://mvnrepository.com/artifact/net.bytebuddy/byte-buddy -->
+      <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy</artifactId>
+        <version>1.14.12</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+
+  <build>
+
+
+    <resources>
+      <resource>
+        <directory>src/main/java</directory>
+        <includes>
+          <include>**/*.xml</include>
+        </includes>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**</include>
+        </includes>
+      </resource>
+
+    </resources>
+  </build>
+</project>

@@ -1,0 +1,59 @@
+# 代码生成
+gen:
+    # 作者
+    author: link2fun
+    # 默认生成包路径 system 需改成自己的模块名称 如 system monitor tool
+    packageName: com.github.link2fun.模块名称.modular.功能名称
+    # 自动去除表前缀，默认是false
+    autoRemovePre: false
+    # 表前缀（生成类名不会包含表前缀，多个用逗号分隔）
+    tablePrefix: sys_
+
+#    ---------------- 下面是扩展配置 ----------------
+
+    # 是否启用 swagger , 启用 swagger 的话, 会加上 swagger 的一些注解
+    swaggerEnable: true
+
+    # 同步来源, 使用导入表和同步表的时候的数据来源. pdmaner: 设计器(建议); db: 数据库
+    syncSource: pdmaner
+    # 如果同步来源选择 pdmaner , 则 pdmanerJsonPath 必须填写, 如果读取失败, 建议本地更改为绝对路径
+    pdmanerJsonPath: "../../../doc/pdmaner/kyou-solon.pdma.json"
+    basePackage: com.github.link2fun
+    supportPackage: com.github.link2fun
+    restfulLevel: 2
+
+# 模块信息列表, 用于辅助代码生成, 其中 moduleCode 需要跟 PDManer 中的主题编码一致
+    moduleInfoList:
+        -   moduleCode: system # 模块编码, 用于和 PDManer 中的主题编码进行匹配
+            moduleDesc: 系统管理 # 模块名称, 用于生成代码时的注释, 建议跟 PDManer 中的保持一致
+            moduleCodeUpperCamelShort: Sys # 模块编码首字母大驼峰
+            moduleCodeUpperCamel: System # 模块编码大驼峰
+            moduleCodeLowerCamel: system # 模块编码小驼峰
+            packageName: system # 模块编码对应的包名
+            dirName: system # 模块所处的目录, 特指前端目录 src/pages/${dirName}/${functionCode}
+
+        -   moduleCode: basedoc
+            moduleDesc: 基础档案
+            moduleCodeUpperCamelShort: Bd
+            moduleCodeUpperCamel: BaseDoc
+            moduleCodeLowerCamel: baseDoc
+            packageName: basedoc
+            dirName: basedoc
+
+        -   moduleCode: tool
+            moduleDesc: 系统工具
+            moduleCodeUpperCamelShort: Tool
+            moduleCodeUpperCamel: Tool
+            moduleCodeLowerCamel: tool
+            packageName: tool
+            dirName: tool
+
+        -   moduleCode: star
+            moduleDesc: 常用功能
+            moduleCodeUpperCamelShort: Star
+            moduleCodeUpperCamel: Star
+            moduleCodeLowerCamel: star
+            packageName: star
+            dirName: star
+
+

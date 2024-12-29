@@ -1,0 +1,28 @@
+package ${packageName}.service;
+
+import java.util.List;
+
+import ${packageName}.entity.${ClassName};
+import com.github.link2fun.support.core.page.Page;
+
+import com.baomidou.mybatisplus.solon.service.IService;
+
+/**
+ * ${functionName}Service接口
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+public interface I${ClassName}Service extends IService<${ClassName}> {
+
+  /**
+   * 分页查询 ${functionName}
+   *
+   * @param Page 分页适配器
+   * @param searchReq   筛选条件
+   * @return 分页数据
+   */
+  Page<${ClassName}> pageSearch(Page<${ClassName}> Page, ${ClassName} searchReq);
+
+
+}

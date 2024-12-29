@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.github.link2fun</groupId>
+    <artifactId>kyou-solon</artifactId>
+    <version>0.0.1</version>
+  </parent>
+
+  <artifactId>kyou-main</artifactId>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!--        打包跳过单元测试-->
+    <skipTests>true</skipTests>
+  </properties>
+
+  <dependencies>
+    <!-- solon solon -->
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-web</artifactId>
+      <!-- 排除 snack3, 改用 jackson -->
+      <exclusions>
+        <exclusion>
+          <artifactId>solon-serialization-snack3</artifactId>
+          <groupId>org.noear</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-serialization-properties</artifactId>
+    </dependency>
+    <!-- kyou support -->
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-support</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-serialization-jackson</artifactId>
+    </dependency>
+
+
+
+    <!-- kyou scheduler -->
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-schedule</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.logging.logback</artifactId>
+    </dependency>
+
+    <!-- kyou system -->
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-system</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-biz</artifactId>
+      <version>0.0.1</version>
+    </dependency>
+
+    <!-- kyou gen -->
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-gen-plugin</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+
+  <build>
+
+    <finalName>${project.artifactId}-${project.version}-r${buildNumber}</finalName>
+    <plugins>
+      <!-- 配置打包插件（并打包成胖包） -->
+      <plugin>
+        <groupId>org.noear</groupId>
+        <artifactId>solon-maven-plugin</artifactId>
+        <version>3.0.5</version>
+        <configuration>
+          <!-- 指定启动主类 -->
+          <mainClass>com.github.link2fun.KyouApp</mainClass>
+        </configuration>
+      </plugin>
+
+      <!-- buildnumber-maven-plugin: 用于生成构建号和版本信息 -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>3.2.1</version>
+        <executions>
+          <!-- 在验证阶段创建构建号 -->
+          <execution>
+            <id>buildnumber-create</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+          <!-- 在生成资源阶段创建元数据 -->
+          <execution>
+            <id>buildnumber-metadata</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>create-metadata</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <!-- 不检查本地修改 -->
+          <doCheck>false</doCheck>
+          <!-- 不更新本地代码 -->
+          <doUpdate>false</doUpdate>
+          <!-- 设置版本号长度为5位 -->
+          <shortRevisionLength>5</shortRevisionLength>
+          <!-- 将生成的构建信息附加到项目中 -->
+          <attach>true</attach>
+          <!-- 将输出目录添加到资源中，使构建信息在jar/war包的classpath中可用 -->
+          <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
+        </configuration>
+      </plugin>
+    </plugins>
+
+    <resources>
+      <resource>
+        <directory>src/main/java</directory>
+        <includes>
+          <include>**/*.xml</include>
+        </includes>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**</include>
+        </includes>
+      </resource>
+
+    </resources>
+  </build>
+</project>

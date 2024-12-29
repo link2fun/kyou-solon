@@ -1,0 +1,69 @@
+solon:
+    app:
+        name: kyou
+    env: dev
+
+server:
+    port: 8078
+
+# application.yml配置 yml格式读取maven属性使用@@来表示，在properties格式中用${project.versio}
+
+kyou:
+    # 实例演示开关
+    demoEnabled: false
+    addressEnabled: true
+
+    # 验证码配置
+    captcha:
+        # 验证码开关
+        enabled: true
+        # 干扰类型: line 线段干扰、circle 圆圈干扰、shear 扭曲干扰
+        invadeType: line
+        # 验证码类型: math 四则运算、char 字符
+        type: math
+
+# sa-token配置
+sa-token:
+    # token名称 (同时也是cookie名称)
+    token-name: passkey
+    # token有效期，单位s 默认30天, -1代表永不过期
+    timeout: 2592000
+    # token临时有效期 (指定时间内无操作就视为token过期) 单位: 秒
+    active-timeout: -1
+    # 是否允许同一账号并发登录 (为true时允许一起登录, 为false时新登录挤掉旧登录)
+    allow-concurrent-login: true
+    # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
+    is-share: false
+    # token风格
+    token-style: uuid
+    # 是否输出操作日志
+    is-log: false
+
+# 记录器级别的配置示例 https://solon.noear.org/article/361
+solon.logging.logger:
+    "root": #默认记录器配置
+        level: INFO
+    "com.github.link2fun":
+        level: DEBUG
+
+solon.logging.appender:
+    console:
+        level: INFO
+        enable: true
+        pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %magenta(${PID:-}) --- %-15([%15.15thread]) %-56(%cyan(%-40.40logger{39}%L)) : %msg%n"
+#  file:
+#    pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level ${PID:-} --- %-15([%15.15thread]) %-56(%-40.40logger{39}%L) : %msg%n"
+
+
+solon.serialization.json:
+    dateAsFormat: 'yyyy-MM-dd HH:mm:ss' #配置日期格式（默认输出为时间戳）
+    dateAsTimeZone: 'GMT+8' #配置时区
+    dateAsTicks: false #将date转为毫秒数（和 dateAsFormat 二选一）
+    longAsString: false #将long型转为字符串输出 （默认为false）
+    boolAsInt: false   #将bool型转为字符串输出 （默认为false）
+    nullStringAsEmpty: false
+    nullBoolAsFalse: false
+    nullNumberAsZero: false
+    nullArrayAsEmpty: false
+    nullAsWriteable: false
+    enumAsName: false #枚举使用名字（v2.2.1 后支持）

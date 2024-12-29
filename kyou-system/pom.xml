@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.github.link2fun</groupId>
+    <artifactId>kyou-solon</artifactId>
+    <version>0.0.1</version>
+  </parent>
+
+  <artifactId>kyou-system</artifactId>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!--        打包跳过单元测试-->
+    <skipTests>true</skipTests>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-support</artifactId>
+    </dependency>
+    <!-- entity-query的apt包 如果你是多模块只需要在生成apt的对象模块处需要引入 -->
+    <dependency>
+      <groupId>com.easy-query</groupId>
+      <artifactId>sql-processor</artifactId>
+      <version>${easy-query.version}</version>
+    </dependency>
+    <!-- 引入 tlog 进行日志链路 -->
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-tlog-solon-plugin</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.easy-query</groupId>
+      <artifactId>sql-solon-plugin</artifactId>
+      <version>${easy-query.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>4.0.3</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+    </dependency>
+
+
+    <!-- https://mvnrepository.com/artifact/com.github.oshi/oshi-core -->
+    <dependency>
+      <groupId>com.github.oshi</groupId>
+      <artifactId>oshi-core</artifactId>
+      <version>6.4.11</version>
+    </dependency>
+
+
+    <!-- lombok -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon.scheduling</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-test-junit5</artifactId>
+    </dependency>
+
+  </dependencies>
+
+
+</project>
