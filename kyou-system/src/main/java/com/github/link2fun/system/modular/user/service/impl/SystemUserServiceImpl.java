@@ -122,7 +122,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
       .selectAutoInclude(resultClass);
     EasyPageResult<T> pageResult = query
-      .toPageResult(page.getPageNum(), page.getPageSize(), page.getTotal());
+      .toPageResult(page.getPageNum(), page.getPageSize());
 
     return Page.of(pageResult);
   }
