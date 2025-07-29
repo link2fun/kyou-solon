@@ -67,3 +67,10 @@ solon.serialization.json:
     nullArrayAsEmpty: false
     nullAsWriteable: false
     enumAsName: false #枚举使用名字（v2.2.1 后支持）
+
+easy-query:
+    # 配置自定义日志
+    # log-class: ...
+    dataSource_default:
+        # 支持mysql pgsql h2 mssql dameng mssql_row_number kingbase_es等其余数据库在适配中
+#        database: mysql

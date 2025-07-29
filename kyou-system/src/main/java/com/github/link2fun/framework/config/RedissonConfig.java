@@ -1,6 +1,5 @@
 package com.github.link2fun.framework.config;
 
-import cn.dev33.satoken.solon.dao.SaTokenDaoOfRedissonJackson;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +25,7 @@ import org.redisson.solon.RedissonSupplier;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * solon 集成 Redisson 配置
@@ -34,6 +34,15 @@ import java.time.LocalTime;
  */
 @Configuration
 public class RedissonConfig {
+
+
+  public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+  public static final String DATE_PATTERN = "yyyy-MM-dd";
+  public static final String TIME_PATTERN = "HH:mm:ss";
+  public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
+  public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DATE_PATTERN);
+  public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(TIME_PATTERN);
+
 
   @Bean(typed = true)
   public ObjectMapper objectMapper() {
@@ -44,12 +53,12 @@ public class RedissonConfig {
 
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     JavaTimeModule timeModule = new JavaTimeModule();
-    timeModule.addSerializer(new LocalDateTimeSerializer(SaTokenDaoOfRedissonJackson.DATE_TIME_FORMATTER));
-    timeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(SaTokenDaoOfRedissonJackson.DATE_TIME_FORMATTER));
-    timeModule.addSerializer(new LocalDateSerializer(SaTokenDaoOfRedissonJackson.DATE_FORMATTER));
-    timeModule.addDeserializer(LocalDate.class, new LocalDateDeserializer(SaTokenDaoOfRedissonJackson.DATE_FORMATTER));
-    timeModule.addSerializer(new LocalTimeSerializer(SaTokenDaoOfRedissonJackson.TIME_FORMATTER));
-    timeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(SaTokenDaoOfRedissonJackson.TIME_FORMATTER));
+    timeModule.addSerializer(new LocalDateTimeSerializer(DATE_TIME_FORMATTER));
+    timeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DATE_TIME_FORMATTER));
+    timeModule.addSerializer(new LocalDateSerializer(DATE_FORMATTER));
+    timeModule.addDeserializer(LocalDate.class, new LocalDateDeserializer(DATE_FORMATTER));
+    timeModule.addSerializer(new LocalTimeSerializer(TIME_FORMATTER));
+    timeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(TIME_FORMATTER));
     objectMapper.registerModule(timeModule);
     return objectMapper;
   }

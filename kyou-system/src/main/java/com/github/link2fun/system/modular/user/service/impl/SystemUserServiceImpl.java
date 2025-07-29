@@ -11,7 +11,8 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
-import com.easy.query.core.expression.lambda.SQLExpression2;
+import com.easy.query.core.expression.lambda.SQLActionExpression2;
+
 import com.easy.query.core.proxy.columns.types.SQLStringTypeColumn;
 import com.easy.query.core.proxy.columns.types.impl.SQLStringTypeColumnImpl;
 import com.easy.query.solon.annotation.Db;
@@ -264,7 +265,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
 
   @Override
-  public Query<SysUserDTO> getSysUserDTOQuery(SQLExpression2<SysUserProxy, SysDeptProxy> whereExpression) {
+  public Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression2<SysUserProxy, SysDeptProxy> whereExpression) {
     return entityQuery.queryable(SysUser.class)
       .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId()))
       .where(whereExpression)

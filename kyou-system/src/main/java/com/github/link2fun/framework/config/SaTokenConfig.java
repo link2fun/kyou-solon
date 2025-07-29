@@ -3,9 +3,9 @@ package com.github.link2fun.framework.config;
 
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.dao.SaTokenDao;
+import cn.dev33.satoken.dao.SaTokenDaoForRedisson;
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
-import cn.dev33.satoken.solon.dao.SaTokenDaoOfRedissonJackson;
 import cn.dev33.satoken.solon.integration.SaTokenInterceptor;
 import cn.dev33.satoken.stp.StpUtil;
 import com.github.link2fun.framework.password.PasswordEncoder;
@@ -47,7 +47,7 @@ public class SaTokenConfig {
 
   @Bean
   public SaTokenDao saTokenDaoInit(@Inject RedissonClient redissonClient) {
-    return new SaTokenDaoOfRedissonJackson(redissonClient);
+    return new SaTokenDaoForRedisson(redissonClient);
   }
 
 
