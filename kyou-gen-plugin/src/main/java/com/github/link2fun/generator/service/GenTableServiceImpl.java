@@ -3,7 +3,6 @@ package com.github.link2fun.generator.service;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -13,13 +12,12 @@ import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.link2fun.generator.config.GenConfig;
 import com.github.link2fun.generator.domain.GenTable;
 import com.github.link2fun.generator.domain.GenTableColumn;
-import com.github.link2fun.generator.domain.pdmaner.PDManer;
-import com.github.link2fun.generator.domain.pdmaner.TableInfo;
 import com.github.link2fun.generator.domain.proxy.GenTableProxy;
-import com.github.link2fun.generator.util.*;
+import com.github.link2fun.generator.util.GenUtils;
+import com.github.link2fun.generator.util.VelocityInitializer;
+import com.github.link2fun.generator.util.VelocityUtils;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.GenConstants;
 import com.github.link2fun.support.core.page.Page;
@@ -157,48 +155,24 @@ public class GenTableServiceImpl implements IGenTableService {
    */
   @Override
   public List<GenTable> selectDbTableListByNames(String[] tableNames) {
+    String anylineServiceName = Solon.context().getWrapsOfType(DataSource.class).stream()
+      .filter(BeanWrap::typed)
+      .findFirst()
+      .map(BeanWrap::name)
+      .orElse("default");
 
-    String syncSource = GenUtils.getGenConfig().getSyncSource();
-    if (StrUtil.equalsAnyIgnoreCase(syncSource, "db")) {
-      String anylineServiceName = Solon.context().getWrapsOfType(DataSource.class).stream().filter(BeanWrap::typed)
-        .findFirst().map(BeanWrap::name).orElse("default");
-
-      LinkedHashMap<String, Table<?>> tables = ServiceProxy.service(anylineServiceName).metadata().tables();
-      // 根据查询条件进行过滤
-
-      return tables.values().stream()
-        .filter(info -> StrUtil.containsAny(info.getName(), tableNames))
-        .map(t -> {
-          GenTable genT = new GenTable();
-          genT.setTableName(t.getName());
-          genT.setTableComment(t.getComment());
-          genT.setCreateTime(LocalDateTimeUtil.of(t.getCreateTime()));
-          genT.setUpdateTime(LocalDateTimeUtil.of(t.getUpdateTime()));
-
-          return genT;
-
-        })
-        // 根据查询条件进行过滤
-        .toList();
-    }
-
-    // 使用的不是 db, 那应该是 pdmaner
-    PDManer pdManer = PDManerTool.loadPDManer(GenUtils.getGenConfig().getPdmanerJsonPath());
-
-    return pdManer.getEntities().stream()
-      .filter(entity -> ArrayUtil.contains(tableNames, entity.getDefKey()))
-      .map(entity -> {
+    LinkedHashMap<String, Table<?>> tables = ServiceProxy.service(anylineServiceName).metadata().tables();
+    return tables.values().stream()
+      .filter(info -> StrUtil.containsAny(info.getName(), tableNames))
+      .map(t -> {
         GenTable genT = new GenTable();
-        genT.setTableName(entity.getDefKey());
-        genT.setTableComment(entity.getDefName());
-        genT.setCreateTime(LocalDateTimeUtil.of(new Date()));
-        genT.setUpdateTime(LocalDateTimeUtil.of(new Date()));
-
+        genT.setTableName(t.getName());
+        genT.setTableComment(t.getComment());
+        genT.setCreateTime(LocalDateTimeUtil.of(t.getCreateTime()));
+        genT.setUpdateTime(LocalDateTimeUtil.of(t.getUpdateTime()));
         return genT;
       })
-      .collect(Collectors.toList());
-
-
+      .toList();
   }
 
   /**
@@ -270,12 +244,7 @@ public class GenTableServiceImpl implements IGenTableService {
           .executeRows(true);
         if (row > 0) {
           // 保存列信息
-          List<GenTableColumn> genTableColumns;
-          if (GenUtils.getGenConfig().syncFromDb()) {
-            genTableColumns = genTableColumnService.selectDbTableColumnsByName(tableName);
-          } else {
-            genTableColumns = PDManerTool.extractTableColumns(PDManerTool.loadPDManer(GenUtils.getGenConfig().getPdmanerJsonPath()), tableName);
-          }
+          List<GenTableColumn> genTableColumns = genTableColumnService.selectDbTableColumnsByName(tableName);
           for (GenTableColumn column : genTableColumns) {
             GenUtils.initColumnField(column, table);
             column.setTableId(table.getTableId());
@@ -319,17 +288,6 @@ public class GenTableServiceImpl implements IGenTableService {
       tpl.merge(context, sw);
       dataMap.put(template, sw.toString());
     }
-
-    PDManer pdManer = PDManerTool.loadPDManer(GenUtils.getGenConfig().getPdmanerJsonPath());
-    GenConfig genConfig = GenUtils.getGenConfig();
-
-
-    TableInfo tableInfo = new TableInfo(pdManer, table);
-
-    tableInfo.setAuthor(genConfig.getAuthor());
-
-    CodeGenerator.getHandlers()
-      .forEach(handler-> dataMap.put(handler.getTemplateName(), handler.getTemplateResult(tableInfo)));
 
     return dataMap;
   }
@@ -404,15 +362,8 @@ public class GenTableServiceImpl implements IGenTableService {
     Map<String, GenTableColumn> tableColumnMap = tableColumns.stream().collect(Collectors.toMap(GenTableColumn::getColumnName, Function.identity()));
 
     List<GenTableColumn> dbTableColumns;
-    if (GenUtils.getGenConfig().syncFromDb()) {
-      // 从DB进行同步
-      dbTableColumns = genTableColumnService.selectDbTableColumnsByName(tableName);
-    } else {
-      // 从PDManer进行同步
-      PDManer pdManer = PDManerTool.loadPDManer(GenUtils.getGenConfig().getPdmanerJsonPath());
-      // todo 从pdmaner中获取表结构
-      dbTableColumns = PDManerTool.extractTableColumns(pdManer, tableName);
-    }
+    // 从DB进行同步
+    dbTableColumns = genTableColumnService.selectDbTableColumnsByName(tableName);
 
     if (StringUtils.isEmpty(dbTableColumns)) {
       throw new ServiceException("同步数据失败，原表结构不存在");
