@@ -126,7 +126,6 @@ public class LogInterceptor implements Interceptor {
       // 记录一下耗时
       logMsg.append("COST TIME\t: ").append(System.currentTimeMillis() - TIME_THREADLOCAL.get()).append("ms").append(System.lineSeparator());
 
-      ThreadUtil.sleep(1000);
       return invokeResult;
     }  catch (Exception throwable) {
       // 到这里是异常结束的
