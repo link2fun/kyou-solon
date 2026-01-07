@@ -12,8 +12,8 @@ public class DataSourceConfig {
 
   //typed=true，表示默认数据源。@Db 可不带名字注入
   @Bean(value = "dataSource_default", typed = true)
-  public DataSource dataSourceDefault(@Inject("${datasource.default}") HikariDataSource ds) {
-    return ds;
+  public DataSource dataSourceDefault(@Inject("${datasource.default}") HikariDataSource dataSource) {
+    return dataSource;
   }
 
 

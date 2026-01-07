@@ -40,25 +40,16 @@ public class SessionUser implements Serializable {
   /** 登录时间: tokenSession */
   public Long getLoginTime() {
     // 登录了,
-//    return getTokenSession().getCreateTime();
     return Optional.ofNullable(tokenSession).map(SaSession::getCreateTime).orElse(null);
   }
 
-  public Long getTimeout() {
-//    return getTokenSession().getTimeout();
-    return Optional.ofNullable(tokenSession).map(SaSession::getTimeout).orElse(null);
-  }
 
 
-  /** 过期时间 */
-  public Long getExpireTime() {
 
-    return getLoginTime() + (getTimeout() == -1 ? 864000 : getTimeout());
-  }
+
 
   /** 登录IP地址 */
   public String getIpaddr() {
-//    return getTokenSession().getString("ipaddr");
     return Optional.ofNullable(tokenSession).map(session -> session.getString("ipaddr")).orElse(null);
   }
 

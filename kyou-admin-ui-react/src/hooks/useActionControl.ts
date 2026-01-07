@@ -1,4 +1,4 @@
-import useResponsiveOperationsWidth from '@/hooks/useResponsiveOperationsWidth';
+import useRowActionsResponsiveWidth from '@/hooks/useRowActionsResponsiveWidth';
 import useTableRowSelection from '@/hooks/useTableRowSelection';
 // @ts-ignore
 import useLoadingState, { UseLoadingStateReturnType } from '@/hooks/useLoadingState';
@@ -21,6 +21,8 @@ interface ActionInfo {
   onActionSuccess?: (result: Record<string, any>) => void;
   /** onActionCall 失败后的回调 */
   onActionError?: (e: any) => void;
+  /** onActionCall 执行成功后刷新表格数据, 不传递的话默认就是true,除非明确传递 false */
+  refreshTableOnSuccess?: boolean;
 }
 
 interface ProTableEditModalProps {
@@ -70,7 +72,7 @@ const useActionControl = (props: ProTableEditModalProps) => {
     useTableRowSelection(rowData, { itemKey: props.selection?.rowKey });
 
   /** 定义一个响应式的 操作按钮宽度 */
-  const responsiveRowAction = useResponsiveOperationsWidth();
+  const responsiveRowAction = useRowActionsResponsiveWidth();
 
   /** 打开新增Modal */
   const openAddModal = (initData?: any) => {
@@ -130,7 +132,10 @@ const useActionControl = (props: ProTableEditModalProps) => {
         loading.begin();
         const result = await props.addAction.onActionCall(values);
         message.success('操作成功');
-        tableActionRef.current?.reload();
+        if (props.addAction?.refreshTableOnSuccess !== false) {
+          // 默认刷新表格数据
+          tableActionRef.current?.reload();
+        }
         props.addAction.onActionSuccess?.(result);
         onCancel();
       } catch (e) {
@@ -147,6 +152,10 @@ const useActionControl = (props: ProTableEditModalProps) => {
         loading.begin();
         const result = await props.editAction.onActionCall(values);
         message.success('操作成功');
+        if (props.editAction?.refreshTableOnSuccess !== false) {
+          // 默认刷新表格数据
+          tableActionRef.current?.reload();
+        }
         tableActionRef.current?.reload();
         props.editAction.onActionSuccess?.(result);
         onCancel();
@@ -164,7 +173,10 @@ const useActionControl = (props: ProTableEditModalProps) => {
         loading.begin();
         const result = await props.removeAction.onActionCall(values);
         message.success('操作成功');
-        tableActionRef.current?.reload();
+        if (props.removeAction?.refreshTableOnSuccess !== false) {
+          // 默认刷新表格数据
+          tableActionRef.current?.reload();
+        }
         props.removeAction.onActionSuccess?.(result);
         onCancel();
       } catch (e) {
@@ -175,12 +187,16 @@ const useActionControl = (props: ProTableEditModalProps) => {
     }
   };
 
-  const handleExtraAction = async (values: any) => {
-    const actionExecutor = props.extraActionMap?.action;
+  const handleExtraAction = async (action:string, values: any) => {
+    const actionExecutor = props.extraActionMap?.[action];
     if (actionExecutor) {
       try {
         loading.begin();
         const result = await actionExecutor?.onActionCall?.(values);
+        if (actionExecutor.refreshTableOnSuccess !== false){
+          // 默认刷新表格数据
+          tableActionRef.current?.reload();
+        }
         actionExecutor.onActionSuccess?.(result);
         onCancel();
       } catch (e) {
@@ -200,7 +216,7 @@ const useActionControl = (props: ProTableEditModalProps) => {
     } else if (action === 'remove') {
       return await handleRemoveAction(values);
     } else {
-      return await handleExtraAction(values);
+      return await handleExtraAction(action as string,values);
     }
   };
 

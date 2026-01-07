@@ -55,6 +55,11 @@
       <artifactId>mysql-connector-java</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-redisson</artifactId>
+    </dependency>
+
 
     <!-- https://mvnrepository.com/artifact/com.github.oshi/oshi-core -->
     <dependency>

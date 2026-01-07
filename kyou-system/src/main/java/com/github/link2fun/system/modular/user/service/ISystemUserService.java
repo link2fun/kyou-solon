@@ -2,7 +2,7 @@ package com.github.link2fun.system.modular.user.service;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
 import com.easy.query.core.basic.api.select.Query;
-import com.easy.query.core.expression.lambda.SQLExpression2;
+import com.easy.query.core.expression.lambda.SQLActionExpression2;
 import com.easy.query.core.proxy.columns.types.SQLStringTypeColumn;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
@@ -61,7 +61,7 @@ public interface ISystemUserService {
   SysUserDTO selectUserByUserName(String userName);
 
 
-  Query<SysUserDTO> getSysUserDTOQuery(SQLExpression2<SysUserProxy, SysDeptProxy> whereExpression);
+  Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression2<SysUserProxy, SysDeptProxy> whereExpression);
 
   /** 根据用户 tokenInfo 查询登录用户信息 */
   SessionUser selectCurrentUserByTokenInfo(SaTokenInfo tokenInfo);
