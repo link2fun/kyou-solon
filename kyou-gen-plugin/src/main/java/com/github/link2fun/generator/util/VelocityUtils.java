@@ -119,27 +119,35 @@ public class VelocityUtils {
    * @return 模板列表
    */
   public static List<String> getTemplateList(String tplCategory, String tplWebType) {
-//    String useWebType = "vm/vue";
-//    if ("element-plus".equals(tplWebType)) {
-//      useWebType = "vm/vue/v3";
-//    }
-    List<String> templates = new ArrayList<String>();
-//    templates.add("vm/java/domain.java.vm");
-//    templates.add("vm/java/mapper.java.vm");
-//    templates.add("vm/java/service.java.vm");
-//    templates.add("vm/java/serviceImpl.java.vm");
-//    templates.add("vm/java/controller.java.vm");
-//    templates.add("vm/xml/mapper.xml.vm");
-//    templates.add("vm/sql/sql.vm");
-//    templates.add("vm/js/api.js.vm");
-//    if (GenConstants.TPL_CRUD.equals(tplCategory)) {
-//      templates.add(useWebType + "/index.vue.vm");
-//    } else if (GenConstants.TPL_TREE.equals(tplCategory)) {
-//      templates.add(useWebType + "/index-tree.vue.vm");
-//    } else if (GenConstants.TPL_SUB.equals(tplCategory)) {
-//      templates.add(useWebType + "/index.vue.vm");
-//      templates.add("vm/java/sub-domain.java.vm");
-//    }
+    List<String> templates = new ArrayList<>();
+
+    templates.add("vm/java/domain.java.vm");
+    templates.add("vm/java/mapper.java.vm");
+    templates.add("vm/java/service.java.vm");
+    templates.add("vm/java/serviceImpl.java.vm");
+    templates.add("vm/java/controller.java.vm");
+    templates.add("vm/xml/mapper.xml.vm");
+    templates.add("vm/sql/sql.vm");
+    templates.add("vm/js/api.js.vm");
+
+    if (!"ant-design-umi-max".equals(tplWebType)) {
+      String useWebType = "vm/vue";
+      if ("element-plus".equals(tplWebType)) {
+        useWebType = "vm/vue/v3";
+      }
+
+      if (GenConstants.TPL_CRUD.equals(tplCategory)) {
+        templates.add(useWebType + "/index.vue.vm");
+      } else if (GenConstants.TPL_TREE.equals(tplCategory)) {
+        templates.add(useWebType + "/index-tree.vue.vm");
+      } else if (GenConstants.TPL_SUB.equals(tplCategory)) {
+        templates.add(useWebType + "/index.vue.vm");
+        templates.add("vm/java/sub-domain.java.vm");
+      }
+    } else if (GenConstants.TPL_SUB.equals(tplCategory)) {
+      templates.add("vm/java/sub-domain.java.vm");
+    }
+
     return templates;
   }
 

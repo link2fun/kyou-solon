@@ -61,7 +61,7 @@ Kyou (读作 Q ) 是一个基于 Solon、EasyQuery 、React 脚手架
 ├──  kyou-admin-ui-react: 前端React项目, 兼容前后端分离的 ruoyi 接口请求
 
 ├──  kyou-biz: 业务目录, 提供一些业务相关的功能, 自己写的业务功能可以放到这里面
-├──  kyou-gen-plugin: 代码生成器插件, 提供一些代码生成器插件, 可以生成一些通用的代码(基于 PDManer json 文件解析)
+├──  kyou-gen-plugin: 代码生成器插件, 提供基于模板的代码生成能力, 可生成通用 CRUD / 菜单 SQL 等
 ├──  kyou-main: 主目录, 提供应用启动类及配置 [8078]
 ├──  kyou-schedule: 定时任务模块, 提供定时任务相关的功能, 目前提供的是基于 solon simple-scheduler 的实现
 ├──  kyou-support: 支持包, 提供一些常用的工具类
@@ -71,7 +71,7 @@ Kyou (读作 Q ) 是一个基于 Solon、EasyQuery 、React 脚手架
 
 ## 建议用法
 - 使用 PDManer 设计数据库, 管理SQL版本, 使用说明见: [PDManer元数建模-v4-操作手册](https://www.yuque.com/pdmaner/docs/pdmaner-manual)
-- 使用自带的代码生成器或者 PDManer 的代码生成器插件, 生成代码
+- 使用自带的代码生成器（基于模板/数据库元数据）, 生成代码
 - 安装 [EasyQuery IDEA 插件](https://plugins.jetbrains.com/plugin/23121-easyqueryassistant) , 该插件可以图形化创建和修改查询实体
 
 
