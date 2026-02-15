@@ -60,6 +60,12 @@
       <artifactId>sa-token-redisson</artifactId>
     </dependency>
 
+    <!-- sa-token JSON 序列化支持 (SaJsonTemplate 实现) -->
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-jackson</artifactId>
+    </dependency>
+
 
     <!-- https://mvnrepository.com/artifact/com.github.oshi/oshi-core -->
     <dependency>

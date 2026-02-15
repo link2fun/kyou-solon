@@ -60,6 +60,13 @@
         <version>${sa-token.redisson.version}</version>
       </dependency>
 
+      <!-- sa-token JSON 序列化支持 (SaJsonTemplate 实现) -->
+      <dependency>
+        <groupId>cn.dev33</groupId>
+        <artifactId>sa-token-jackson</artifactId>
+        <version>${sa-token.redisson.version}</version>
+      </dependency>
+
       <!-- hutool工具 -->
       <dependency>
         <groupId>cn.hutool</groupId>
