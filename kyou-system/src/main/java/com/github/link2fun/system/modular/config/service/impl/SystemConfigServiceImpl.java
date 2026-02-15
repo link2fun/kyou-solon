@@ -60,24 +60,15 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
   public String selectConfigByKey(final String configKey) {
     Preconditions.checkArgument(StrUtil.isNotBlank(configKey), "configKey is blank");
 
-    String configValue = ConfigContext.getString(configKey);
-    if (Objects.nonNull(configValue)) {
-      // 数据库中有缓存的值
-      return configValue;
-    }
-
+    // 直接查库，缓存逻辑由 StandaloneRedisConfigHolder.get() 统一负责
+    // 不能在此调用 ConfigContext，否则会与 ConfigHolder 形成循环调用导致 StackOverflow
     final SysConfig config = entityQuery.queryable(SysConfig.class)
         .where(_config -> _config.configKey().eq(configKey)).singleOrNull();
     if (Objects.nonNull(config)) {
-      // 缓存配置
-      ConfigContext.put(configKey, config.getConfigValue());
       return config.getConfigValue();
-    } else {
-      // 就算数据库中没有，也要缓存空值，防止缓存穿透
-      ConfigContext.put(configKey, StrUtil.EMPTY);
     }
 
-    return StringUtils.EMPTY;
+    return null;
   }
 
   /**

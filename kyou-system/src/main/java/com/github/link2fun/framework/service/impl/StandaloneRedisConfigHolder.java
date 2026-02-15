@@ -60,7 +60,8 @@ public class StandaloneRedisConfigHolder implements IConfigHolder {
     }
     // 没有这个key , 说明目前没有缓存这个 config, 去数据库查询一下
     String configValue = configService.selectConfigByKey(configKey);
-    redisCache.set(configKey,configValue);
+    // 回填缓存，使用 cacheKey（带前缀）保持与读取一致
+    redisCache.set(cacheKey, configValue);
 
     return configValue;
   }
