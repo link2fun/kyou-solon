@@ -37,3 +37,5 @@ doc/pdmaner/.back_kyou-solon
 
 
 app*local.yml
+
+env/docker/.env

@@ -1,7 +1,7 @@
 solon:
     app:
         name: kyou
-    env: dev
+    env: docker
 
 server:
     port: 8078
@@ -73,4 +73,4 @@ easy-query:
     # log-class: ...
     dataSource_default:
         # 支持mysql pgsql h2 mssql dameng mssql_row_number kingbase_es等其余数据库在适配中
-#        database: mysql
+        database: mysql

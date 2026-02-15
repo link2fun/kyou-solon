@@ -1,6 +1,9 @@
 -- 来自 ruoyi-vue
 -- https://gitee.com/y_project/RuoYi-Vue/raw/a96d4bf2eda9dfde4a8efdb32cb619b95c80ab1e/sql/ry_20240629.sql
 
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 -- ----------------------------
 -- 1、部门表
 -- ----------------------------
