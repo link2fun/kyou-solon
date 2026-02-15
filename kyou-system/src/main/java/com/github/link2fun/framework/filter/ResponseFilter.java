@@ -1,5 +1,7 @@
 package com.github.link2fun.framework.filter;
 
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.exception.SaTokenException;
 import com.easy.query.core.exception.EasyQuerySQLCommandException;
 import com.easy.query.core.exception.EasyQuerySQLStatementException;
@@ -50,12 +52,27 @@ public class ResponseFilter implements Filter {
           }
         }
       }
+    } catch (NotLoginException e) {
+      log.warn("未登录访问: {}", ctx.path(), e);
+      ctx.render(R.fail(HttpStatus.UNAUTHORIZED, e.getMessage()));
+    } catch (NotPermissionException e) {
+      log.warn("权限不足: {}", ctx.path(), e);
+      ctx.render(R.fail(HttpStatus.FORBIDDEN, e.getMessage()));
     } catch (SaTokenException e) {
-      ctx.render(R.fail(HttpStatus.FORBIDDEN, "你没有权限"));
+      log.warn("认证异常: {}", ctx.path(), e);
+      ctx.render(R.fail(HttpStatus.FORBIDDEN, e.getMessage()));
     } catch (ValidatorException e) {
+      log.warn("参数校验失败: {}", e.getMessage(), e);
       ctx.render(R.fail(e.getCode(), e.getMessage()));
-    } catch (DataThrowable | ServiceException | DemoModeException e) {
+    } catch (DataThrowable e) {
+      log.error("DataThrowable: {}", e.getMessage(), e);
       ctx.render(R.fail(HttpStatus.ERROR, e.getMessage()));
+    } catch (ServiceException e) {
+      log.warn("业务异常: code={}, msg={}, detail={}", e.getCode(), e.getMessage(), e.getDetailMessage(), e);
+      ctx.render(R.fail(e.getCode() != null ? e.getCode() : HttpStatus.ERROR, e.getMessage()));
+    } catch (DemoModeException e) {
+      log.warn("演示模式拦截: {}", ctx.path(), e);
+      ctx.render(R.fail(HttpStatus.ERROR, "演示模式，不允许操作"));
     } catch (EasyQuerySQLCommandException exp) {
       Throwable cause = exp.getCause();
       if (cause instanceof EasyQuerySQLStatementException) {
