@@ -88,12 +88,14 @@ public class BuildInfoContext {
 
   /** 获取构建时间 */
   public static LocalDateTime getBuildTime() {
-    return LocalDateTimeUtil.of(buildInfo.getLong("timestamp"));
+    Long timestamp = buildInfo.getLong("timestamp");
+    return timestamp != null ? LocalDateTimeUtil.of(timestamp) : null;
   }
 
   /** 获取构建时间 str */
   public static String getBuildTimeStr() {
-    return LocalDateTimeUtil.formatNormal(getBuildTime());
+    LocalDateTime buildTime = getBuildTime();
+    return buildTime != null ? LocalDateTimeUtil.formatNormal(buildTime) : "unknown";
   }
 
   /** 获取GIT/SVN版本 */
