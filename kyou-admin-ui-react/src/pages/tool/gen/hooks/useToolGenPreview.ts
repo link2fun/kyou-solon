@@ -1,7 +1,7 @@
-import { UseLoadingStateReturnType } from '@/hooks/useLoadingState';
-import ApiToolGen from '@/services/tool/ApiToolGen';
 import { useGetState } from 'ahooks';
 import { useMemo } from 'react';
+import type { UseLoadingStateReturnType } from '@/hooks/useLoadingState';
+import ApiToolGen from '@/services/tool/ApiToolGen';
 
 const useToolGenPreview = (loading: UseLoadingStateReturnType) => {
   const [open, setOpen] = useGetState<boolean>(false);

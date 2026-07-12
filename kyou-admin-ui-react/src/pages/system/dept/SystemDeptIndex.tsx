@@ -1,3 +1,10 @@
+import {
+  ExpandAltOutlined,
+  PlusOutlined,
+  ShrinkOutlined,
+} from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { Button } from 'antd';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
@@ -7,13 +14,6 @@ import useManualTreeExpandControl from '@/hooks/useManualTreeExpandControl';
 import SystemDeptEditModal from '@/pages/system/dept/components/SystemDeptEditModal';
 import ApiSystemDept from '@/services/system/ApiSystemDept';
 import { handleTree } from '@/utils/utils';
-import {
-  ExpandAltOutlined,
-  PlusOutlined,
-  ShrinkOutlined,
-} from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
-import { Button } from 'antd';
 
 const SystemDeptIndex = () => {
   const actionControl = useActionControl({
@@ -42,7 +42,7 @@ const SystemDeptIndex = () => {
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         defaultSize={'small'}
@@ -114,12 +114,12 @@ const SystemDeptIndex = () => {
             title: '排序',
             dataIndex: 'orderNum',
             key: 'orderNum',
-            hideInSearch: true,
+            search: false,
           },
 
           {
             title: '操作',
-            hideInSearch: true,
+            search: false,
             fixed: 'right',
             width: actionControl.rowAction.width,
             render: (_, record) => [
@@ -144,6 +144,8 @@ const SystemDeptIndex = () => {
                   actionControl={actionControl}
                   record={record}
                   permissionsRequired={['system:dept:remove']}
+                  disabled={record.children && record.children.length > 0}
+                  disabledText="存在下级部门,不允许删除"
                 />
               </div>,
             ],
@@ -152,7 +154,7 @@ const SystemDeptIndex = () => {
       />
 
       <SystemDeptEditModal {...actionControl.editModal} />
-    </div>
+    </PageContainer>
   );
 };
 

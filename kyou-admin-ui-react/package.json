@@ -1,50 +1,77 @@
 {
   "private": true,
   "author": "link2fun <link2fun@qq.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/link2fun/kyou-solon.git"
+  },
   "scripts": {
     "build": "max build",
     "dev": "max dev",
-    "format": "prettier --cache --write .",
+    "biome": "biome check --write",
+    "biome:lint": "biome lint",
+    "format": "biome check --write",
+    "lint": "npm run biome:lint && npm run tsc",
+    "tsc": "tsc --noEmit",
     "postinstall": "max setup",
     "prepare": "cd .. && husky",
     "setup": "max setup",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "resolutions": {
+    "click-to-react-component": "1.0.8"
   },
   "dependencies": {
     "@ant-design/charts": "^2.2.1",
-    "@ant-design/icons": "^5.0.1",
-    "@ant-design/plots": "^2.3.2",
-    "@ant-design/pro-components": "^2.4.4",
-    "@ant-design/pro-form": "^2.31.2",
-    "@umijs/max": "4.3.24",
+    "@ant-design/icons": "^6.3.2",
+    "@ant-design/plots": "^2.6.8",
+    "@ant-design/pro-components": "^3.1.12-0",
     "@wangeditor/editor": "^5.1.23",
     "@wangeditor/editor-for-react": "^1.0.6",
     "ahooks": "^3.8.1",
-    "antd": "^5.4.0",
+    "@rc-component/util": "^1.11.0",
+    "antd": "^6.5.0",
     "antd-img-crop": "^4.23.0",
-    "antd-style": "^3.7.0",
+    "antd-style": "^4.1.0",
     "classnames": "^2.5.1",
+    "clsx": "^2.1.1",
     "copy-to-clipboard": "^3.3.3",
     "mathjs": "^13.2.2",
+    "dayjs": "^1.11.20",
     "path-to-regexp": "^6.2.2",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-highlight": "^0.15.0",
     "react-router": "^6.27.0"
   },
   "devDependencies": {
-    "@types/react": "^18.0.33",
-    "@types/react-dom": "^18.0.11",
+    "@ant-design/cli": "^6.5.0",
+    "@biomejs/biome": "^2.5.3",
+    "@commitlint/cli": "^21.2.0",
+    "@commitlint/config-conventional": "^21.0.0",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "@types/react-highlight": "^0.12.8",
+    "@umijs/lint": "^4.6.51",
+    "@umijs/max": "^4.6.75",
+    "cross-env": "^10.1.0",
+    "happy-dom": "^20.10.6",
     "husky": "^9",
-    "lint-staged": "^13.2.0",
-    "prettier": "^2.8.7",
-    "prettier-plugin-organize-imports": "^3.2.2",
-    "prettier-plugin-packagejson": "^2.4.3",
-    "tailwindcss": "^3",
-    "typescript": "^5.0.3"
+    "lint-staged": "^17.0.2",
+    "react-doctor": "^0.5.0",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^7.0.2",
+    "vitest": "4.1.8"
   },
-  "resolutions": {
-    "click-to-react-component": "1.0.8"
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

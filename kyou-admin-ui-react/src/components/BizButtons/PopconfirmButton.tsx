@@ -1,6 +1,6 @@
 import { useAccess } from '@umijs/max';
-import { Button, Popconfirm, PopconfirmProps, Tooltip } from 'antd';
-import { ButtonProps } from 'antd/es/button';
+import { Button, Popconfirm, type PopconfirmProps, Tooltip } from 'antd';
+import type { ButtonProps } from 'antd/es/button';
 import React, { memo } from 'react';
 
 interface PopconfirmButtonProps extends PopconfirmProps {
@@ -9,7 +9,9 @@ interface PopconfirmButtonProps extends PopconfirmProps {
   /** 按钮的名字 */
   buttonText: string;
   /** 其他按钮属性 */
-  buttonProps?: Partial<Pick<ButtonProps, Exclude<keyof ButtonProps, 'onClick' | 'title'>>>;
+  buttonProps?: Partial<
+    Pick<ButtonProps, Exclude<keyof ButtonProps, 'onClick' | 'title'>>
+  >;
   /** 所需权限,eg: ['monitor:online:forceLogout'], 传 [] 的视作不需要权限, 默认不需要权限 */
   permissionsRequired?: string[];
   /** 按钮的操作提示 */

@@ -1,12 +1,13 @@
+import { useModel } from '@@/exports';
+import type { ActionType, ProFormInstance } from '@ant-design/pro-components';
+import { App } from 'antd';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import useLoadingState, {
+  type UseLoadingStateReturnType,
+} from '@/hooks/useLoadingState';
 import useRowActionsResponsiveWidth from '@/hooks/useRowActionsResponsiveWidth';
 import useTableRowSelection from '@/hooks/useTableRowSelection';
-// @ts-ignore
-import useLoadingState, { UseLoadingStateReturnType } from '@/hooks/useLoadingState';
-import { useModel } from '@@/exports';
-import { ActionType, FormInstance } from '@ant-design/pro-components';
-import { message } from 'antd';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { useEffect, useMemo, useRef, useState } from 'react';
 
 export type FlowAction = 'add' | 'edit' | 'view' | 'remove' | undefined;
 
@@ -49,10 +50,11 @@ export type UseActionControlReturnType = ReturnType<typeof useActionControl>;
  * 使用 ProTable 的编辑表单
  */
 const useActionControl = (props: ProTableEditModalProps) => {
-  const tableActionRef = useRef<ActionType>();
-  const tableFormRef = useRef<FormInstance>();
+  const { message } = App.useApp();
+  const tableActionRef = useRef<ActionType>(undefined);
+  const tableFormRef = useRef<ProFormInstance>(undefined);
 
-  const editModalFormRef = useRef<FormInstance>();
+  const editModalFormRef = useRef<ProFormInstance>(undefined);
   const { getActiveTab, updateTab, getHeaderTabState } = useModel('global');
 
   /** state 定义当前的操作 */
@@ -68,8 +70,14 @@ const useActionControl = (props: ProTableEditModalProps) => {
   const [rowData, setRowData] = useState<any[]>([]);
 
   // 定义一个 rowSelection
-  const { rowSelection, setSelected, selectedRowKeys, selectedRowObjs, selectSingle, selectMultiple } =
-    useTableRowSelection(rowData, { itemKey: props.selection?.rowKey });
+  const {
+    rowSelection,
+    setSelected,
+    selectedRowKeys,
+    selectedRowObjs,
+    selectSingle,
+    selectMultiple,
+  } = useTableRowSelection(rowData, { itemKey: props.selection?.rowKey });
 
   /** 定义一个响应式的 操作按钮宽度 */
   const responsiveRowAction = useRowActionsResponsiveWidth();
@@ -89,7 +97,8 @@ const useActionControl = (props: ProTableEditModalProps) => {
     await loading.wrap({
       action: async () => {
         if (props?.editAction?.onModalOpen) {
-          const formInitData = (await props?.editAction?.onModalOpen(initData || {})) || {};
+          const formInitData =
+            (await props?.editAction?.onModalOpen(initData || {})) || {};
           editModalFormRef.current?.setFieldsValue({ ...formInitData });
         } else {
           editModalFormRef.current?.setFieldsValue({ ...initData });
@@ -187,13 +196,13 @@ const useActionControl = (props: ProTableEditModalProps) => {
     }
   };
 
-  const handleExtraAction = async (action:string, values: any) => {
+  const handleExtraAction = async (action: string, values: any) => {
     const actionExecutor = props.extraActionMap?.[action];
     if (actionExecutor) {
       try {
         loading.begin();
         const result = await actionExecutor?.onActionCall?.(values);
-        if (actionExecutor.refreshTableOnSuccess !== false){
+        if (actionExecutor.refreshTableOnSuccess !== false) {
           // 默认刷新表格数据
           tableActionRef.current?.reload();
         }
@@ -216,7 +225,7 @@ const useActionControl = (props: ProTableEditModalProps) => {
     } else if (action === 'remove') {
       return await handleRemoveAction(values);
     } else {
-      return await handleExtraAction(action as string,values);
+      return await handleExtraAction(action as string, values);
     }
   };
 
@@ -292,7 +301,12 @@ const useActionControl = (props: ProTableEditModalProps) => {
        * */
       wrapPageTotal: (params: any) => {
         const { current } = params;
-        if (current === undefined || current === null || current === 0 || current === 1) {
+        if (
+          current === undefined ||
+          current === null ||
+          current === 0 ||
+          current === 1
+        ) {
           return params;
         }
         return {

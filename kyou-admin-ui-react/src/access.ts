@@ -1,10 +1,10 @@
-import { InitialState } from '@/typing';
+import type { InitialState } from '@/typing';
 import CollectionTool from '@/utils/CollectionTool';
 
 export default (initialState: InitialState) => {
   const { currentUser } = initialState || {};
-  const permissionMenuList = (currentUser || {}).permissions || [];
-  const permissionRoleList = (currentUser || {}).roles || [];
+  const permissionMenuList = currentUser?.permissions || [];
+  const permissionRoleList = currentUser?.roles || [];
 
   // 在这里按照初始化数据定义项目中的权限，统一管理
   // 参考文档 https://umijs.org/docs/max/access

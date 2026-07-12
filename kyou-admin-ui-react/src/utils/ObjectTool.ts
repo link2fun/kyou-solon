@@ -10,7 +10,7 @@ const isNull = (obj: any) => {
  * @returns {boolean}
  */
 const hasAnyKey = (obj: any, keys: string[]) => {
-  return keys.some((key) => obj.hasOwnProperty(key));
+  return keys.some((key) => Object.hasOwn(obj, key));
 };
 
 export default {

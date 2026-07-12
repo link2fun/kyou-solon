@@ -1,3 +1,7 @@
+import { history } from '@@/core/history';
+import { TagOutlined, UserOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { App, Switch, Tag } from 'antd';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
@@ -10,10 +14,6 @@ import SystemRoleEditModal from '@/pages/system/role/components/SystemRoleEditMo
 import useSystemRoleDataScopeModal from '@/pages/system/role/hooks/useSystemRoleDataScopeModal';
 import ApiSystemMenu from '@/services/system/ApiSystemMenu';
 import ApiSystemRole from '@/services/system/ApiSystemRole';
-import { history } from '@@/core/history';
-import { TagOutlined, UserOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
-import { App, Switch, Tag } from 'antd';
 
 const SystemRoleIndex = () => {
   const { message } = App.useApp();
@@ -43,7 +43,7 @@ const SystemRoleIndex = () => {
   const dataScopeModal = useSystemRoleDataScopeModal();
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params) => {
@@ -69,7 +69,7 @@ const SystemRoleIndex = () => {
           {
             title: '显示顺序',
             dataIndex: 'roleSort',
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '状态',
@@ -84,12 +84,20 @@ const SystemRoleIndex = () => {
             },
             valueEnum: {
               '0': (
-                <Tag color={'green'} className={'cursor-pointer'} title={'点击切换状态'}>
+                <Tag
+                  color={'green'}
+                  className={'cursor-pointer'}
+                  title={'点击切换状态'}
+                >
                   正常
                 </Tag>
               ),
               '1': (
-                <Tag color={'red'} className={'cursor-pointer'} title={'点击切换状态'}>
+                <Tag
+                  color={'red'}
+                  className={'cursor-pointer'}
+                  title={'点击切换状态'}
+                >
                   停用
                 </Tag>
               ),
@@ -114,15 +122,18 @@ const SystemRoleIndex = () => {
             dataIndex: 'remark',
             renderText: (text) => <EllipsisText text={text} />,
           },
-          { title: '创建时间', dataIndex: 'createTime', hideInSearch: true },
+          { title: '创建时间', dataIndex: 'createTime', search: false },
           {
             title: '操作',
             fixed: 'right',
             width: actionControl.rowAction.width,
-            hideInSearch: true,
-            render: (text, record) => [
+            search: false,
+            render: (_text, record) => [
               <div key={'operations'} ref={actionControl.rowAction.ref}>
-                <TableRowViewButton actionControl={actionControl} record={record} />
+                <TableRowViewButton
+                  actionControl={actionControl}
+                  record={record}
+                />
                 <TableRowEditButton
                   actionControl={actionControl}
                   record={record}
@@ -147,7 +158,9 @@ const SystemRoleIndex = () => {
                   icon={<UserOutlined />}
                   type={'link'}
                   title={'分配用户'}
-                  onClick={() => history.push(`/system/roleAuthUser?roleId=${record.roleId}`)}
+                  onClick={() =>
+                    history.push(`/system/roleAuthUser?roleId=${record.roleId}`)
+                  }
                 />
               </div>,
             ],
@@ -164,7 +177,7 @@ const SystemRoleIndex = () => {
         onCancel={dataScopeModal.onCancel}
         formRef={dataScopeModal.formRef}
       />
-    </div>
+    </PageContainer>
   );
 };
 

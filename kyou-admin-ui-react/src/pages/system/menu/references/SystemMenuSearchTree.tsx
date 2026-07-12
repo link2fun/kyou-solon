@@ -1,7 +1,7 @@
+import React from 'react';
 import SearchTree from '@/components/ProFormItem/FormSearchTree';
 import ApiSystemMenu from '@/services/system/ApiSystemMenu';
-import { FormItemProps } from '@/typing';
-import React from 'react';
+import type { FormItemProps } from '@/typing';
 
 type SystemMenuSearchTreeProps = FormItemProps & {
   checkable?: boolean;

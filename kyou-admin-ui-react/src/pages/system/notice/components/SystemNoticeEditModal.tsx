@@ -1,14 +1,14 @@
-import EditModalForm from '@/components/EditModalForm';
-import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
-import { EditModalProps } from '@/typing';
-
-import RichEditor from '@/components/ProFormItem/RichEditor';
 import {
   ProFormItem,
   ProFormSelect,
   ProFormText,
 } from '@ant-design/pro-components';
 import React from 'react';
+import EditModalForm from '@/components/EditModalForm';
+
+import RichEditor from '@/components/ProFormItem/RichEditor';
+import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
+import type { EditModalProps } from '@/typing';
 
 const SystemNoticeEditModal: React.FC<EditModalProps> = (props) => {
   return (

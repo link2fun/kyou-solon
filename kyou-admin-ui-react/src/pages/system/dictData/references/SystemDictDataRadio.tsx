@@ -1,7 +1,9 @@
-import useDict, { type DictValue } from '@/hooks/useDict';
-import { ProFormRadio } from '@ant-design/pro-components';
-import { ProFormRadioGroupProps } from '@ant-design/pro-form';
+import {
+  ProFormRadio,
+  type ProFormRadioGroupProps,
+} from '@ant-design/pro-components';
 import React from 'react';
+import useDict, { type DictValue } from '@/hooks/useDict';
 
 type SystemDictDataRadioProps = ProFormRadioGroupProps & {
   typeCode: string;

@@ -1,3 +1,11 @@
+import { history, useModel } from '@@/exports';
+import {
+  EyeOutlined,
+  HistoryOutlined,
+  PlayCircleOutlined,
+} from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { App, Tooltip } from 'antd';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
@@ -7,17 +15,9 @@ import useActionControl from '@/hooks/useActionControl';
 import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
 import MonitorJobEditModal from '@/pages/monitor/job/components/MonitorJobEditModal';
 import ApiMonitorJob from '@/services/monitor/ApiMonitorJob';
-import { history, useModel } from '@@/exports';
-import {
-  EyeOutlined,
-  HistoryOutlined,
-  PlayCircleOutlined,
-} from '@ant-design/icons';
-import { ProFormSelect, ProTable } from '@ant-design/pro-components';
-import { message, Tooltip } from 'antd';
-import ButtonGroup from 'antd/es/button/button-group';
 
 const MonitorJobIndex = () => {
+  const { message } = App.useApp();
   const { updateTab } = useModel('global');
 
   const actionControl = useActionControl({
@@ -51,7 +51,7 @@ const MonitorJobIndex = () => {
   };
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params: any) => {
@@ -66,22 +66,21 @@ const MonitorJobIndex = () => {
         rowKey={'jobId'}
         toolBarRender={() => {
           return [
-            <ButtonGroup key={'operations'}>
-              <PermissionButton
-                permissionsRequired={['monitor:job:add']}
-                loading={actionControl.loading.value}
-                onClick={() => actionControl.actions.openAddModal({})}
-              >
-                新增
-              </PermissionButton>
-            </ButtonGroup>,
+            <PermissionButton
+              key={'add'}
+              permissionsRequired={['monitor:job:add']}
+              loading={actionControl.loading.value}
+              onClick={() => actionControl.actions.openAddModal({})}
+            >
+              新增
+            </PermissionButton>,
           ];
         }}
         columns={[
           {
             title: '任务编号',
             dataIndex: 'jobId',
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '任务名称',
@@ -98,17 +97,19 @@ const MonitorJobIndex = () => {
             title: '调用目标字符串',
             dataIndex: 'invokeTarget',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
           {
             title: 'cron表达式',
             dataIndex: 'cronExpression',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '状态',
             dataIndex: 'status',
+            valueType: 'select',
+            request: sysJobStatusSelectRequest,
             renderText: (_, record) => {
               return (
                 <Tooltip title={'点击切换状态'}>
@@ -125,7 +126,7 @@ const MonitorJobIndex = () => {
                           status: value,
                         });
                         message.success('操作成功');
-                      } catch (e) {
+                      } catch (_e) {
                       } finally {
                         actionControl.loading.end();
                       }
@@ -135,14 +136,11 @@ const MonitorJobIndex = () => {
                 </Tooltip>
               );
             },
-            renderFormItem: () => (
-              <ProFormSelect request={sysJobStatusSelectRequest} />
-            ),
           },
           {
             title: '操作',
             dataIndex: 'operations',
-            hideInSearch: true,
+            search: false,
             fixed: 'right',
             width: actionControl.rowAction.width,
             render: (_, record) => {
@@ -170,7 +168,7 @@ const MonitorJobIndex = () => {
                     }}
                     onConfirm={async () => {
                       message.info('执行结果请稍后查看任务日志');
-                      ApiMonitorJob.run(record);
+                      await ApiMonitorJob.run(record);
                       return;
                     }}
                   />
@@ -197,7 +195,7 @@ const MonitorJobIndex = () => {
         {...actionControl.editModal}
         open={actionControl.editModal.action !== undefined}
       />
-    </div>
+    </PageContainer>
   );
 };
 

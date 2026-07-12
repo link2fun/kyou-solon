@@ -1,3 +1,5 @@
+import { DeleteOutlined, ExportOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
@@ -7,8 +9,6 @@ import EllipsisText from '@/components/EllipsisText';
 import useActionControl from '@/hooks/useActionControl';
 import SystemConfigEditModal from '@/pages/system/config/components/SystemConfigEditModal';
 import ApiSystemConfig from '@/services/system/ApiSystemConfig';
-import { DeleteOutlined, ExportOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
 
 const SystemConfigIndex = () => {
   const actionControl = useActionControl({
@@ -25,7 +25,7 @@ const SystemConfigIndex = () => {
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (_params: any) => {
@@ -84,11 +84,11 @@ const SystemConfigIndex = () => {
             title: '参数主键',
             dataIndex: 'configId',
             hideInTable: true,
-            hideInSearch: true,
+            search: false,
           },
           { title: '参数名称', dataIndex: 'configName' },
           { title: '参数键名', dataIndex: 'configKey' },
-          { title: '参数键值', dataIndex: 'configValue', hideInSearch: true },
+          { title: '参数键值', dataIndex: 'configValue', search: false },
           {
             title: '系统内置',
             dataIndex: 'configType',
@@ -103,7 +103,7 @@ const SystemConfigIndex = () => {
           {
             title: '创建时间',
             dataIndex: 'createTime',
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '操作',
@@ -130,7 +130,7 @@ const SystemConfigIndex = () => {
       />
 
       <SystemConfigEditModal {...actionControl.editModal} />
-    </div>
+    </PageContainer>
   );
 };
 

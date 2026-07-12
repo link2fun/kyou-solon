@@ -1,10 +1,10 @@
-import useLoadingState from '@/hooks/useLoadingState';
-import useTableRowSelection from '@/hooks/useTableRowSelection';
-import ApiSystemUser from '@/services/system/ApiSystemUser';
-import { ProTable } from '@ant-design/pro-components';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useLocation } from '@umijs/max';
 import { App, Button, Descriptions, Divider, Popconfirm, Space } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
+import useLoadingState from '@/hooks/useLoadingState';
+import useTableRowSelection from '@/hooks/useTableRowSelection';
+import ApiSystemUser from '@/services/system/ApiSystemUser';
 
 interface PageData {
   roles: SysRoleDTO[];
@@ -43,7 +43,7 @@ const SystemUserAuthRole = () => {
       const data: getAuthRoleProps = await ApiSystemUser.getAuthRole(userId);
       setPageData(data);
       setSelected(data.user.roles || []);
-    } catch (e) {
+    } catch (_e) {
     } finally {
       loadingState.end();
     }
@@ -59,7 +59,7 @@ const SystemUserAuthRole = () => {
       await ApiSystemUser.authRole(userId, roleIds);
       message.success('分配成功');
       await loadData();
-    } catch (e) {
+    } catch (_e) {
     } finally {
       loadingState.end();
     }
@@ -70,11 +70,11 @@ const SystemUserAuthRole = () => {
   }, []);
 
   return (
-    <div>
+    <PageContainer>
       <Descriptions
         layout={'horizontal'}
         className={'w-full'}
-        title={<Divider orientation={'left'}>基本信息</Divider>}
+        title={<Divider titlePlacement={'left'}>基本信息</Divider>}
       >
         <Descriptions.Item label={'用户昵称'}>
           {pageData.user.nickName}
@@ -90,7 +90,7 @@ const SystemUserAuthRole = () => {
         layout={'horizontal'}
         column={1}
         className={''}
-        title={<Divider orientation={'left'}>角色信息</Divider>}
+        title={<Divider titlePlacement={'left'}>角色信息</Divider>}
       >
         <Descriptions.Item>
           <ProTable
@@ -103,7 +103,7 @@ const SystemUserAuthRole = () => {
             tableAlertOptionRender={() => {
               return (
                 <Space size={16}>
-                  <Button.Group>
+                  <Space.Compact>
                     <Popconfirm
                       title={'请问是否继续?'}
                       okText={'继续'}
@@ -114,7 +114,7 @@ const SystemUserAuthRole = () => {
                         分配
                       </Button>
                     </Popconfirm>
-                  </Button.Group>
+                  </Space.Compact>
                 </Space>
               );
             }}
@@ -132,7 +132,7 @@ const SystemUserAuthRole = () => {
           />
         </Descriptions.Item>
       </Descriptions>
-    </div>
+    </PageContainer>
   );
 };
 

@@ -1,8 +1,8 @@
+import { Input, Spin, Tree, type TreeProps } from 'antd';
+import React, { type Key, useEffect, useMemo } from 'react';
 import useManualTreeExpandControl from '@/hooks/useManualTreeExpandControl';
 import ApiSystemUser from '@/services/system/ApiSystemUser';
-import { FormItemProps } from '@/typing';
-import { Input, Spin, Tree, TreeProps } from 'antd';
-import React, { Key, useEffect, useMemo } from 'react';
+import type { FormItemProps } from '@/typing';
 
 const { Search } = Input;
 
@@ -32,7 +32,9 @@ const SystemDeptSearchTree: React.FC<SystemDeptSearchTreeProps> = (props) => {
         const strTitle = item.label as string;
         const index = strTitle.indexOf(expandControl.searchValue);
         const beforeStr = strTitle.substring(0, index);
-        const afterStr = strTitle.slice(index + expandControl.searchValue.length);
+        const afterStr = strTitle.slice(
+          index + expandControl.searchValue.length,
+        );
         const title =
           index > -1 ? (
             <span key={item.id}>
@@ -53,7 +55,7 @@ const SystemDeptSearchTree: React.FC<SystemDeptSearchTreeProps> = (props) => {
         };
       });
 
-    let result = loop(expandControl.treeData);
+    const result = loop(expandControl.treeData);
     // 数据计算完成后, 触发一次展开节点
     expandControl.onSearchChange(expandControl.searchValue);
     return result;
@@ -65,7 +67,8 @@ const SystemDeptSearchTree: React.FC<SystemDeptSearchTreeProps> = (props) => {
       // 开启了勾选, 则不允许选择
       return {
         checkable: props.checkable,
-        checkStrictly: props.checkStrictly === undefined ? true : props.checkStrictly,
+        checkStrictly:
+          props.checkStrictly === undefined ? true : props.checkStrictly,
         selectable: false,
         checkedKeys: props.value as Key[],
       };
@@ -89,7 +92,9 @@ const SystemDeptSearchTree: React.FC<SystemDeptSearchTreeProps> = (props) => {
     }
     console.log('action', props.action);
     if (props.action === 'checkAll') {
-      const allKeys = expandControl.listData.map((item) => item[expandControl.idField]);
+      const allKeys = expandControl.listData.map(
+        (item) => item[expandControl.idField],
+      );
       props?.onChange?.(allKeys);
     } else if (props.action === 'uncheckAll') {
       props?.onChange?.([]);
@@ -102,7 +107,11 @@ const SystemDeptSearchTree: React.FC<SystemDeptSearchTreeProps> = (props) => {
 
   return (
     <div>
-      <Search style={{ marginBottom: 8 }} placeholder="请输入部门名称" onChange={onChange} />
+      <Search
+        style={{ marginBottom: 8 }}
+        placeholder="请输入部门名称"
+        onChange={onChange}
+      />
       <Spin spinning={!expandControl.loadingState.loaded}>
         <Tree
           defaultExpandAll
@@ -112,12 +121,12 @@ const SystemDeptSearchTree: React.FC<SystemDeptSearchTreeProps> = (props) => {
           expandedKeys={expandControl.expandedKeys}
           autoExpandParent={expandControl.autoExpandParent}
           treeData={treeData}
-          onSelect={(selectedKeys, info) => {
+          onSelect={(_selectedKeys, info) => {
             if (props.checkable) {
               // 开启了勾选, 使用勾选的结果
               return;
             }
-            // @ts-ignore
+            // @ts-expect-error
             const selectedDeptId = info?.node?.title?.key;
             props?.onChange?.(selectedDeptId || 0);
           }}

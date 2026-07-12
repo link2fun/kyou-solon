@@ -1,6 +1,6 @@
-import ApiSystemDictData from '@/services/system/ApiSystemDictData';
 import { useGetState, useSessionStorageState } from 'ahooks';
 import { useEffect } from 'react';
+import ApiSystemDictData from '@/services/system/ApiSystemDictData';
 
 export type DictValue = {
   dictType: string;

@@ -1,9 +1,9 @@
-import { UseActionControlReturnType } from '@/hooks/useActionControl';
+import { useEffect, useState } from 'react';
+import type { UseActionControlReturnType } from '@/hooks/useActionControl';
 import useTableRowSelection, {
-  UseTableRowSelectionReturnType,
+  type UseTableRowSelectionReturnType,
 } from '@/hooks/useTableRowSelection';
 import ApiToolGen from '@/services/tool/ApiToolGen';
-import { useEffect, useState } from 'react';
 
 const useToolGenTableImport = (actionControl: UseActionControlReturnType) => {
   const [open, setOpen] = useState<boolean>(false);

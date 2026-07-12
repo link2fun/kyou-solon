@@ -9,7 +9,7 @@ interface MemoryInfoProps {
 const MemoryInfo = ({ used }: MemoryInfoProps) => {
   const config = {
     data: {
-      target: parseInt(used || '0') || 0,
+      target: parseInt(used || '0', 10) || 0,
       total: 1000,
     },
     legend: false,

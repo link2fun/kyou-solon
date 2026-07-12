@@ -31,7 +31,7 @@ const useRowActionsResponsiveWidth = () => {
   // 添加一个方法来计算所有操作按钮容器的最大宽度
   const calculateMaxWidth = useCallback(() => {
     // 查找表格中所有的操作按钮容器
-    const tableElement = ref.current?.closest('.ant-table-content') ;
+    const tableElement = ref.current?.closest('.ant-table-content');
     if (!tableElement) {
       return getPresetMaxWidth(); // 使用预设宽度
     }
@@ -45,14 +45,17 @@ const useRowActionsResponsiveWidth = () => {
       let totalWidth = 0;
 
       for (let i = 0; i < children.length; i++) {
-        if (children[i].style.display !== 'none' && children[i].offsetWidth > 0) {
+        if (
+          children[i].style.display !== 'none' &&
+          children[i].offsetWidth > 0
+        ) {
           visibleCount++;
           totalWidth += children[i].offsetWidth;
         }
       }
 
       if (visibleCount > 0) {
-        let rowWidth;
+        let rowWidth: number;
         if (visibleCount === 1) {
           rowWidth = Math.max(totalWidth + 12, 64);
         } else if (responsive?.md === true) {
@@ -83,8 +86,8 @@ const useRowActionsResponsiveWidth = () => {
     }
 
     // 最后回退到原来的逻辑
-    let children = (ref?.current?.children || []) as any[];
-    let eleCount = children.length;
+    const children = (ref?.current?.children || []) as any[];
+    const eleCount = children.length;
     if (eleCount < 1) {
       return 64;
     }

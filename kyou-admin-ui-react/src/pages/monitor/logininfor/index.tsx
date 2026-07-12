@@ -1,15 +1,15 @@
-import PermissionButton from '@/components/BizButtons/PermissionButton';
-import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
-import useActionControl from '@/hooks/useActionControl';
-import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
-import ApiMonitorLogininfor from '@/services/monitor/ApiMonitorLogininfor';
 import {
   DeleteFilled,
   ExportOutlined,
   UnlockOutlined,
 } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { App } from 'antd';
+import PermissionButton from '@/components/BizButtons/PermissionButton';
+import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
+import useActionControl from '@/hooks/useActionControl';
+import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
+import ApiMonitorLogininfor from '@/services/monitor/ApiMonitorLogininfor';
 
 const SystemLogLogininforIndex = () => {
   const actionControl = useActionControl({
@@ -21,13 +21,13 @@ const SystemLogLogininforIndex = () => {
   const { message } = App.useApp();
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (_params: any) => {
           const { loginTime, ...rest } = _params;
-          let beginTime = loginTime ? loginTime[0] : '';
-          let endTime = loginTime ? loginTime[1] : '';
+          const beginTime = loginTime ? loginTime[0] : '';
+          const endTime = loginTime ? loginTime[1] : '';
           const params = {
             ...rest,
             'params[beginTime]': beginTime,
@@ -132,12 +132,12 @@ const SystemLogLogininforIndex = () => {
           </PermissionButton>,
         ]}
         columns={[
-          { title: '访问编号', dataIndex: 'infoId', hideInSearch: true },
+          { title: '访问编号', dataIndex: 'infoId', search: false },
           { title: '用户名称', dataIndex: 'userName' },
           { title: '登录地址', dataIndex: 'ipaddr' },
-          { title: '登录地点', dataIndex: 'loginLocation', hideInSearch: true },
-          { title: '操作系统', dataIndex: 'os', hideInSearch: true },
-          { title: '浏览器', dataIndex: 'browser', hideInSearch: true },
+          { title: '登录地点', dataIndex: 'loginLocation', search: false },
+          { title: '操作系统', dataIndex: 'os', search: false },
+          { title: '浏览器', dataIndex: 'browser', search: false },
           {
             title: '登录状态',
             dataIndex: 'status',
@@ -150,13 +150,13 @@ const SystemLogLogininforIndex = () => {
             title: '描述',
             dataIndex: 'msg',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '访问时间',
             dataIndex: 'loginTime',
             valueType: 'dateTime',
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '访问时间',
@@ -166,7 +166,7 @@ const SystemLogLogininforIndex = () => {
           },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 };
 

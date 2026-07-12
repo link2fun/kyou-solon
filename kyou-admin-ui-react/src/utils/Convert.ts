@@ -1,10 +1,20 @@
 const Convert = {
   /** Convert any to boolean */
-  toBoolean: (value: string | boolean | undefined | number, defaultValue: boolean = false) => {
+  toBoolean: (
+    value: string | boolean | undefined | number,
+    defaultValue: boolean = false,
+  ) => {
     if (value === undefined) {
       return defaultValue;
     }
-    return value === 'true' || value === '1' || value === true || value === 'yes' || value === 'Y' || value === 'TRUE';
+    return (
+      value === 'true' ||
+      value === '1' ||
+      value === true ||
+      value === 'yes' ||
+      value === 'Y' ||
+      value === 'TRUE'
+    );
   },
 
   /** Convert any boolean to number boolean */

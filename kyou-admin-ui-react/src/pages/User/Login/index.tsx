@@ -1,9 +1,7 @@
 // import { Footer } from '@/components';
 // import { login } from '@/services/ant-design-pro/api';
 // import { getFakeCaptcha } from '@/services/ant-design-pro/login';
-import useCaptchaImage from '@/hooks/useCaptchaImage';
-import ApiCommon from '@/services/common/ApiCommon';
-import UserTool from '@/utils/UserTool';
+
 import {
   AlipayCircleOutlined,
   LockOutlined,
@@ -19,12 +17,14 @@ import {
   ProFormText,
 } from '@ant-design/pro-components';
 import { Helmet, history, useModel } from '@umijs/max';
-import { Alert, message, Tabs } from 'antd';
+import { Alert, App, Tabs } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
-
-import logo from '@/assets/logo.svg'
+import logo from '@/assets/logo.svg';
+import useCaptchaImage from '@/hooks/useCaptchaImage';
+import ApiCommon from '@/services/common/ApiCommon';
+import UserTool from '@/utils/UserTool';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -91,7 +91,7 @@ const LoginMessage: React.FC<{
       style={{
         marginBottom: 24,
       }}
-      message={content}
+      title={content}
       type="error"
       showIcon
     />
@@ -99,6 +99,7 @@ const LoginMessage: React.FC<{
 };
 
 const Login: React.FC = () => {
+  const { message } = App.useApp();
   const [userLoginState, setUserLoginState] = useState<any>({});
   const [type, setType] = useState<string>('account');
   const { initialState, setInitialState } = useModel('@@initialState');
@@ -112,7 +113,7 @@ const Login: React.FC = () => {
       roles: [],
       permissions: [],
     };
-    if (userInfo && userInfo?.user?.userId) {
+    if (userInfo?.user?.userId) {
       flushSync(() => {
         const { permissions, roles, user } = userInfo;
         setInitialState((s) => {
@@ -191,9 +192,11 @@ const Login: React.FC = () => {
             autoLogin: true,
             username: 'admin',
             password: 'admin',
-
           }}
-          actions={[<>其他登录方式</>, <ActionIcons key="icons" />]}
+          actions={[
+            <span key="text">其他登录方式</span>,
+            <ActionIcons key="icons" />,
+          ]}
           onFinish={async (values) => {
             await handleSubmit(values);
           }}
@@ -252,7 +255,7 @@ const Login: React.FC = () => {
                 placeholder={'验证码: '}
                 fieldProps={{
                   size: 'large',
-                  prefix: (
+                  prefix: captchaImage.imgBase64 ? (
                     <img
                       style={{ height: 24 }}
                       className={'cursor-pointer'}
@@ -260,7 +263,7 @@ const Login: React.FC = () => {
                       onClick={captchaImage.refreshCaptcha}
                       alt={'img'}
                     />
-                  ),
+                  ) : null,
                 }}
                 rules={[
                   {

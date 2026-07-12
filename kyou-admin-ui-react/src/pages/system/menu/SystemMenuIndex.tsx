@@ -1,3 +1,5 @@
+import { PlusOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
@@ -8,8 +10,6 @@ import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
 import SystemMenuEditModal from '@/pages/system/menu/components/SystemMenuEditModal';
 import ApiSystemMenu from '@/services/system/ApiSystemMenu';
 import { handleTree } from '@/utils/utils';
-import { PlusOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
 
 const SystemMenuIndex = () => {
   const actionControl = useActionControl({
@@ -26,7 +26,7 @@ const SystemMenuIndex = () => {
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params) => {
@@ -48,24 +48,24 @@ const SystemMenuIndex = () => {
         rowKey={'menuId'}
         columns={[
           { title: '菜单名称', dataIndex: 'menuName' },
-          { title: '图标', dataIndex: 'icon', width: 150, hideInSearch: true },
+          { title: '图标', dataIndex: 'icon', width: 150, search: false },
           {
             title: '排序',
             dataIndex: 'orderNum',
             width: 60,
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '权限标识',
             dataIndex: 'perms',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '组件路径',
             dataIndex: 'component',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '菜单状态',
@@ -76,13 +76,13 @@ const SystemMenuIndex = () => {
             }),
           },
 
-          { title: '创建时间', dataIndex: 'createTime', hideInSearch: true },
+          { title: '创建时间', dataIndex: 'createTime', search: false },
           {
             title: '操作',
             fixed: 'right',
             width: actionControl.rowAction.width,
-            hideInSearch: true,
-            render: (text, record) => [
+            search: false,
+            render: (_text, record) => [
               <div key={'operations'} ref={actionControl.rowAction.ref}>
                 <TableRowViewButton
                   actionControl={actionControl}
@@ -116,7 +116,7 @@ const SystemMenuIndex = () => {
       />
 
       <SystemMenuEditModal {...actionControl.editModal} />
-    </div>
+    </PageContainer>
   );
 };
 

@@ -1,13 +1,14 @@
+import { ClearOutlined, ExportOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { Tag } from 'antd';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
 import TableRowEditButton from '@/components/BizButtons/TableRowEditButton';
 import useActionControl from '@/hooks/useActionControl';
+import SystemDictTypeEditModal from '@/pages/system/dictType/components/SystemDictTypeEditModal';
 import ApiSystemDictType from '@/services/system/ApiSystemDictType';
-import { ClearOutlined, ExportOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
-import { Tag } from 'antd';
 
 const SystemDictTypeIndex = () => {
   const actionControl = useActionControl({
@@ -15,16 +16,16 @@ const SystemDictTypeIndex = () => {
       onActionCall: (values) => ApiSystemDictType.add(values),
     },
     editAction: {
-      onModalOpen: (values) => ApiSystemDictType.detail(values.dictTypeId),
+      onModalOpen: (values) => ApiSystemDictType.detail(values.dictId),
       onActionCall: (values) => ApiSystemDictType.edit(values),
     },
     removeAction: {
-      onActionCall: (values) => ApiSystemDictType.remove(values.dictTypeId),
+      onActionCall: (values) => ApiSystemDictType.remove(values.dictId),
     },
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params) => {
@@ -67,7 +68,7 @@ const SystemDictTypeIndex = () => {
             }
           />,
         ]}
-        rowKey={'dictType'}
+        rowKey={'dictId'}
         columns={[
           { title: '字典名称', dataIndex: 'dictName' },
           { title: '字典类型', dataIndex: 'dictType' },
@@ -83,12 +84,12 @@ const SystemDictTypeIndex = () => {
             title: '备注',
             dataIndex: 'remark',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
-          { title: '创建时间', dataIndex: 'createTime', hideInSearch: true },
+          { title: '创建时间', dataIndex: 'createTime', search: false },
           {
             title: '操作',
-            hideInSearch: true,
+            search: false,
             fixed: 'right',
             width: actionControl.rowAction.width,
             render: (_text, record) => [
@@ -108,7 +109,8 @@ const SystemDictTypeIndex = () => {
           },
         ]}
       />
-    </div>
+      <SystemDictTypeEditModal {...actionControl.editModal} />
+    </PageContainer>
   );
 };
 

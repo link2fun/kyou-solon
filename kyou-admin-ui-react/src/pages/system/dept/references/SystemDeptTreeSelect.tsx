@@ -1,7 +1,7 @@
-import ApiSystemDept from '@/services/system/ApiSystemDept';
-import { handleTree } from '@/utils/utils';
 import { Tag, TreeSelect } from 'antd';
 import React, { useEffect, useState } from 'react';
+import ApiSystemDept from '@/services/system/ApiSystemDept';
+import { handleTree } from '@/utils/utils';
 
 interface SystemDeptTreeSelectProps {
   value?: string;

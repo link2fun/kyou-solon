@@ -1,10 +1,15 @@
-import CollectionTool from '@/utils/CollectionTool';
+import type { MathExpression, Matrix } from 'mathjs';
 import * as math from 'mathjs';
-import { MathExpression, Matrix } from 'mathjs';
+import CollectionTool from '@/utils/CollectionTool';
 
 /** 找到第一个不是 undefined 的值 */
-function findFirst<T>(...args: T[]): T {
-  return args.find((item) => item !== undefined)!;
+function findFirst<T>(...args: T[]): T | undefined {
+  for (const item of args) {
+    if (item !== undefined) {
+      return item;
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -39,7 +44,7 @@ const convertToNumberWithPrecision = (
   precision = 8,
   defaultValue: number,
 ) => {
-  let num;
+  let num: number;
 
   if (typeof input === 'string') {
     num = parseFloat(input);

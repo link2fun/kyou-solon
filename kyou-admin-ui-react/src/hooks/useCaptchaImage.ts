@@ -1,5 +1,5 @@
-import ApiCommon from '@/services/common/ApiCommon';
 import { useState } from 'react';
+import ApiCommon from '@/services/common/ApiCommon';
 
 /** 使用图片验证码 */
 const useCaptchaImage = () => {

@@ -1,7 +1,7 @@
-import useSelectControl from '@/hooks/useSelectControl';
-import ApiSystemPost from '@/services/system/ApiSystemPost';
 import { Select, Tag } from 'antd';
 import React from 'react';
+import useSelectControl from '@/hooks/useSelectControl';
+import ApiSystemPost from '@/services/system/ApiSystemPost';
 
 interface SystemPostSelectProps {
   value?: number;

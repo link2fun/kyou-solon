@@ -1,12 +1,12 @@
-import EditModalForm from '@/components/EditModalForm';
-import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
-import { EditModalProps } from '@/typing';
 import {
   ProFormRadio,
   ProFormSelect,
   ProFormText,
 } from '@ant-design/pro-components';
 import React from 'react';
+import EditModalForm from '@/components/EditModalForm';
+import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
+import type { EditModalProps } from '@/typing';
 
 const MonitorJobEditModal: React.FC<EditModalProps> = (props) => {
   const sysJobStatusSelectRequest = useProFormSelectDictRequest({

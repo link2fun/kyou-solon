@@ -1,10 +1,7 @@
-import EditModalForm from '@/components/EditModalForm';
-import SystemDeptSearchTree from '@/pages/system/dept/references/SystemDeptSearchTree';
-import ApiSystemRole from '@/services/system/ApiSystemRole';
 import {
-  FormInstance,
   ProFormCheckbox,
   ProFormDependency,
+  type ProFormInstance,
   ProFormItem,
   ProFormSelect,
   ProFormText,
@@ -12,6 +9,9 @@ import {
 } from '@ant-design/pro-components';
 import { useGetState, usePrevious } from 'ahooks';
 import React, { useMemo } from 'react';
+import EditModalForm from '@/components/EditModalForm';
+import SystemDeptSearchTree from '@/pages/system/dept/references/SystemDeptSearchTree';
+import ApiSystemRole from '@/services/system/ApiSystemRole';
 
 interface SystemRoleDataScopeModalProps {
   open?: boolean;
@@ -20,10 +20,16 @@ interface SystemRoleDataScopeModalProps {
   role?: Partial<SysRoleDTO>;
   deptDataSource?: any[];
   onCancel: () => void;
-  formRef?: React.MutableRefObject<FormInstance | undefined>;
+  formRef?: React.MutableRefObject<ProFormInstance | undefined>;
 }
 
-const SystemRoleDataScopeModal = ({ open, loading, roleId, onCancel, formRef }: SystemRoleDataScopeModalProps) => {
+const SystemRoleDataScopeModal = ({
+  open,
+  loading,
+  roleId,
+  onCancel,
+  formRef,
+}: SystemRoleDataScopeModalProps) => {
   const dataScopeOptions = [
     { value: '1', label: '全部数据权限' },
     { value: '2', label: '自定数据权限' },
@@ -39,13 +45,25 @@ const SystemRoleDataScopeModal = ({ open, loading, roleId, onCancel, formRef }: 
     const prevOptions = previousFormValues?.dataScopeOptions || [];
     const nowOptions = formValues?.dataScopeOptions || [];
 
-    if (prevOptions.includes('deptExpand') && !nowOptions.includes('deptExpand')) {
+    if (
+      prevOptions.includes('deptExpand') &&
+      !nowOptions.includes('deptExpand')
+    ) {
       return 'expandAll';
-    } else if (!prevOptions.includes('deptExpand') && nowOptions.includes('deptExpand')) {
+    } else if (
+      !prevOptions.includes('deptExpand') &&
+      nowOptions.includes('deptExpand')
+    ) {
       return 'collapseAll';
-    } else if (prevOptions.includes('deptNodeAll') && !nowOptions.includes('deptNodeAll')) {
+    } else if (
+      prevOptions.includes('deptNodeAll') &&
+      !nowOptions.includes('deptNodeAll')
+    ) {
       return 'checkAll';
-    } else if (!prevOptions.includes('deptNodeAll') && nowOptions.includes('deptNodeAll')) {
+    } else if (
+      !prevOptions.includes('deptNodeAll') &&
+      nowOptions.includes('deptNodeAll')
+    ) {
       return 'uncheckAll';
     }
     return undefined;
@@ -65,13 +83,25 @@ const SystemRoleDataScopeModal = ({ open, loading, roleId, onCancel, formRef }: 
         await ApiSystemRole.dataScope({ roleId, ...formValues });
         onCancel();
       }}
-      onValuesChange={(changedValues, values) => {
+      onValuesChange={(_changedValues, values) => {
         setFormValues(values);
       }}
     >
-      <ProFormText label={'角色名称'} proFieldProps={{ mode: 'read' }} name={'roleName'} />
-      <ProFormText label={'权限字符'} proFieldProps={{ mode: 'read' }} name={'roleKey'} />
-      <ProFormSelect label={'权限范围'} name={'dataScope'} options={dataScopeOptions} />
+      <ProFormText
+        label={'角色名称'}
+        proFieldProps={{ mode: 'read' }}
+        name={'roleName'}
+      />
+      <ProFormText
+        label={'权限字符'}
+        proFieldProps={{ mode: 'read' }}
+        name={'roleKey'}
+      />
+      <ProFormSelect
+        label={'权限范围'}
+        name={'dataScope'}
+        options={dataScopeOptions}
+      />
 
       <ProFormDependency name={['dataScope', 'dataScopeOptions']}>
         {({ dataScope, dataScopeOptions }) => {
@@ -79,7 +109,8 @@ const SystemRoleDataScopeModal = ({ open, loading, roleId, onCancel, formRef }: 
             // 不是 自定数据权限 就不显示
             return undefined;
           }
-          const deptCheckStrictly = dataScopeOptions?.includes('deptCheckStrictly');
+          const deptCheckStrictly =
+            dataScopeOptions?.includes('deptCheckStrictly');
           // deptCheckStrictly 的语义跟 ant-design tree checkStrictly 相反
           return (
             <>
@@ -93,7 +124,11 @@ const SystemRoleDataScopeModal = ({ open, loading, roleId, onCancel, formRef }: 
                 ]}
               />
               <ProFormItem label={'部门权限'} name={'deptIds'}>
-                <SystemDeptSearchTree action={action} checkable={true} checkStrictly={!deptCheckStrictly} />
+                <SystemDeptSearchTree
+                  action={action}
+                  checkable={true}
+                  checkStrictly={!deptCheckStrictly}
+                />
               </ProFormItem>
             </>
           );

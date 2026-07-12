@@ -1,8 +1,8 @@
-﻿import { HttpStatus } from '@/constants';
-import UserTool from '@/utils/UserTool';
-import { history } from '@@/core/history';
+﻿import { history } from '@@/core/history';
 import type { RequestConfig } from '@umijs/max';
-import { message, notification } from 'antd';
+import { HttpStatus } from '@/constants';
+import { getMessage, getNotification } from '@/hooks/useAntdStatic';
+import UserTool from '@/utils/UserTool';
 
 // 错误处理方案： 错误类型
 export enum ErrorShowType {
@@ -22,6 +22,7 @@ interface ResponseStructure {
   total?: number;
   rows?: any[];
   showType?: ErrorShowType;
+  success?: boolean;
 }
 
 /**
@@ -34,7 +35,8 @@ export const requestConfig: RequestConfig = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res) => {
-      const { data, code, msg, description, showType } = res as unknown as ResponseStructure;
+      const { data, code, msg, description, showType } =
+        res as unknown as ResponseStructure;
       if (code !== HttpStatus.SUCCESS) {
         const error: any = new Error(msg || description);
         error.name = 'BizError';
@@ -50,42 +52,45 @@ export const requestConfig: RequestConfig = {
         const errorInfo: ResponseStructure | undefined = error.info;
         if (errorInfo) {
           const { msg, code } = errorInfo;
-          const showType = errorInfo.showType !== undefined ? errorInfo.showType : opts?.headers?.showType;
+          const showType =
+            errorInfo.showType !== undefined
+              ? errorInfo.showType
+              : opts?.headers?.showType;
           switch (showType) {
             case ErrorShowType.SILENT:
               // do nothing
               break;
             case ErrorShowType.WARN_MESSAGE:
-              message.warning(msg);
+              getMessage().warning(msg);
               break;
             case ErrorShowType.ERROR_MESSAGE:
-              message.error(msg);
+              getMessage().error(msg);
               break;
             case ErrorShowType.NOTIFICATION:
-              notification.open({
+              getNotification().open({
                 description: msg,
-                message: code,
+                title: code,
               });
               break;
             case ErrorShowType.REDIRECT:
               // TODO: redirect
               break;
             default:
-              message.error(msg);
+              getMessage().error(msg);
           }
         }
       } else if (error.response) {
         // Axios 的错误
         // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
-        message.error(`Response status:${error.response.status}`);
+        getMessage().error(`Response status:${error.response.status}`);
       } else if (error.request) {
         // 请求已经成功发起，但没有收到响应
         // \`error.request\` 在浏览器中是 XMLHttpRequest 的实例，
         // 而在node.js中是 http.ClientRequest 的实例
-        message.error('None response! Please retry.');
+        getMessage().error('None response! Please retry.');
       } else {
         // 发送请求时出了点问题
-        message.error('Request error, please retry.');
+        getMessage().error('Request error, please retry.');
       }
     },
   },
@@ -103,7 +108,6 @@ export const requestConfig: RequestConfig = {
         ...headers,
         passkey: UserTool.getUserToken(),
       };
-      console.log('request:', options.method, url, options.params);
       return {
         url,
         options: { ...options, headers: headersWithToken },
@@ -118,25 +122,23 @@ export const requestConfig: RequestConfig = {
       const { data } = response as unknown as ResponseStructure;
 
       if (data?.success === false) {
-        message.error('请求失败！');
+        getMessage().error('请求失败！');
       }
       return response;
     },
     (response) => {
       // 拦截响应数据，进行个性化处理
-      console.log('response:', response.data);
-      const { data } = response;
-      const { code } = data as any;
+      const responseData = response.data as ResponseStructure;
+      const { code } = responseData;
 
       if (HttpStatus.UNAUTHORIZED === code) {
         // 清理掉本地的token
         UserTool.saveUserToken('');
-        notification.error({ message: '登录失效，请重新登录' });
+        getNotification().error({ title: '登录失效，请重新登录' });
         history.push('/user/login');
       }
       if (code !== undefined) {
-        // @ts-ignore
-        response['data']['success'] = code === HttpStatus.SUCCESS;
+        responseData.success = code === HttpStatus.SUCCESS;
       }
       return response;
     },

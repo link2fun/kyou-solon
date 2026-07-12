@@ -1,8 +1,8 @@
-import useLoadingState from '@/hooks/useLoadingState';
-import ApiSystemRole from '@/services/system/ApiSystemRole';
-import { FormInstance } from '@ant-design/pro-components';
+import type { ProFormInstance } from '@ant-design/pro-components';
 import { useGetState } from 'ahooks';
 import { useRef, useState } from 'react';
+import useLoadingState from '@/hooks/useLoadingState';
+import ApiSystemRole from '@/services/system/ApiSystemRole';
 
 const useSystemRoleDataScopeModal = () => {
   const loadingState = useLoadingState();
@@ -16,13 +16,13 @@ const useSystemRoleDataScopeModal = () => {
   const [depts, setDepts] = useState<any[]>([]);
   const [role, setRole] = useState<Partial<SysRoleDTO>>({});
 
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>(undefined);
 
   const loadModalData = async (_roleId: string) => {
     const data = await ApiSystemRole.deptTree(_roleId);
     const { checkedKeys: _checkedKeys, depts } = data;
     // checkedKeys 是 Array<number> 需要转为 Array<string>
-    let checkedKeys = _checkedKeys.map(String);
+    const checkedKeys = _checkedKeys.map(String);
     setCheckedKeys(checkedKeys);
     // setCheckedKeys(checkedKeys);
     setDepts(depts);

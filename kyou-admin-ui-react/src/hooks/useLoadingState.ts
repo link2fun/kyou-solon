@@ -1,5 +1,6 @@
 import { useThrottle } from 'ahooks';
 import { App } from 'antd';
+import type { MessageType } from 'antd/es/message/interface';
 import { useState } from 'react';
 
 type LoadingState = {
@@ -11,7 +12,9 @@ type LoadingState = {
 export type UseLoadingStateReturnType = ReturnType<typeof useLoadingState>;
 
 /** 加载状态 */
-const useLoadingState = ({ defaultValue, wait }: LoadingState = { defaultValue: false, wait: 100 }) => {
+const useLoadingState = (
+  { defaultValue, wait }: LoadingState = { defaultValue: false, wait: 100 },
+) => {
   const [_loading, setLoading] = useState<boolean>(defaultValue);
   const [loaded, setLoaded] = useState<boolean>(false);
   const { message } = App.useApp();
@@ -31,7 +34,7 @@ const useLoadingState = ({ defaultValue, wait }: LoadingState = { defaultValue: 
     let result: any;
     try {
       result = await action();
-    } catch (e) {
+    } catch (_e) {
     } finally {
       setLoaded(true);
       setLoading(false);
@@ -53,7 +56,7 @@ const useLoadingState = ({ defaultValue, wait }: LoadingState = { defaultValue: 
     }
 
     setLoading(true);
-    let hide;
+    let hide: MessageType | undefined;
     if (props.loadingMessage) {
       hide = message.loading(props.loadingMessage);
     }
@@ -63,7 +66,7 @@ const useLoadingState = ({ defaultValue, wait }: LoadingState = { defaultValue: 
       if (props.successMessage) {
         message.success(props.successMessage);
       }
-    } catch (e) {
+    } catch (_e) {
       message.error(props.failMessage);
     } finally {
       setLoading(false);

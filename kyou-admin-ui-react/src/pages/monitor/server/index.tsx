@@ -1,3 +1,7 @@
+import {PageContainer} from '@ant-design/pro-components';
+import {useInterval} from 'ahooks';
+import {Col, Row} from 'antd';
+import {useState} from 'react';
 import useLoadingState from '@/hooks/useLoadingState';
 import Cpu from '@/pages/monitor/server/components/Cpu';
 import DiskInfo from '@/pages/monitor/server/components/DiskInfo';
@@ -5,9 +9,6 @@ import JvmInfo from '@/pages/monitor/server/components/JvmInfo';
 import Memory from '@/pages/monitor/server/components/Memory';
 import ServerInfo from '@/pages/monitor/server/components/ServerInfo';
 import ApiMonitorServer from '@/services/monitor/ApiMonitorServer';
-import { useInterval } from 'ahooks';
-import { Col, Row } from 'antd';
-import { useState } from 'react';
 
 export interface DiskUsage {
   dirName: string;
@@ -49,29 +50,39 @@ const MonitorServerIndex = () => {
       loadData();
     },
     10000,
-    { immediate: true },
+    {immediate: true},
   );
 
   return (
-    <Row gutter={[16, 24]}>
-      <Col span={24} md={12}>
-        <Cpu cpu={data.cpu} loading={!loadingState.loaded} />
-      </Col>
-      <Col span={24} md={12}>
-        <Memory mem={data.mem} jvm={data.jvm} loading={!loadingState.loaded} />
-      </Col>
+    <PageContainer>
+      <Row gutter={[16, 24]}>
+        <Col span={24} md={12}>
+          <Cpu cpu={data.cpu} loading={!loadingState.loaded}/>
+        </Col>
+        <Col span={24} md={12}>
+          <Memory
+            mem={data.mem}
+            jvm={data.jvm}
+            loading={!loadingState.loaded}
+          />
+        </Col>
 
-      <Col span={24}>
-        <ServerInfo sys={data.sys} loading={!loadingState.loaded} />
-      </Col>
-      <Col span={24}>
-        <JvmInfo jvm={data.jvm} sys={data.sys} loading={!loadingState.loaded} />
-      </Col>
+        <Col span={24}>
+          <ServerInfo sys={data.sys} loading={!loadingState.loaded}/>
+        </Col>
+        <Col span={24}>
+          <JvmInfo
+            jvm={data.jvm}
+            sys={data.sys}
+            loading={!loadingState.loaded}
+          />
+        </Col>
 
-      <Col span={24}>
-        <DiskInfo files={data.sysFiles} loading={!loadingState.loaded} />
-      </Col>
-    </Row>
+        <Col span={24}>
+          <DiskInfo files={data.sysFiles} loading={!loadingState.loaded}/>
+        </Col>
+      </Row>
+    </PageContainer>
   );
 };
 
