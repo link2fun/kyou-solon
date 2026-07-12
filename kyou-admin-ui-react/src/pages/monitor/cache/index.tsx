@@ -1,9 +1,10 @@
+import { PageContainer } from '@ant-design/pro-components';
+import { Col, Row } from 'antd';
+import { useEffect, useState } from 'react';
 import BaseInfo from '@/pages/monitor/cache/components/BaseInfo';
 import CommandInfo from '@/pages/monitor/cache/components/CommandInfo';
 import MemoryInfo from '@/pages/monitor/cache/components/MemoryInfo';
 import ApiMonitorCache from '@/services/monitor/ApiMonitorCache';
-import { Col, Row } from 'antd';
-import { useEffect, useState } from 'react';
 
 export interface CommandStatus {
   name: string;
@@ -28,17 +29,19 @@ const MonitorCacheIndex = () => {
   }, []);
 
   return (
-    <Row gutter={[16, 24]}>
-      <Col span={24}>
-        <BaseInfo info={data?.info} dbSize={data.dbSize} />
-      </Col>
-      <Col span={24} lg={12}>
-        <CommandInfo commandStatus={data?.commandStats || []} />
-      </Col>
-      <Col span={24} md={12}>
-        <MemoryInfo used={data?.info?.used_memory_human} />
-      </Col>
-    </Row>
+    <PageContainer>
+      <Row gutter={[16, 24]}>
+        <Col span={24}>
+          <BaseInfo info={data?.info} dbSize={data.dbSize} />
+        </Col>
+        <Col span={24} lg={12}>
+          <CommandInfo commandStatus={data?.commandStats || []} />
+        </Col>
+        <Col span={24} md={12}>
+          <MemoryInfo used={data?.info?.used_memory_human} />
+        </Col>
+      </Row>
+    </PageContainer>
   );
 };
 

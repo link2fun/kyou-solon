@@ -1,7 +1,7 @@
-import ObjectTool from '@/utils/ObjectTool';
 import { useSelections } from 'ahooks';
-import { Options } from 'ahooks/lib/useSelections';
-import { Key, useMemo } from 'react';
+import type { Options } from 'ahooks/lib/useSelections';
+import { type Key, useMemo } from 'react';
+import ObjectTool from '@/utils/ObjectTool';
 
 export type UseTableRowSelectionReturnType = ReturnType<
   typeof useTableRowSelection
@@ -53,7 +53,7 @@ export default function useTableRowSelection<T>(
     preserveSelectedRowKeys: true,
     selectedRowKeys: selectedRowKeys,
     alwaysShowAlert: true,
-    onChange: (selectedRowKeys: Key[], selectedRows: T[]) => {
+    onChange: (_selectedRowKeys: Key[], selectedRows: T[]) => {
       selections.setSelected(selectedRows);
     },
   };

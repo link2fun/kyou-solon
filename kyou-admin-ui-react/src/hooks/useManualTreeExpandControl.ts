@@ -1,6 +1,6 @@
+import React, { useEffect, useMemo, useState } from 'react';
 import useLoadingState from '@/hooks/useLoadingState';
 import TreeTool from '@/utils/TreeTool';
-import React, { useEffect, useMemo, useState } from 'react';
 
 interface TreeProps {
   id: string;
@@ -152,7 +152,10 @@ const useManualTreeExpandControl = (props: ManualControlProps) => {
         }
         return null;
       })
-      .filter((item, i, self): item is React.Key => !!(item && self.indexOf(item) === i));
+      .filter(
+        (item, i, self): item is React.Key =>
+          !!(item && self.indexOf(item) === i),
+      );
     setSearchValue(value);
     onExpandAutoParent(newExpandedKeys);
   };

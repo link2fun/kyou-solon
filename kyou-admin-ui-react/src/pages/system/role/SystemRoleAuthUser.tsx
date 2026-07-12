@@ -1,12 +1,21 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
+import { ReloadOutlined } from '@ant-design/icons';
+import { PageContainer } from '@ant-design/pro-components';
+import { useLocation } from '@umijs/max';
+import {
+  App,
+  Button,
+  Descriptions,
+  Divider,
+  Tag,
+  type TransferProps,
+} from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import ProListTransfer from '@/components/ProListTransfer';
-import { TableTransferProps } from '@/components/TableTransfer';
+import type { TableTransferProps } from '@/components/TableTransfer';
 import useLoadingState from '@/hooks/useLoadingState';
 import ApiSystemRole from '@/services/system/ApiSystemRole';
-import { ReloadOutlined } from '@ant-design/icons';
-import { useLocation } from '@umijs/max';
-import { App, Button, Descriptions, Divider, Tag, TransferProps } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
 
 /** 给角色授权用户 */
 const SystemRoleAuthUser = () => {
@@ -17,7 +26,7 @@ const SystemRoleAuthUser = () => {
   const [unallocatedList, setUnallocatedList] = useState<SysUserDTO[]>([]);
   const [role, setRole] = useState<Partial<SysRoleDTO>>({});
 
-  // @ts-ignore
+  // @ts-expect-error
   const roleId: string = useMemo(() => {
     const searchParams = new URLSearchParams(search);
     if (searchParams.has('roleId')) {
@@ -64,7 +73,7 @@ const SystemRoleAuthUser = () => {
       setAllocatedList(_allocatedList.rows);
       setUnallocatedList(_unallocatedList.rows);
       setRole(_role);
-    } catch (e) {
+    } catch (_e) {
     } finally {
       loadingState.end();
     }
@@ -96,7 +105,7 @@ const SystemRoleAuthUser = () => {
         message.success('授权成功');
       }
       await loadData();
-    } catch (e) {
+    } catch (_e) {
     } finally {
       loadingState.end();
     }
@@ -111,9 +120,9 @@ const SystemRoleAuthUser = () => {
   }, [checkedKeys]);
 
   return (
-    <div>
+    <PageContainer>
       <Descriptions
-        title={<Divider orientation={'left'}>角色信息</Divider>}
+        title={<Divider titlePlacement={'left'}>角色信息</Divider>}
         extra={
           <Button
             icon={<ReloadOutlined />}
@@ -132,7 +141,7 @@ const SystemRoleAuthUser = () => {
         <Descriptions.Item label={'角色权限'}>{role.roleKey}</Descriptions.Item>
       </Descriptions>
 
-      <Divider orientation={'left'}>授权用户</Divider>
+      <Divider titlePlacement={'left'}>授权用户</Divider>
       <ProListTransfer
         dataSource={dataSource}
         targetKeys={targetKeys}
@@ -141,20 +150,21 @@ const SystemRoleAuthUser = () => {
         onChange={onChange}
         filterOption={filterOption}
         loading={loadingState.value}
-        metas={{
-          title: {
-            render: (text, record) => {
-              return `${record.userName} / ${record.nickName}`;
-            },
+        columns={[
+          {
+            listSlot: 'title',
+            render: (_text, record) =>
+              `${record.userName} / ${record.nickName}`,
           },
-          subTitle: {
-            render: (text, record) => (
+          {
+            listSlot: 'subTitle',
+            render: (_text, record) => (
               <Tag color={'cyan'}>{record.deptName}</Tag>
             ),
           },
-        }}
+        ]}
       />
-    </div>
+    </PageContainer>
   );
 };
 

@@ -1,7 +1,7 @@
+import { Input, Spin, Tree, type TreeProps } from 'antd';
+import React, { type Key, useEffect, useMemo } from 'react';
 import useManualTreeExpandControl from '@/hooks/useManualTreeExpandControl';
-import { FormItemProps } from '@/typing';
-import { Input, Spin, Tree, TreeProps } from 'antd';
-import React, { Key, useEffect, useMemo } from 'react';
+import type { FormItemProps } from '@/typing';
 
 const { Search } = Input;
 
@@ -44,7 +44,9 @@ const SearchTree: React.FC<SearchTreeProps> = (props) => {
         const strTitle = item[labelField] as string;
         const index = strTitle.indexOf(expandControl.searchValue);
         const beforeStr = strTitle.substring(0, index);
-        const afterStr = strTitle.slice(index + expandControl.searchValue.length);
+        const afterStr = strTitle.slice(
+          index + expandControl.searchValue.length,
+        );
         const title =
           index > -1 ? (
             <span key={item[idField]}>
@@ -69,7 +71,7 @@ const SearchTree: React.FC<SearchTreeProps> = (props) => {
         };
       });
 
-    let result = loop(expandControl.treeData);
+    const result = loop(expandControl.treeData);
     expandControl.onSearchChange(expandControl.searchValue);
     return result;
   }, [expandControl.searchValue, expandControl.treeData]);
@@ -78,7 +80,8 @@ const SearchTree: React.FC<SearchTreeProps> = (props) => {
     if (props.checkable) {
       return {
         checkable: props.checkable,
-        checkStrictly: props.checkStrictly === undefined ? true : props.checkStrictly,
+        checkStrictly:
+          props.checkStrictly === undefined ? true : props.checkStrictly,
         selectable: false,
         checkedKeys: props.value as Key[],
       };
@@ -102,7 +105,9 @@ const SearchTree: React.FC<SearchTreeProps> = (props) => {
     }
 
     if (props.action === 'checkAll') {
-      const allKeys = expandControl.listData.map((item) => item[expandControl.idField]);
+      const allKeys = expandControl.listData.map(
+        (item) => item[expandControl.idField],
+      );
       props?.onChange?.(allKeys);
     } else if (props.action === 'uncheckAll') {
       props?.onChange?.([]);
@@ -115,7 +120,11 @@ const SearchTree: React.FC<SearchTreeProps> = (props) => {
 
   return (
     <div>
-      <Search style={{ marginBottom: 8 }} placeholder={props.placeholder || '请输入搜索内容'} onChange={onChange} />
+      <Search
+        style={{ marginBottom: 8 }}
+        placeholder={props.placeholder || '请输入搜索内容'}
+        onChange={onChange}
+      />
       <Spin spinning={!expandControl.loadingState.loaded}>
         <Tree
           height={250}
@@ -125,11 +134,11 @@ const SearchTree: React.FC<SearchTreeProps> = (props) => {
           expandedKeys={[...expandControl.expandedKeys]}
           autoExpandParent={expandControl.autoExpandParent}
           treeData={treeData}
-          onSelect={(selectedKeys, info) => {
+          onSelect={(_selectedKeys, info) => {
             if (props.checkable) {
               return;
             }
-            // @ts-ignore
+            // @ts-expect-error
             const selectedId = info?.node?.title?.key;
             props?.onChange?.(selectedId || 0);
           }}

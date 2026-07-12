@@ -1,7 +1,7 @@
-import PermissionButton from '@/components/BizButtons/PermissionButton';
-import { UseActionControlReturnType } from '@/hooks/useActionControl';
 import { EditOutlined } from '@ant-design/icons';
 import React, { memo } from 'react';
+import PermissionButton from '@/components/BizButtons/PermissionButton';
+import type { UseActionControlReturnType } from '@/hooks/useActionControl';
 
 interface TableRowEditButtonProps {
   /** 操作控制器 */
@@ -17,7 +17,13 @@ interface TableRowEditButtonProps {
 }
 
 const TableRowEditButton: React.FC<TableRowEditButtonProps> = memo(
-  ({ actionControl, record, permissionsRequired = [], buttonText = '', tooltip = '编辑' }) => {
+  ({
+    actionControl,
+    record,
+    permissionsRequired = [],
+    buttonText = '',
+    tooltip = '编辑',
+  }) => {
     const handleClick = () => {
       actionControl.actions.openUpdateModal(record);
     };

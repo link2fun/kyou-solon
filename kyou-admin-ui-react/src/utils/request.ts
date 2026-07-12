@@ -1,5 +1,5 @@
+import { request } from '@umijs/max';
 import { HttpStatus } from '@/constants';
-import { request } from 'umi';
 
 const get = (url: string, params: any = {}) => {
   return request(url, {

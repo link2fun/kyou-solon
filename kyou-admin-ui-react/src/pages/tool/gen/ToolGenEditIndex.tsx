@@ -1,3 +1,29 @@
+import { useModel } from '@@/exports';
+import {
+  EyeOutlined,
+  FullscreenOutlined,
+  SaveOutlined,
+} from '@ant-design/icons';
+import {
+  type ActionType,
+  type EditableFormInstance,
+  EditableProTable,
+  PageContainer,
+  ProForm,
+  ProFormDependency,
+  ProFormGroup,
+  type ProFormInstance,
+  ProFormList,
+  ProFormRadio,
+  ProFormSelect,
+  ProFormText,
+  ProFormTextArea,
+} from '@ant-design/pro-components';
+import { useLocation } from '@umijs/max';
+import { useToggle } from 'ahooks';
+import { Button, Space, Spin, Tabs } from 'antd';
+import { createStyles } from 'antd-style';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useLoadingState from '@/hooks/useLoadingState';
 import SystemMenuSelect from '@/pages/system/menu/references/SystemMenuSelect';
 import ToolGenPreviewModal from '@/pages/tool/gen/components/ToolGenPreviewModal';
@@ -5,31 +31,10 @@ import useToolGenPreview from '@/pages/tool/gen/hooks/useToolGenPreview';
 import ApiSystemDictType from '@/services/system/ApiSystemDictType';
 import ApiToolGen from '@/services/tool/ApiToolGen';
 import Convert from '@/utils/Convert';
-import { useModel } from '@@/exports';
-import { EyeOutlined, FullscreenOutlined, SaveOutlined } from '@ant-design/icons';
-import {
-  EditableFormInstance,
-  EditableProTable,
-  FormInstance,
-  ProForm,
-  ProFormDependency,
-  ProFormGroup,
-  ProFormList,
-  ProFormRadio,
-  ProFormSelect,
-  ProFormText,
-  ProFormTextArea,
-} from '@ant-design/pro-components';
-import type { ActionType } from '@ant-design/pro-table/es/typing';
-import { useLocation } from '@umijs/max';
-import { useToggle } from 'ahooks';
-import { Button, Space, Spin, Tabs } from 'antd';
-import { createStyles } from 'antd-style';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // 样式定义
 const useStyle = createStyles(({ css, token }) => {
-  // @ts-ignore
+  // @ts-expect-error
   const { antCls } = token;
   return {
     customTable: css`
@@ -53,9 +58,9 @@ const fullLine = { span: 24 };
 
 const ToolGenEditIndex = () => {
   // refs
-  const tableActionRef = useRef<ActionType>();
-  const genInfoFormRef = useRef<FormInstance>();
-  const editableFormRef = useRef<EditableFormInstance>();
+  const tableActionRef = useRef<ActionType>(undefined);
+  const genInfoFormRef = useRef<ProFormInstance>(undefined);
+  const editableFormRef = useRef<EditableFormInstance>(undefined);
 
   // hooks
   const { closeActiveTab } = useModel('global');
@@ -92,14 +97,16 @@ const ToolGenEditIndex = () => {
         setBaseInfo({ ...restInfo, ...options });
 
         // 处理行数据
-        const formattedRows = (rows as any[]).map(({ isInsert, isEdit, isList, isQuery, isRequired, ...rest }) => ({
-          ...rest,
-          isInsert: Convert.toBoolean(isInsert),
-          isEdit: Convert.toBoolean(isEdit),
-          isList: Convert.toBoolean(isList),
-          isQuery: Convert.toBoolean(isQuery),
-          isRequired: Convert.toBoolean(isRequired),
-        }));
+        const formattedRows = (rows as any[]).map(
+          ({ isInsert, isEdit, isList, isQuery, isRequired, ...rest }) => ({
+            ...rest,
+            isInsert: Convert.toBoolean(isInsert),
+            isEdit: Convert.toBoolean(isEdit),
+            isList: Convert.toBoolean(isList),
+            isQuery: Convert.toBoolean(isQuery),
+            isRequired: Convert.toBoolean(isRequired),
+          }),
+        );
         setRowDataSource(formattedRows);
       },
       loadingMessage: '加载中...',
@@ -107,7 +114,10 @@ const ToolGenEditIndex = () => {
   }, [tableId]);
 
   // 可编辑的行keys
-  const editableKeys = useMemo(() => rowDataSource.map((row) => row.columnId), [rowDataSource]);
+  const editableKeys = useMemo(
+    () => rowDataSource.map((row) => row.columnId),
+    [rowDataSource],
+  );
 
   useEffect(() => {
     loadData();
@@ -119,14 +129,16 @@ const ToolGenEditIndex = () => {
 
     await loadingState.wrap({
       action: async () => {
-        const formattedRows = rowDataSource.map(({ isInsert, isEdit, isList, isQuery, isRequired, ...rest }) => ({
-          ...rest,
-          isInsert: Convert.toBooleanStr1or0(isInsert),
-          isEdit: Convert.toBooleanStr1or0(isEdit),
-          isList: Convert.toBooleanStr1or0(isList),
-          isQuery: Convert.toBooleanStr1or0(isQuery),
-          isRequired: Convert.toBooleanStr1or0(isRequired),
-        }));
+        const formattedRows = rowDataSource.map(
+          ({ isInsert, isEdit, isList, isQuery, isRequired, ...rest }) => ({
+            ...rest,
+            isInsert: Convert.toBooleanStr1or0(isInsert),
+            isEdit: Convert.toBooleanStr1or0(isEdit),
+            isList: Convert.toBooleanStr1or0(isList),
+            isQuery: Convert.toBooleanStr1or0(isQuery),
+            isRequired: Convert.toBooleanStr1or0(isRequired),
+          }),
+        );
 
         await ApiToolGen.edit({
           tableId,
@@ -156,15 +168,24 @@ const ToolGenEditIndex = () => {
 
   // noinspection JSUnusedGlobalSymbols
   return (
-    <div>
+    <PageContainer>
       <Space className={'ml-6 mb-3'}>
         <Button type={'default'} onClick={closeActiveTab}>
           关闭
         </Button>
-        <Button type={'primary'} icon={<SaveOutlined />} loading={loadingState.value} onClick={handleSave}>
+        <Button
+          type={'primary'}
+          icon={<SaveOutlined />}
+          loading={loadingState.value}
+          onClick={handleSave}
+        >
           保存
         </Button>
-        <Button icon={<EyeOutlined />} loading={loadingState.value} onClick={() => previewModal.onPreview(tableId)}>
+        <Button
+          icon={<EyeOutlined />}
+          loading={loadingState.value}
+          onClick={() => previewModal.onPreview(tableId)}
+        >
           预览
         </Button>
       </Space>
@@ -192,7 +213,12 @@ const ToolGenEditIndex = () => {
                   <ProFormText name={'tableComment'} label={'表描述'} />
                   <ProFormText name={'className'} label={'实体类名称'} />
                   <ProFormText name={'functionAuthor'} label={'作者'} />
-                  <ProFormTextArea name={'remark'} label={'备注'} labelCol={{ span: 3 }} colProps={fullLine} />
+                  <ProFormTextArea
+                    name={'remark'}
+                    label={'备注'}
+                    labelCol={{ span: 3 }}
+                    colProps={fullLine}
+                  />
                   <ProFormSelect
                     label={'生成模板'}
                     name={'tplCategory'}
@@ -206,9 +232,15 @@ const ToolGenEditIndex = () => {
                     label={'前端类型'}
                     name={'tplWebType'}
                     options={[
-                      { label: 'AntDesign Umi Max 模板', value: 'ant-design-umi-max' },
+                      {
+                        label: 'AntDesign Umi Max 模板',
+                        value: 'ant-design-umi-max',
+                      },
                       { label: 'Vue2 Element UI 模版', value: 'element-ui' },
-                      { label: 'Vue3 Element Plus 模版', value: 'element-plus' },
+                      {
+                        label: 'Vue3 Element Plus 模版',
+                        value: 'element-plus',
+                      },
                     ]}
                   />
                   <ProFormText
@@ -216,9 +248,21 @@ const ToolGenEditIndex = () => {
                     name={'packageName'}
                     tooltip={'生成在哪个java包下，例如 com.ruoyi.system'}
                   />
-                  <ProFormText label={'生成模块名'} name={'moduleName'} tooltip={'可理解为子系统名，例如 system'} />
-                  <ProFormText label={'生成业务名'} name={'businessName'} tooltip={'可理解为功能英文名，例如 user'} />
-                  <ProFormText label={'生成功能名'} name={'functionName'} tooltip={'用作类描述，例如 用户'} />
+                  <ProFormText
+                    label={'生成模块名'}
+                    name={'moduleName'}
+                    tooltip={'可理解为子系统名，例如 system'}
+                  />
+                  <ProFormText
+                    label={'生成业务名'}
+                    name={'businessName'}
+                    tooltip={'可理解为功能英文名，例如 user'}
+                  />
+                  <ProFormText
+                    label={'生成功能名'}
+                    name={'functionName'}
+                    tooltip={'用作类描述，例如 用户'}
+                  />
                   <ProFormRadio.Group
                     label={'生成代码方式'}
                     name={'genType'}
@@ -239,7 +283,9 @@ const ToolGenEditIndex = () => {
                           label={'自定义路径'}
                           name={'genPath'}
                           labelCol={{ span: 4 }}
-                          tooltip={'填写磁盘绝对路径，若不填写，则生成到当前Web项目下'}
+                          tooltip={
+                            '填写磁盘绝对路径，若不填写，则生成到当前Web项目下'
+                          }
                         />
                       )
                     }
@@ -251,7 +297,9 @@ const ToolGenEditIndex = () => {
                           <ProFormText
                             label={'模块编码'}
                             name={'moduleCode'}
-                            tooltip={'模块编码，例如 system 用于权限控制符的生成 eg: ["模块编码:dict:view"]'}
+                            tooltip={
+                              '模块编码，例如 system 用于权限控制符的生成 eg: ["模块编码:dict:view"]'
+                            }
                           />
                           <ProFormText
                             label={'模块的中文名'}
@@ -261,24 +309,34 @@ const ToolGenEditIndex = () => {
                           <ProFormText
                             label={'模块编码大驼峰缩写'}
                             name={'moduleCodeUpperCamelShort'}
-                            tooltip={'模块编码大驼峰缩写。以 basedoc 为例，结果为 Bd'}
+                            tooltip={
+                              '模块编码大驼峰缩写。以 basedoc 为例，结果为 Bd'
+                            }
                           />
                           <ProFormText
                             label={'模块编码大驼峰'}
                             name={'moduleCodeUpperCamel'}
-                            tooltip={' 模块编码驼峰命名首字母大写。以 basedoc 为例 结果为 BaseDoc'}
+                            tooltip={
+                              ' 模块编码驼峰命名首字母大写。以 basedoc 为例 结果为 BaseDoc'
+                            }
                           />
                           <ProFormText
                             label={'模块编码小驼峰'}
                             name={'moduleCodeLowerCamel'}
-                            tooltip={'模块编码 驼峰命名 首字母小写。以 basedoc 为例 结果为 baseDoc'}
+                            tooltip={
+                              '模块编码 驼峰命名 首字母小写。以 basedoc 为例 结果为 baseDoc'
+                            }
                           />
                           <ProFormText
                             label={'Java包名'}
                             name={'javaPackageName'}
                             tooltip={'Java包名，例如 basedoc 需全小写'}
                           />
-                          <ProFormText label={'前端路径'} name={'dirName'} tooltip={'前端路径，例如 basedoc'} />
+                          <ProFormText
+                            label={'前端路径'}
+                            name={'dirName'}
+                            tooltip={'前端路径，例如 basedoc'}
+                          />
                         </>
                       )
                     }
@@ -320,7 +378,8 @@ const ToolGenEditIndex = () => {
                 editable={{
                   type: 'multiple',
                   editableKeys,
-                  onValuesChange: (_record, recordList) => setRowDataSource(recordList),
+                  onValuesChange: (_record, recordList) =>
+                    setRowDataSource(recordList),
                 }}
                 columns={[
                   {
@@ -427,7 +486,7 @@ const ToolGenEditIndex = () => {
                     title: '复杂格式',
                     dataIndex: 'dictFormat',
                     width: 780,
-                    renderFormItem: () => {
+                    formItemRender: () => {
                       return (
                         <ProFormList name={'dictFormat'} alwaysShowItemLabel>
                           <ProFormGroup>
@@ -451,7 +510,7 @@ const ToolGenEditIndex = () => {
         items={previewModal.modal.items}
         onRefresh={previewModal.modal.onRefresh}
       />
-    </div>
+    </PageContainer>
   );
 };
 

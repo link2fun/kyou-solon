@@ -1,8 +1,7 @@
-import { ProList } from '@ant-design/pro-components';
-import { ProListMetas } from '@ant-design/pro-list';
+import { type ProColumns, ProList } from '@ant-design/pro-components';
 import { Spin, Table, Transfer } from 'antd';
-import { TransferDirection, TransferItem } from 'antd/es/transfer';
-import { TransferKey } from 'antd/es/transfer/interface';
+import type { TransferDirection, TransferItem } from 'antd/es/transfer';
+import type { TransferKey } from 'antd/es/transfer/interface';
 
 interface ProListTransferProps<T extends TransferItem> {
   dataSource: T[];
@@ -20,7 +19,7 @@ interface ProListTransferProps<T extends TransferItem> {
     item: T,
     direction: TransferDirection,
   ) => boolean;
-  metas: ProListMetas<T>;
+  columns: ProColumns<T>[];
   loading: boolean;
 }
 
@@ -32,7 +31,7 @@ const ProListTransfer = <T extends TransferItem>({
   showSelectAll,
   onChange,
   filterOption,
-  metas,
+  columns,
   loading,
 }: ProListTransferProps<T>) => {
   return (
@@ -67,7 +66,7 @@ const ProListTransfer = <T extends TransferItem>({
                   Table.SELECTION_NONE,
                 ],
               }}
-              metas={metas}
+              columns={columns}
             />
           );
         }}

@@ -1,3 +1,5 @@
+import { ExportOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
@@ -6,8 +8,6 @@ import useActionControl from '@/hooks/useActionControl';
 import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
 import SystemPostEditModal from '@/pages/system/post/components/SystemPostEditModal';
 import ApiSystemPost from '@/services/system/ApiSystemPost';
-import { ExportOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
 
 const SystemPostIndex = () => {
   const actionControl = useActionControl({
@@ -24,7 +24,7 @@ const SystemPostIndex = () => {
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params: any) => {
@@ -53,10 +53,10 @@ const SystemPostIndex = () => {
         rowKey={'postId'}
         scroll={{ x: 'max-content' }}
         columns={[
-          { title: '岗位编号', dataIndex: 'postId', hideInSearch: true },
+          { title: '岗位编号', dataIndex: 'postId', search: false },
           { title: '岗位编码', dataIndex: 'postCode' },
           { title: '岗位名称', dataIndex: 'postName' },
-          { title: '岗位排序', dataIndex: 'postSort', hideInSearch: true },
+          { title: '岗位排序', dataIndex: 'postSort', search: false },
           {
             title: '状态',
             dataIndex: 'status',
@@ -65,13 +65,13 @@ const SystemPostIndex = () => {
               typeCode: 'sys_normal_disable',
             }),
           },
-          { title: '备注', dataIndex: 'remark', hideInSearch: true },
+          { title: '备注', dataIndex: 'remark', search: false },
           {
             title: '操作',
-            hideInSearch: true,
+            search: false,
             fixed: 'right',
             width: actionControl.rowAction.width,
-            render: (text, record) => [
+            render: (_text, record) => [
               <div key={'operations'} ref={actionControl.rowAction.ref}>
                 <TableRowEditButton
                   actionControl={actionControl}
@@ -90,7 +90,7 @@ const SystemPostIndex = () => {
       />
 
       <SystemPostEditModal {...actionControl.editModal} />
-    </div>
+    </PageContainer>
   );
 };
 

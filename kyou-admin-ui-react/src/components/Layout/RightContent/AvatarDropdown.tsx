@@ -1,16 +1,18 @@
+import {
+  LogoutOutlined,
+  SettingOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import { history, useModel } from '@umijs/max';
+import { useResponsive } from 'ahooks';
+import { Avatar, type MenuProps, Spin } from 'antd';
+import { createStyles } from 'antd-style';
+import React from 'react';
+import { flushSync } from 'react-dom';
+import defaultAvatar from '@/assets/avatar.jpg';
 import HeaderDropdown from '@/components/Layout/HeaderDropdown';
 import ApiCommon from '@/services/common/ApiCommon';
 import UserTool from '@/utils/UserTool';
-import { LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
-import { history, useModel } from '@umijs/max';
-import { useResponsive } from 'ahooks';
-import { Avatar, MenuProps, Spin } from 'antd';
-import { createStyles } from 'antd-style';
-import { stringify } from 'querystring';
-import React from 'react';
-import { flushSync } from 'react-dom';
-import defaultAvatar from '@/assets/avatar.jpg'
-
 
 export type GlobalHeaderRightProps = {
   menu?: boolean;
@@ -51,7 +53,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu }) => {
     // 调用登出接口
     try {
       await ApiCommon.logout();
-    } catch (err) {
+    } catch (_err) {
       // 不管登出接口的报错
     }
 
@@ -66,9 +68,9 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu }) => {
     if (window.location.pathname !== '/user/login' && !redirect) {
       history.replace({
         pathname: '/user/login',
-        search: stringify({
+        search: new URLSearchParams({
           redirect: pathname + search,
-        }),
+        }).toString(),
       });
     }
   };
@@ -110,7 +112,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu }) => {
 
   const { currentUser } = initialState;
 
-  if (!currentUser || !currentUser.user?.userName) {
+  if (!currentUser?.user?.userName) {
     return loading;
   }
 
@@ -148,11 +150,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu }) => {
       }}
     >
       <span className={styles.action}>
-        <Avatar
-          src={defaultAvatar}
-          size={28}
-          key="avatar"
-        />
+        <Avatar src={defaultAvatar} size={28} key="avatar" />
         {responsive.md && <AvatarName />}
       </span>
     </HeaderDropdown>

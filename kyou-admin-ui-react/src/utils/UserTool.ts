@@ -38,7 +38,7 @@ const hasRole = (roleCodes: string[], currentUser?: CurrentUser) => {
  * @param currentUser 登录用户
  */
 const saveCurrentUser = (currentUser: CurrentUser) => {
-  if (!currentUser || !currentUser?.user?.userId) {
+  if (!currentUser?.user?.userId) {
     // localStorage.removeItem(webConst.USER_INFO);
     // localStorage.removeItem(webConst.USER_TOKEN);
     // localStorage.removeItem(webConst.PERMISSION_RES_ARR);

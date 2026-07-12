@@ -1,7 +1,3 @@
-import EditModalForm from '@/components/EditModalForm';
-import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
-import useProFormTreeSelectDept from '@/pages/system/dept/hooks/useProFormTreeSelectDept';
-import { EditModalProps } from '@/typing';
 import {
   ProFormDigit,
   ProFormRadio,
@@ -9,6 +5,10 @@ import {
   ProFormTreeSelect,
 } from '@ant-design/pro-components';
 import React from 'react';
+import EditModalForm from '@/components/EditModalForm';
+import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
+import useProFormTreeSelectDept from '@/pages/system/dept/hooks/useProFormTreeSelectDept';
+import type { EditModalProps } from '@/typing';
 
 const SystemDeptEditModal: React.FC<EditModalProps> = (props) => {
   return (

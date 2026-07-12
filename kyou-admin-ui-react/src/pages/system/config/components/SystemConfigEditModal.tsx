@@ -1,7 +1,7 @@
-import EditModalForm from '@/components/EditModalForm';
-import { EditModalProps } from '@/typing';
 import { ProFormText } from '@ant-design/pro-components';
 import React from 'react';
+import EditModalForm from '@/components/EditModalForm';
+import type { EditModalProps } from '@/typing';
 
 const SystemConfigEditModal: React.FC<EditModalProps> = (props) => {
   return (

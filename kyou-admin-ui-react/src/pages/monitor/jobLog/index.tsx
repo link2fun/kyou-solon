@@ -1,14 +1,15 @@
+import { DeleteOutlined, ExportOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { App } from 'antd';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
 import useActionControl from '@/hooks/useActionControl';
 import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
 import ApiMonitorJob from '@/services/monitor/ApiMonitorJob';
 import ApiMonitorJobLog from '@/services/monitor/ApiMonitorJobLog';
-import { DeleteOutlined, ExportOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
-import { message } from 'antd';
 
 const MonitorJobLogIndex = () => {
+  const { message } = App.useApp();
   const actionControl = useActionControl({
     selection: {
       rowKey: 'jobLogId',
@@ -16,7 +17,7 @@ const MonitorJobLogIndex = () => {
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params: any) => {
@@ -92,7 +93,7 @@ const MonitorJobLogIndex = () => {
         ]}
         rowKey={'jobLogId'}
         columns={[
-          { title: '日志编号', dataIndex: 'jobLogId', hideInSearch: true },
+          { title: '日志编号', dataIndex: 'jobLogId', search: false },
           {
             title: '任务名称',
             dataIndex: 'jobName',
@@ -117,13 +118,13 @@ const MonitorJobLogIndex = () => {
             title: '调用不妙字符串',
             dataIndex: 'invokeTarget',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '日志信息',
             dataIndex: 'jobMessage',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '执行状态',
@@ -137,11 +138,11 @@ const MonitorJobLogIndex = () => {
             title: '执行时间',
             dataIndex: 'createTime',
             valueType: 'dateTime',
-            hideInSearch: true,
+            search: false,
           },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 };
 

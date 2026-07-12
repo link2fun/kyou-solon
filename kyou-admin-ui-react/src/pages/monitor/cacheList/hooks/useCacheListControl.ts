@@ -1,7 +1,7 @@
+import type { ProFormInstance } from '@ant-design/pro-components';
+import { useEffect, useRef, useState } from 'react';
 import useLoadingState from '@/hooks/useLoadingState';
 import ApiMonitorCache from '@/services/monitor/ApiMonitorCache';
-import { FormInstance } from '@ant-design/pro-components';
-import { useEffect, useRef, useState } from 'react';
 
 const useCacheListControl = () => {
   /** 定义 state 存储缓存名list */
@@ -16,7 +16,7 @@ const useCacheListControl = () => {
   const [cacheContent, setCacheContent] = useState<any>({});
   const cacheContentLoading = useLoadingState();
 
-  const contentFormRef = useRef<FormInstance>();
+  const contentFormRef = useRef<ProFormInstance>(undefined);
 
   /** 初始加载缓存Name List */
   const loadCacheNameList = async () => {

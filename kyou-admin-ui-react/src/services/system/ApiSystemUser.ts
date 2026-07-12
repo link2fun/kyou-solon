@@ -1,13 +1,6 @@
 import WebConst from '@/constants/WebConst';
-import { ErrorShowType } from '@/requestConfig';
-import {
-  downloadFile,
-  get,
-  postFile,
-  postJSON,
-  putForm,
-  putJSON,
-} from '@/utils/request';
+import {ErrorShowType} from '@/requestConfig';
+import {deleteJSON, downloadFile, get, postFile, postJSON, putForm, putJSON,} from '@/utils/request';
 
 const ApiSystemUser = {
   /** 获取用户列表 */
@@ -19,12 +12,12 @@ const ApiSystemUser = {
       `${WebConst.API_PREFIX}/system/user/export`,
       params,
       '用户列表.xlsx',
-      { method: 'POST' },
+      {method: 'POST'},
     ),
   /** 导入用户 */
   import: (file: File, updateSupport: boolean) => {
     const formData = new FormData();
-    formData.append('updateSupport', updateSupport + '');
+    formData.append('updateSupport', `${updateSupport}`);
     formData.append('file', file);
 
     return postFile(`${WebConst.API_PREFIX}/system/user/importData`, formData, {
@@ -38,7 +31,7 @@ const ApiSystemUser = {
       `${WebConst.API_PREFIX}/system/user/importTemplate`,
       {},
       '用户导入模板.xlsx',
-      { method: 'POST' },
+      {method: 'POST'},
     ),
   /** 根据用户编号获取详细信息 */
   detail: (userId: number) =>
@@ -50,7 +43,7 @@ const ApiSystemUser = {
   edit: (data: any) => putJSON(`${WebConst.API_PREFIX}/system/user`, data),
   /** 删除用户 */
   remove: (userId: number | number[]) =>
-    get(`${WebConst.API_PREFIX}/system/user/${userId}`),
+    deleteJSON(`${WebConst.API_PREFIX}/system/user/${userId}`),
   /** 重置密码 */
   resetPwd: (data: any) =>
     putJSON(`${WebConst.API_PREFIX}/system/user/resetPwd`, data),
@@ -63,7 +56,7 @@ const ApiSystemUser = {
   /** 用户授权角色 */
   authRole: async (userId: string, roleIds: string[]) => {
     const formData = new FormData();
-    formData.append('userId', userId + '');
+    formData.append('userId', `${userId}`);
     (roleIds || []).forEach((roleId) => {
       formData.append('roleIds', roleId);
     });

@@ -1,3 +1,14 @@
+import { ExportOutlined, KeyOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  PageContainer,
+  ProForm,
+  type ProFormInstance,
+  ProFormText,
+  ProTable,
+} from '@ant-design/pro-components';
+import { history } from '@umijs/max';
+import { App, Col, Row } from 'antd';
+import React, { useEffect, useRef } from 'react';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
@@ -10,11 +21,6 @@ import SystemUserEditModal from '@/pages/system/user/components/SystemUserEditMo
 import SystemUserImportModal from '@/pages/system/user/components/SystemUserImportModal';
 import ApiSystemUser from '@/services/system/ApiSystemUser';
 import { dateRangeToRequestParams } from '@/utils/utils';
-import { ExportOutlined, KeyOutlined, UserOutlined } from '@ant-design/icons';
-import { FormInstance, ProForm, ProFormText, ProTable } from '@ant-design/pro-components';
-import { history } from '@umijs/max';
-import { App, Col, Row } from 'antd';
-import React, { useEffect, useRef } from 'react';
 
 const SystemUserIndex = () => {
   const { message, modal } = App.useApp();
@@ -37,17 +43,20 @@ const SystemUserIndex = () => {
     },
   });
 
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>(undefined);
 
   useEffect(() => {
     actionControl.actions.reloadTableData();
   }, [deptIdSelected]);
 
   return (
-    <div>
+    <PageContainer>
       <Row>
         <Col span={24} lg={6}>
-          <SystemDeptSearchTree value={deptIdSelected} onChange={(val) => setDeptIdSelected(val as number)} />
+          <SystemDeptSearchTree
+            value={deptIdSelected}
+            onChange={(val) => setDeptIdSelected(val as number)}
+          />
         </Col>
         <Col span={24} lg={18} className={'pl-1'}>
           <ProTable
@@ -86,7 +95,11 @@ const SystemUserIndex = () => {
                 icon={<ExportOutlined />}
                 loading={actionControl.loading.value}
                 permissionsRequired={['system:user:export']}
-                onClick={() => actionControl.loading.wrap(() => ApiSystemUser.export(actionControl.queryParams.value))}
+                onClick={() =>
+                  actionControl.loading.wrap(() =>
+                    ApiSystemUser.export(actionControl.queryParams.value),
+                  )
+                }
               >
                 导出
               </PermissionButton>,
@@ -98,11 +111,11 @@ const SystemUserIndex = () => {
                 title: '用户编号',
                 dataIndex: 'userId',
                 hideInTable: true,
-                hideInSearch: true,
+                search: false,
               },
               { title: '用户名称', dataIndex: 'userName' },
-              { title: '用户昵称', dataIndex: 'nickName', hideInSearch: true },
-              { title: '部门', dataIndex: 'deptName', hideInSearch: true },
+              { title: '用户昵称', dataIndex: 'nickName', search: false },
+              { title: '部门', dataIndex: 'deptName', search: false },
               {
                 title: '手机号码',
                 dataIndex: 'phonenumber',
@@ -116,13 +129,13 @@ const SystemUserIndex = () => {
               {
                 title: '备注',
                 dataIndex: 'remark',
-                hideInSearch: true,
+                search: false,
                 renderText: (text) => <EllipsisText text={text} />,
               },
               {
                 title: '创建时间',
                 dataIndex: 'createTime',
-                hideInSearch: true,
+                search: false,
               },
               {
                 title: '创建时间',
@@ -131,7 +144,7 @@ const SystemUserIndex = () => {
                 hideInTable: true,
               },
               {
-                hideInSearch: true,
+                search: false,
                 fixed: 'right',
                 title: '操作',
                 width: actionControl.rowAction.width,
@@ -148,7 +161,10 @@ const SystemUserIndex = () => {
                         actionControl={actionControl}
                         record={record}
                       />
-                      <TableRowViewButton actionControl={actionControl} record={record} />
+                      <TableRowViewButton
+                        actionControl={actionControl}
+                        record={record}
+                      />
                       <PermissionButton
                         permissionsRequired={['system:user:resetPwd']}
                         title={'重置密码'}
@@ -196,7 +212,11 @@ const SystemUserIndex = () => {
                         icon={<UserOutlined />}
                         type={'link'}
                         title={'分配角色'}
-                        onClick={() => history.push(`/system/userAuthRole?userId=${record.userId}`)}
+                        onClick={() =>
+                          history.push(
+                            `/system/userAuthRole?userId=${record.userId}`,
+                          )
+                        }
                       />
                     </div>
                   );
@@ -207,7 +227,7 @@ const SystemUserIndex = () => {
         </Col>
       </Row>
       <SystemUserEditModal {...actionControl.editModal} />
-    </div>
+    </PageContainer>
   );
 };
 

@@ -1,11 +1,11 @@
+import { DeleteOutlined, ExportOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { App } from 'antd';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
 import useActionControl from '@/hooks/useActionControl';
 import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
 import ApiMonitorOperlog from '@/services/monitor/ApiMonitorOperlog';
-import { DeleteOutlined, ExportOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
-import { App } from 'antd';
 
 const SystemLogOperlogIndex = () => {
   const { message } = App.useApp();
@@ -20,13 +20,13 @@ const SystemLogOperlogIndex = () => {
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (_params: any) => {
           const { operTime, ...rest } = _params;
-          let beginTime = operTime ? operTime[0] : '';
-          let endTime = operTime ? operTime[1] : '';
+          const beginTime = operTime ? operTime[0] : '';
+          const endTime = operTime ? operTime[1] : '';
           const params = {
             ...rest,
             'params[beginTime]': beginTime,
@@ -98,7 +98,7 @@ const SystemLogOperlogIndex = () => {
           </PermissionButton>,
         ]}
         columns={[
-          { title: '日志编号', dataIndex: 'operId', hideInSearch: true },
+          { title: '日志编号', dataIndex: 'operId', search: false },
           { title: '系统模块', dataIndex: 'title' },
           {
             title: '操作类型',
@@ -121,7 +121,7 @@ const SystemLogOperlogIndex = () => {
             title: '操作日期',
             dataIndex: 'operTime',
             valueType: 'dateTime',
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '操作日期',
@@ -132,7 +132,7 @@ const SystemLogOperlogIndex = () => {
           {
             title: '操作耗时',
             dataIndex: 'costTime',
-            hideInSearch: true,
+            search: false,
             renderText: (text: number) => {
               if (text < 500) {
                 return <span className={'text-green-600'}>{text} ms</span>;
@@ -144,7 +144,7 @@ const SystemLogOperlogIndex = () => {
           },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 };
 

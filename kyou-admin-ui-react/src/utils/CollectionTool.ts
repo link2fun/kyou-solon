@@ -20,7 +20,7 @@ const containsItem = (list: string[], item: string) => {
     return false;
   }
 
-  return list.findIndex((value) => value === item) >= 0;
+  return list.indexOf(item) >= 0;
 };
 
 const containsAny = (list: string[], items: string[]) => {

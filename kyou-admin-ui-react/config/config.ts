@@ -1,0 +1,203 @@
+// https://umijs.org/config/
+
+import { join } from 'node:path';
+import { defineConfig } from '@umijs/max';
+import defaultSettings from './defaultSettings';
+import proxy from './proxy';
+
+import routes from './routes';
+
+const { UMI_ENV = 'dev' } = process.env;
+
+// Compute commit hash: env vars take precedence, fall back to git at build time
+const commitHash =
+  process.env.COMMIT_HASH ||
+  process.env.CF_PAGES_COMMIT_SHA ||
+  (() => {
+    try {
+      return require('node:child_process')
+        .execSync('git rev-parse HEAD', {
+          stdio: ['ignore', 'pipe', 'ignore'],
+          encoding: 'utf-8',
+        })
+        .trim();
+    } catch {
+      return '';
+    }
+  })();
+
+/**
+ * @name 使用公共路径
+ * @description 部署时的路径，如果部署在非根目录下，需要配置这个变量
+ * @doc https://umijs.org/docs/api/config#publicpath
+ */
+const PUBLIC_PATH: string = '/';
+
+export default defineConfig({
+  alias: {
+    '@root': join(__dirname, '..'),
+  },
+  /**
+   * @name 开启 hash 模式
+   * @description 让 build 之后的产物包含 hash 后缀。通常用于增量发布和避免浏览器加载缓存。
+   * @doc https://umijs.org/docs/api/config#hash
+   */
+  hash: true,
+
+  publicPath: PUBLIC_PATH,
+
+  /**
+   * @name 兼容性设置
+   * @description 设置 ie11 不一定完美兼容，需要检查自己使用的所有依赖
+   * @doc https://umijs.org/docs/api/config#targets
+   */
+  // targets: {
+  //   ie: 11,
+  // },
+  /**
+   * @name 路由的配置，不在路由中引入的文件不会编译
+   * @description 只支持 path，component，routes，redirect，wrappers，title 的配置
+   * @doc https://umijs.org/docs/guides/routes
+   */
+  // umi routes: https://umijs.org/docs/routing
+  routes,
+  /**
+   * @name 主题的配置
+   * @description 虽然叫主题，但是其实只是 less 的变量设置
+   * @doc antd的主题设置 https://ant.design/docs/react/customize-theme-cn
+   * @doc umi 的 theme 配置 https://umijs.org/docs/api/config#theme
+   */
+  // theme: { '@primary-color': '#1DA57A' }
+  /**
+   * @name moment 的国际化配置
+   * @description 如果对国际化没有要求，打开之后能减少js的包大小
+   * @doc https://umijs.org/docs/api/config#ignoremomentlocale
+   */
+  ignoreMomentLocale: true,
+  /**
+   * @name 代理配置
+   * @description 可以让你的本地服务器代理到你的服务器上，这样你就可以访问服务器的数据了
+   * @see 要注意以下 代理只能在本地开发时使用，build 之后就无法使用了。
+   * @doc 代理介绍 https://umijs.org/docs/guides/proxy
+   * @doc 代理配置 https://umijs.org/docs/api/config#proxy
+   */
+  proxy: proxy[UMI_ENV as keyof typeof proxy] || proxy.dev,
+
+  /**
+   * @name 快速热更新配置
+   * @description 一个不错的热更新组件，更新时可以保留 state
+   */
+  fastRefresh: true,
+
+  /**
+   * @name 路由预加载
+   * @description 预加载路由资源，提升页面切换速度
+   * @doc https://umijs.org/docs/api/config#routePrefetch
+   */
+  routePrefetch: {},
+
+  /**
+   * @name manifest 配置
+   * @description 生成资源清单，配合 routePrefetch 使用
+   */
+  manifest: {},
+  //============== 以下都是max的插件配置 ===============
+  /**
+   * @name 数据流插件
+   * @@doc https://umijs.org/docs/max/data-flow
+   */
+  model: {},
+
+  /**
+   * 一个全局的初始数据流，可以用它在插件之间共享数据
+   * @description 可以用来存放一些全局的数据，比如用户信息，或者一些全局的状态，全局初始状态在整个 Umi 项目的最开始创建。
+   * @doc https://umijs.org/docs/max/data-flow#%E5%85%A8%E5%B1%80%E5%88%9D%E5%A7%8B%E7%8A%B6%E6%80%81
+   */
+  initialState: {},
+  /**
+   * @name layout 插件
+   * @doc https://umijs.org/docs/max/layout-menu
+   */
+  title: defaultSettings.title,
+  layout: {
+    locale: false,
+    ...defaultSettings,
+  },
+  /**
+   * @name moment2dayjs 插件
+   * @description 将项目中的 moment 替换为 dayjs
+   * @doc https://umijs.org/docs/max/moment2dayjs
+   */
+  moment2dayjs: {
+    preset: 'antd',
+    plugins: ['duration', 'relativeTime'],
+  },
+
+  /**
+   * @name antd 插件
+   * @description 内置了 babel import 插件
+   * @doc https://umijs.org/docs/max/antd#antd
+   */
+  antd: {
+    appConfig: {},
+    configProvider: {
+      variant: 'filled',
+      theme: {
+        token: {
+          fontFamily: 'AlibabaSans, sans-serif',
+        },
+      },
+    },
+  },
+  /**
+   * @name 网络请求配置
+   * @description 它基于 axios 和 ahooks 的 useRequest 提供了一套统一的网络请求和错误处理方案。
+   * @doc https://umijs.org/docs/max/request
+   */
+  request: {},
+
+  /**
+   * @name 权限插件
+   * @description 基于 initialState 的权限插件，必须先打开 initialState
+   * @doc https://umijs.org/docs/max/access
+   */
+  access: {},
+  /**
+   * @name <head> 中额外的 script
+   * @description 配置 <head> 中额外的 script
+   */
+  headScripts: [
+    // 解决首次加载时白屏的问题
+    { src: join(PUBLIC_PATH, 'scripts/loading.js'), async: true },
+  ],
+
+  //================ 其他配置 =================
+  npmClient: 'pnpm',
+  tailwindcss: {},
+
+  utoopack: {
+    module: {
+      rules: {
+        '*.md': {
+          loaders: [{ loader: join(__dirname, 'md-raw-loader.cjs') }],
+          as: '*.js',
+        },
+      },
+    },
+  },
+  define: {
+    'process.env.CI': process.env.CI,
+    'process.env.COMMIT_HASH': commitHash,
+    __APP_VERSION__: require('./../package.json').version,
+    __UMI_VERSION__: require('@umijs/max/package.json').version,
+    // @utoo/pack 未声明为直接依赖，pnpm 严格隔离下顶层 node_modules 解析不到，
+    // 用 try/catch 容错，失败时回退为空字符串。
+    __UTOO_VERSION__: (() => {
+      try {
+        return require('@utoo/pack/package.json').version;
+      } catch {
+        return '';
+      }
+    })(),
+  },
+});

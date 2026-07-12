@@ -1,14 +1,22 @@
-import { EditModalProps } from '@/typing';
-import { ModalForm } from '@ant-design/pro-components';
-import type { SubmitterProps } from '@ant-design/pro-form/es/components';
-import { Button, type FormInstance, Spin } from 'antd';
-import React, { PropsWithChildren, useMemo } from 'react';
+import {
+  ModalForm,
+  type ProFormInstance,
+  type SubmitterProps,
+} from '@ant-design/pro-components';
+import { Button, Spin } from 'antd';
+import React, {
+  type PropsWithChildren,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import type { EditModalProps } from '@/typing';
 
 interface DynamicProps {
   readonly?: boolean;
   submitter?:
     | SubmitterProps<{
-        form?: FormInstance;
+        form?: ProFormInstance;
       }>
     | false;
 }
@@ -56,8 +64,19 @@ const EditModalForm: React.FC<PropsWithChildren<EditModalProps>> = ({
     }
   }, [action, title]);
 
+  // 表单内容延迟挂载：open 时先渲染 loading 占位，下一轮事件循环再挂载 children
+  const [contentReady, setContentReady] = useState(false);
+  useEffect(() => {
+    if (!open) {
+      setContentReady(false);
+      return;
+    }
+    const timer = setTimeout(() => setContentReady(true), 0);
+    return () => clearTimeout(timer);
+  }, [open]);
+
   return (
-    <Spin spinning={loading && open} wrapperClassName="w-full">
+    <Spin spinning={loading && open} classNames={{ root: 'w-full' }}>
       <ModalForm
         layout="horizontal"
         title={modalTitle}
@@ -68,12 +87,25 @@ const EditModalForm: React.FC<PropsWithChildren<EditModalProps>> = ({
         initialValues={initData}
         {...dynamicProps}
         modalProps={{
-          destroyOnClose: true,
+          destroyOnHidden: true,
           onCancel: () => onCancel(),
         }}
         onFinish={(formData) => onSubmit({ ...initData, ...formData })}
       >
-        {children}
+        {contentReady ? (
+          children
+        ) : (
+          <div
+            style={{
+              minHeight: 120,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Spin />
+          </div>
+        )}
       </ModalForm>
     </Spin>
   );

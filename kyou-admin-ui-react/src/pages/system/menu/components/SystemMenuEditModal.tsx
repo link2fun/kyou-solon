@@ -1,14 +1,14 @@
-import EditModalForm from '@/components/EditModalForm';
-import IconPicker from '@/components/ProFormItem/IconPicker';
-import SystemDictDataRadio from '@/pages/system/dictData/references/SystemDictDataRadio';
-import SystemMenuSelect from '@/pages/system/menu/references/SystemMenuSelect';
-import { EditModalProps } from '@/typing';
 import {
   ProFormDependency,
   ProFormRadio,
   ProFormText,
 } from '@ant-design/pro-components';
 import React from 'react';
+import EditModalForm from '@/components/EditModalForm';
+import IconPicker from '@/components/ProFormItem/IconPicker';
+import SystemDictDataRadio from '@/pages/system/dictData/references/SystemDictDataRadio';
+import SystemMenuSelect from '@/pages/system/menu/references/SystemMenuSelect';
+import type { EditModalProps } from '@/typing';
 
 const SystemMenuEditModal: React.FC<EditModalProps> = (props) => {
   return (
@@ -67,7 +67,7 @@ const SystemMenuEditModal: React.FC<EditModalProps> = (props) => {
               </>
             );
           }
-          return <></>;
+          return null;
         }}
       </ProFormDependency>
 
@@ -103,26 +103,24 @@ const SystemMenuEditModal: React.FC<EditModalProps> = (props) => {
               </>
             );
           }
-          return <></>;
+          return null;
         }}
       </ProFormDependency>
       <ProFormDependency name={['menuType']}>
         {({ menuType }) => {
           if (menuType !== 'M') {
             return (
-              <>
-                <ProFormText
-                  name={'perms'}
-                  label={'权限标识'}
-                  placeholder={'请输入权限标识'}
-                  tooltip={
-                    "控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasPermi('system:user:list')`)"
-                  }
-                />
-              </>
+              <ProFormText
+                name={'perms'}
+                label={'权限标识'}
+                placeholder={'请输入权限标识'}
+                tooltip={
+                  "控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasPermi('system:user:list')`)"
+                }
+              />
             );
           }
-          return <></>;
+          return null;
         }}
       </ProFormDependency>
 
@@ -130,19 +128,17 @@ const SystemMenuEditModal: React.FC<EditModalProps> = (props) => {
         {({ menuType }) => {
           if (menuType !== 'F') {
             return (
-              <>
-                <SystemDictDataRadio
-                  name={'visible'}
-                  label={'显示状态'}
-                  tooltip={'选择隐藏则路由将不会出现在侧边栏，但仍然可以访问'}
-                  typeCode={'sys_show_hide'}
-                  colProps={{ md: 12 }}
-                  valueInLabel={false}
-                />
-              </>
+              <SystemDictDataRadio
+                name={'visible'}
+                label={'显示状态'}
+                tooltip={'选择隐藏则路由将不会出现在侧边栏，但仍然可以访问'}
+                typeCode={'sys_show_hide'}
+                colProps={{ md: 12 }}
+                valueInLabel={false}
+              />
             );
           }
-          return <></>;
+          return null;
         }}
       </ProFormDependency>
       <SystemDictDataRadio

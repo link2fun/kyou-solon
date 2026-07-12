@@ -1,7 +1,3 @@
-import EditModalForm from '@/components/EditModalForm';
-import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
-import SystemMenuSearchTree from '@/pages/system/menu/references/SystemMenuSearchTree';
-import { EditModalProps } from '@/typing';
 import {
   ProFormCheckbox,
   ProFormDependency,
@@ -13,6 +9,10 @@ import {
 } from '@ant-design/pro-components';
 import { useGetState, usePrevious } from 'ahooks';
 import React, { useMemo } from 'react';
+import EditModalForm from '@/components/EditModalForm';
+import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
+import SystemMenuSearchTree from '@/pages/system/menu/references/SystemMenuSearchTree';
+import type { EditModalProps } from '@/typing';
 
 const SystemRoleEditModal: React.FC<EditModalProps> = (props) => {
   const [formValues, setFormValues, getFormValues] = useGetState<any>({});
@@ -22,13 +22,25 @@ const SystemRoleEditModal: React.FC<EditModalProps> = (props) => {
     const prevOptions = previousFormValues?.dataScopeOptions || [];
     const nowOptions = formValues?.dataScopeOptions || [];
 
-    if (prevOptions.includes('menuExpand') && !nowOptions.includes('menuExpand')) {
+    if (
+      prevOptions.includes('menuExpand') &&
+      !nowOptions.includes('menuExpand')
+    ) {
       return 'expandAll';
-    } else if (!prevOptions.includes('menuExpand') && nowOptions.includes('menuExpand')) {
+    } else if (
+      !prevOptions.includes('menuExpand') &&
+      nowOptions.includes('menuExpand')
+    ) {
       return 'collapseAll';
-    } else if (prevOptions.includes('menuNodeAll') && !nowOptions.includes('menuNodeAll')) {
+    } else if (
+      prevOptions.includes('menuNodeAll') &&
+      !nowOptions.includes('menuNodeAll')
+    ) {
       return 'checkAll';
-    } else if (!prevOptions.includes('menuNodeAll') && nowOptions.includes('menuNodeAll')) {
+    } else if (
+      !prevOptions.includes('menuNodeAll') &&
+      nowOptions.includes('menuNodeAll')
+    ) {
       return 'uncheckAll';
     }
     return undefined;
@@ -37,18 +49,30 @@ const SystemRoleEditModal: React.FC<EditModalProps> = (props) => {
   return (
     <EditModalForm
       {...props}
-      onValuesChange={(changedValues, values) => {
+      onValuesChange={(_changedValues, values) => {
         setFormValues(values);
       }}
     >
-      <ProFormText label={'角色名称'} name={'roleName'} rules={[{ required: true, message: '请输入角色名称！' }]} />
+      <ProFormText
+        label={'角色名称'}
+        name={'roleName'}
+        rules={[{ required: true, message: '请输入角色名称！' }]}
+      />
       <ProFormText
         label={'权限字符'}
         name={'roleKey'}
-        tooltip={'控制器中定义的权限字符，如：@PreAuthorize("@ss.hasRole(\'admin\')")'}
+        tooltip={
+          '控制器中定义的权限字符，如：@PreAuthorize("@ss.hasRole(\'admin\')")'
+        }
         rules={[{ required: true, message: '请输入权限字符！' }]}
       />
-      <ProFormDigit label={'角色顺序'} name={'roleSort'} min={0} max={9999} rules={[{ required: true }]} />
+      <ProFormDigit
+        label={'角色顺序'}
+        name={'roleSort'}
+        min={0}
+        max={9999}
+        rules={[{ required: true }]}
+      />
 
       <ProFormRadio.Group
         label={'状态'}
@@ -61,7 +85,8 @@ const SystemRoleEditModal: React.FC<EditModalProps> = (props) => {
 
       <ProFormDependency name={['dataScopeOptions']}>
         {({ dataScopeOptions }) => {
-          const menuCheckStrictly = dataScopeOptions?.includes('menuCheckStrictly');
+          const menuCheckStrictly =
+            dataScopeOptions?.includes('menuCheckStrictly');
           // menuCheckStrictly 的语义跟 ant-design tree checkStrictly 相反
           return (
             <>
@@ -76,7 +101,11 @@ const SystemRoleEditModal: React.FC<EditModalProps> = (props) => {
               />
 
               <ProFormItem name={'menuIds'} label={'菜单'}>
-                <SystemMenuSearchTree action={action} checkable={true} checkStrictly={!menuCheckStrictly} />
+                <SystemMenuSearchTree
+                  action={action}
+                  checkable={true}
+                  checkStrictly={!menuCheckStrictly}
+                />
               </ProFormItem>
             </>
           );

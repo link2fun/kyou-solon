@@ -1,7 +1,3 @@
-import EditModalForm from '@/components/EditModalForm';
-import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
-import ApiSystemDictType from '@/services/system/ApiSystemDictType';
-import { EditModalProps } from '@/typing';
 import {
   ProFormDigit,
   ProFormSelect,
@@ -9,6 +5,10 @@ import {
   ProFormTextArea,
 } from '@ant-design/pro-components';
 import React from 'react';
+import EditModalForm from '@/components/EditModalForm';
+import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
+import ApiSystemDictType from '@/services/system/ApiSystemDictType';
+import type { EditModalProps } from '@/typing';
 
 const SystemDictDataEditModal: React.FC<EditModalProps> = (props) => {
   return (

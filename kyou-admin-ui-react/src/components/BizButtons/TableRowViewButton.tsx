@@ -1,7 +1,7 @@
-import PermissionButton from '@/components/BizButtons/PermissionButton';
-import { UseActionControlReturnType } from '@/hooks/useActionControl';
 import { EyeOutlined } from '@ant-design/icons';
 import React, { memo } from 'react';
+import PermissionButton from '@/components/BizButtons/PermissionButton';
+import type { UseActionControlReturnType } from '@/hooks/useActionControl';
 
 interface TableRowViewButtonProps {
   /** 操作控制器 */
@@ -17,7 +17,13 @@ interface TableRowViewButtonProps {
 }
 
 const TableRowViewButton: React.FC<TableRowViewButtonProps> = memo(
-  ({ actionControl, record, permissionsRequired = [], buttonText = '', tooltip = '查看详情' }) => {
+  ({
+    actionControl,
+    record,
+    permissionsRequired = [],
+    buttonText = '',
+    tooltip = '查看详情',
+  }) => {
     const handleClick = () => {
       actionControl.actions.openViewModal(record);
     };

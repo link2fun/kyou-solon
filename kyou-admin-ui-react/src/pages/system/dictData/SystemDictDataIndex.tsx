@@ -1,3 +1,6 @@
+import { ExportOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { Tag } from 'antd';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
@@ -6,9 +9,6 @@ import useActionControl from '@/hooks/useActionControl';
 import SystemDictDataEditModal from '@/pages/system/dictData/components/SystemDictDataEditModal';
 import ApiSystemDictData from '@/services/system/ApiSystemDictData';
 import ApiSystemDictType from '@/services/system/ApiSystemDictType';
-import { ExportOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
-import { Tag } from 'antd';
 
 const SystemDictDataIndex = () => {
   const actionControl = useActionControl({
@@ -27,7 +27,7 @@ const SystemDictDataIndex = () => {
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params) => {
@@ -72,9 +72,9 @@ const SystemDictDataIndex = () => {
               );
             },
           },
-          { title: '字典编码', dataIndex: 'dictCode', hideInSearch: true },
+          { title: '字典编码', dataIndex: 'dictCode', search: false },
           { title: '字典标签', dataIndex: 'dictLabel' },
-          { title: '字典键值', dataIndex: 'dictValue', hideInSearch: true },
+          { title: '字典键值', dataIndex: 'dictValue', search: false },
           {
             title: '状态',
             dataIndex: 'status',
@@ -87,12 +87,12 @@ const SystemDictDataIndex = () => {
             title: '备注',
             dataIndex: 'remark',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
-          { title: '创建时间', dataIndex: 'createTime', hideInSearch: true },
+          { title: '创建时间', dataIndex: 'createTime', search: false },
           {
             title: '操作',
-            hideInSearch: true,
+            search: false,
             fixed: 'right',
             width: actionControl.rowAction.width,
             render: (_text, record) => [
@@ -114,7 +114,7 @@ const SystemDictDataIndex = () => {
       />
 
       <SystemDictDataEditModal {...actionControl.editModal} />
-    </div>
+    </PageContainer>
   );
 };
 

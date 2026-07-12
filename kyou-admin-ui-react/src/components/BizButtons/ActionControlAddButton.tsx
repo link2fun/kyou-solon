@@ -1,6 +1,6 @@
-import PermissionButton from '@/components/BizButtons/PermissionButton';
-import { UseActionControlReturnType } from '@/hooks/useActionControl';
 import { PlusOutlined } from '@ant-design/icons';
+import PermissionButton from '@/components/BizButtons/PermissionButton';
+import type { UseActionControlReturnType } from '@/hooks/useActionControl';
 
 interface ActionControlAddButtonProps {
   actionControl: UseActionControlReturnType;

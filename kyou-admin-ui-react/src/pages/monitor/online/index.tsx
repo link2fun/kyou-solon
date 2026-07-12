@@ -1,19 +1,20 @@
+import { LogoutOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { App } from 'antd';
 import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
 import useActionControl from '@/hooks/useActionControl';
 import ApiMonitorOnline from '@/services/monitor/ApiMonitorOnline';
-import { LogoutOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
-import { message } from 'antd';
 
 const MonitorOnlineIndex = () => {
+  const { message } = App.useApp();
   const actionControl = useActionControl({});
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params: any) => {
-          let data = await ApiMonitorOnline.list(params);
+          const data = await ApiMonitorOnline.list(params);
           return {
             data: data.rows,
             success: true,
@@ -26,28 +27,28 @@ const MonitorOnlineIndex = () => {
             title: '会话编号',
             dataIndex: 'tokenId',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
           { title: '登录名称', dataIndex: 'userName' },
-          { title: '所属部门', dataIndex: 'deptName', hideInSearch: true },
+          { title: '所属部门', dataIndex: 'deptName', search: false },
           { title: '主机', dataIndex: 'ipaddr' },
-          { title: '登录地点', dataIndex: 'loginLocation', hideInSearch: true },
+          { title: '登录地点', dataIndex: 'loginLocation', search: false },
           {
             title: '操作系统',
             dataIndex: 'os',
             ellipsis: true,
-            hideInSearch: true,
+            search: false,
           },
-          { title: '浏览器', dataIndex: 'browser', hideInSearch: true },
+          { title: '浏览器', dataIndex: 'browser', search: false },
           {
             title: '登录时间',
             dataIndex: 'loginTime',
             valueType: 'dateTime',
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '操作',
-            hideInSearch: true,
+            search: false,
             fixed: 'right',
             width: actionControl.rowAction.width,
             render: (_, record) => {
@@ -76,7 +77,7 @@ const MonitorOnlineIndex = () => {
           },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 };
 

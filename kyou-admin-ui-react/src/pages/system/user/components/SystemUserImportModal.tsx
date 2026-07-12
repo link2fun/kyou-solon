@@ -1,14 +1,14 @@
-import PermissionButton from '@/components/BizButtons/PermissionButton';
-import useLoadingState from '@/hooks/useLoadingState';
-import ApiSystemUser from '@/services/system/ApiSystemUser';
 import { DownloadOutlined, ImportOutlined } from '@ant-design/icons';
 import {
   ModalForm,
   ProFormCheckbox,
   ProFormUploadDragger,
 } from '@ant-design/pro-components';
-import { App, Button, UploadFile } from 'antd';
+import { App, Button, type UploadFile } from 'antd';
 import { useState } from 'react';
+import PermissionButton from '@/components/BizButtons/PermissionButton';
+import useLoadingState from '@/hooks/useLoadingState';
+import ApiSystemUser from '@/services/system/ApiSystemUser';
 
 const SystemUserImportModal = () => {
   const { modal } = App.useApp();
@@ -55,7 +55,7 @@ const SystemUserImportModal = () => {
           const { message: _message, msg } = e as any;
           const errMsg = _message || msg;
           // 拆分错误信息, 根据 <br/> 进行拆分成数组
-          let errArr: string[] = errMsg.split('<br/>');
+          const errArr: string[] = errMsg.split('<br/>');
 
           modal.warning({
             content: (

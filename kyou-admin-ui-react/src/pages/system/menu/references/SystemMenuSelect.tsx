@@ -1,7 +1,7 @@
-import ApiSystemMenu from '@/services/system/ApiSystemMenu';
-import { handleTree } from '@/utils/utils';
 import { ProFormTreeSelect } from '@ant-design/pro-components';
 import React from 'react';
+import ApiSystemMenu from '@/services/system/ApiSystemMenu';
+import { handleTree } from '@/utils/utils';
 
 const SystemMenuSelect: React.FC<any> = (props) => {
   const fetchData = async () => {
@@ -20,8 +20,6 @@ const SystemMenuSelect: React.FC<any> = (props) => {
           value: 'menuId',
           children: 'children',
         },
-        multiple: true,
-        treeCheckable: true,
       }}
       request={fetchData}
       {...props}

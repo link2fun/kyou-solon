@@ -1,3 +1,12 @@
+import { history } from '@@/core/history';
+import {
+  CloudDownloadOutlined,
+  EditOutlined,
+  EyeOutlined,
+  ImportOutlined,
+  SyncOutlined,
+} from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
 import useActionControl from '@/hooks/useActionControl';
@@ -6,9 +15,6 @@ import ToolGenPreviewModal from '@/pages/tool/gen/components/ToolGenPreviewModal
 import useToolGenPreview from '@/pages/tool/gen/hooks/useToolGenPreview';
 import useToolGenTableImport from '@/pages/tool/gen/hooks/useToolGenTableImport';
 import ApiToolGen from '@/services/tool/ApiToolGen';
-import { history } from '@@/core/history';
-import { CloudDownloadOutlined, EditOutlined, EyeOutlined, ImportOutlined, SyncOutlined } from '@ant-design/icons';
-import { ProTable } from '@ant-design/pro-components';
 
 const ToolGenIndex = () => {
   const actionControl = useActionControl({
@@ -26,7 +32,7 @@ const ToolGenIndex = () => {
   const tableImportModal = useToolGenTableImport(actionControl);
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (_params) => {
@@ -72,7 +78,7 @@ const ToolGenIndex = () => {
             title: '操作',
             valueType: 'option',
             key: 'option',
-            render: (text, record) => {
+            render: (_text, record) => {
               return (
                 <div>
                   <PermissionButton
@@ -89,7 +95,10 @@ const ToolGenIndex = () => {
                       history.push(`/tool/genEdit?tableId=${record.tableId}`);
                     }}
                   />
-                  <TableRowDelButton actionControl={actionControl} record={record} />
+                  <TableRowDelButton
+                    actionControl={actionControl}
+                    record={record}
+                  />
                   <PermissionButton
                     title={'同步'}
                     icon={<SyncOutlined />}
@@ -144,7 +153,7 @@ const ToolGenIndex = () => {
         onConditionChange={tableImportModal.modal.onConditionChange}
         onSubmit={tableImportModal.modal.onSubmit}
       />
-    </div>
+    </PageContainer>
   );
 };
 

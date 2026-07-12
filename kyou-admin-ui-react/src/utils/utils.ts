@@ -1,6 +1,6 @@
 // 从路由中读取 标签页的名称
 // import { pathToRegexp } from 'path-to-regexp';
-import { matchPath, RouteObject } from 'react-router';
+import { matchPath, type RouteObject } from 'react-router';
 
 export type RouteInfo = RouteObject & { name?: string; children?: RouteInfo[] };
 
@@ -18,7 +18,7 @@ export const getTabNameFromRouter = <T extends RouteInfo>(
   if (pathname === '/') {
     return '首页';
   }
-  let tabName: string | undefined = undefined;
+  let tabName: string | undefined;
 
   for (let i = 0; i < routers.length; i++) {
     const route = routers[i];
@@ -56,18 +56,18 @@ export function handleTree(
   parentId: string = 'parentId',
   children: string = 'children',
 ) {
-  let config = {
+  const config = {
     id: id || 'id',
     parentId: parentId || 'parentId',
     childrenList: children || 'children',
   };
 
-  let childrenListMap: any = {};
-  let nodeIds: any = {};
-  let tree: any = [];
+  const childrenListMap: any = {};
+  const nodeIds: any = {};
+  const tree: any = [];
 
-  for (let d of data) {
-    let parentId = d[config.parentId];
+  for (const d of data) {
+    const parentId = d[config.parentId];
     if (
       childrenListMap[parentId] === null ||
       childrenListMap[parentId] === undefined
@@ -78,8 +78,8 @@ export function handleTree(
     childrenListMap[parentId].push(d);
   }
 
-  for (let d of data) {
-    let parentId = d[config.parentId];
+  for (const d of data) {
+    const parentId = d[config.parentId];
     if (nodeIds[parentId] === null || nodeIds[parentId] === undefined) {
       tree.push(d);
     }
@@ -90,13 +90,13 @@ export function handleTree(
       o[config.childrenList] = childrenListMap[o[config.id]];
     }
     if (o[config.childrenList]) {
-      for (let c of o[config.childrenList]) {
+      for (const c of o[config.childrenList]) {
         adaptToChildrenList(c);
       }
     }
   }
 
-  for (let t of tree) {
+  for (const t of tree) {
     adaptToChildrenList(t);
   }
 

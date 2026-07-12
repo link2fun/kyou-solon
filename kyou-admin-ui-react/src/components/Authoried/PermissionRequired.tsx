@@ -1,5 +1,5 @@
 import { Access, useAccess } from '@umijs/max';
-import React, { memo, PropsWithChildren } from 'react';
+import React, { memo, type PropsWithChildren } from 'react';
 
 interface PermissionRequiredProps {
   /** 所需权限,eg: ['monitor:online:forceLogout'], 传 [] 的视作不需要权限 */
@@ -8,8 +8,8 @@ interface PermissionRequiredProps {
   fallback?: React.ReactNode;
 }
 
-const PermissionRequired: React.FC<PropsWithChildren<PermissionRequiredProps>> = memo(
-  ({ value = [], children, fallback = <></> }) => {
+const PermissionRequired: React.FC<PropsWithChildren<PermissionRequiredProps>> =
+  memo(({ value = [], children, fallback = <></> }) => {
     const access = useAccess();
 
     return (
@@ -17,8 +17,7 @@ const PermissionRequired: React.FC<PropsWithChildren<PermissionRequiredProps>> =
         {children}
       </Access>
     );
-  },
-);
+  });
 
 PermissionRequired.displayName = 'PermissionRequired';
 

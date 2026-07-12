@@ -1,7 +1,7 @@
-import { CommandStatus } from '@/pages/monitor/cache';
 import { JavaOutlined } from '@ant-design/icons';
 import { Pie } from '@ant-design/plots';
 import { ProCard } from '@ant-design/pro-components';
+import type { CommandStatus } from '@/pages/monitor/cache';
 
 interface CommandInfoProps {
   commandStatus?: CommandStatus[] | undefined;
@@ -27,7 +27,7 @@ const CommandInfo = ({ commandStatus = [] }: CommandInfoProps) => {
         colorField="name"
         data={
           (commandStatus || []).map((item) => {
-            return { name: item.name, value: parseInt(item.value) };
+            return { name: item.name, value: parseInt(item.value, 10) };
           }) as any
         }
         legend={false}

@@ -1,9 +1,9 @@
 // 全局共享数据示例
-import { DEFAULT_NAME } from '@/constants';
-// @ts-ignore
+
 import { history } from '@umijs/max';
 import { useGetState } from 'ahooks';
 import { useState } from 'react';
+import { DEFAULT_NAME } from '@/constants';
 
 export interface HeaderTab {
   // key === pathname
@@ -79,8 +79,7 @@ const useUser = () => {
     // 全新的页签，直接添加到 headerTabs 中
     const { search, ...restProp } = payload;
     const newTab: HeaderTab = {
-      search:
-        search && search[0] && (search[0] === '?' ? search : `?${search}`),
+      search: search ? (search[0] === '?' ? search : `?${search}`) : '',
       queryParams: {},
       ...restProp,
     };
@@ -125,8 +124,7 @@ const useUser = () => {
     // 全新的页签，直接添加到 headerTabs 中
     const { search, ...restProp } = payload;
     const newTab: HeaderTab = {
-      search:
-        search && search[0] && (search[0] === '?' ? search : `?${search}`),
+      search: search ? (search[0] === '?' ? search : `?${search}`) : '',
       ...restProp,
     };
     const headerTabState = getHeaderTabState();
@@ -176,13 +174,13 @@ const useUser = () => {
       setHeaderTabState({
         ...headerTabState,
         headerTabs: newTabs,
-        headerTabsActiveKey: activeTab && activeTab.key,
+        headerTabsActiveKey: activeTab?.key,
       });
 
       // 延迟切换路由, 确保标签页状态先发生变化, 不然会导致标签页状态未更新
       setTimeout(() => {
-        history.push(`${activeTab.pathname}${activeTab.search}`);
-      }, 100);
+        history.push(`${activeTab.pathname ?? ''}${activeTab.search ?? ''}`);
+      }, 1);
     }
   };
 

@@ -1,6 +1,6 @@
-import { UseTableRowSelectionReturnType } from '@/hooks/useTableRowSelection';
 import { ProTable } from '@ant-design/pro-components';
 import { Modal } from 'antd';
+import type { UseTableRowSelectionReturnType } from '@/hooks/useTableRowSelection';
 
 interface TableGenTableImportModalProps {
   open?: boolean;
@@ -24,7 +24,7 @@ const TableGenTableImportModal = ({
       open={open}
       width={'80vw'}
       className={'h-96'}
-      destroyOnClose={true}
+      destroyOnHidden={true}
       title={'导入表结构'}
       onCancel={onCancel}
       onOk={onSubmit}
@@ -49,21 +49,21 @@ const TableGenTableImportModal = ({
             title: '实体',
             dataIndex: 'className',
             key: 'className',
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '创建时间',
             dataIndex: 'createTime',
             key: 'createTime',
             valueType: 'dateTime',
-            hideInSearch: true,
+            search: false,
           },
           {
             title: '更新时间',
             dataIndex: 'updateTime',
             key: 'updateTime',
             valueType: 'dateTime',
-            hideInSearch: true,
+            search: false,
           },
         ]}
       />

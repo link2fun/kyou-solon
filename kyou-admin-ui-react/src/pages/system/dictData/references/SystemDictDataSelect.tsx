@@ -1,7 +1,7 @@
-import type { DictValue } from '@/hooks/useDict';
-import useDict from '@/hooks/useDict';
 import { Select } from 'antd';
 import React from 'react';
+import type { DictValue } from '@/hooks/useDict';
+import useDict from '@/hooks/useDict';
 
 interface SystemDictValueSelectProps {
   typeCode: string;
@@ -23,7 +23,7 @@ const SystemDictDataSelect: React.FC<SystemDictValueSelectProps> = ({
   readonly = false,
   valueInLabel = true,
 }) => {
-  const [selectDs] = useDict(typeCode);
+  const { dict: selectDs } = useDict({ typeCode, valueInLabel });
 
   if (readonly) {
     const dictValue = (selectDs || []).find(

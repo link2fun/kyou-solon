@@ -1,7 +1,7 @@
-import UserTool from '@/utils/UserTool';
-import { App, Button, message, Upload } from 'antd';
-import { ButtonProps } from 'antd/es/button';
+import { App, Button, Upload } from 'antd';
+import type { ButtonProps } from 'antd/es/button';
 import React, { memo } from 'react';
+import UserTool from '@/utils/UserTool';
 
 interface UploadButtonProps {
   /** 上传字段名称 */
@@ -36,7 +36,7 @@ const UploadButton: React.FC<UploadButtonProps> = memo(
     onUploadError = () => {},
     headers = {},
   }) => {
-    const { modal } = App.useApp();
+    const { modal, message } = App.useApp();
 
     const handleChange = (info: any) => {
       const { file } = info;
@@ -48,7 +48,9 @@ const UploadButton: React.FC<UploadButtonProps> = memo(
       }
 
       if (status === 'error') {
-        message.error('文件上传出错，请手动刷新页面(按 Ctrl/Command + F5 )后重试');
+        message.error(
+          '文件上传出错，请手动刷新页面(按 Ctrl/Command + F5 )后重试',
+        );
         setLoading(false);
         return;
       }

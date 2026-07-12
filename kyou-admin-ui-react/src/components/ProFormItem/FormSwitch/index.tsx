@@ -1,4 +1,4 @@
-import { Switch as AntdSwitch, SwitchProps } from 'antd';
+import { Switch as AntdSwitch, type SwitchProps } from 'antd';
 import React from 'react';
 
 type CusSwitchProps = SwitchProps & {

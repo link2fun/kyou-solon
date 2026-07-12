@@ -1,9 +1,3 @@
-import EditModalForm from '@/components/EditModalForm';
-import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
-import SystemDeptTreeSelect from '@/pages/system/dept/references/SystemDeptTreeSelect';
-import SystemPostSelect from '@/pages/system/post/references/SystemPostSelect';
-import SystemRoleSelect from '@/pages/system/role/references/SystemRoleSelect';
-import { EditModalProps } from '@/typing';
 import {
   ProFormItem,
   ProFormSelect,
@@ -11,6 +5,12 @@ import {
   ProFormTextArea,
 } from '@ant-design/pro-components';
 import React from 'react';
+import EditModalForm from '@/components/EditModalForm';
+import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
+import SystemDeptTreeSelect from '@/pages/system/dept/references/SystemDeptTreeSelect';
+import SystemPostSelect from '@/pages/system/post/references/SystemPostSelect';
+import SystemRoleSelect from '@/pages/system/role/references/SystemRoleSelect';
+import type { EditModalProps } from '@/typing';
 
 const SystemUserEditModal: React.FC<EditModalProps> = (props) => {
   return (

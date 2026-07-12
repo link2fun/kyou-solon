@@ -1,17 +1,21 @@
-import { RouteInfo } from '@/utils/utils';
 import { history, matchRoutes, useModel } from '@umijs/max';
 import { ConfigProvider, Tabs } from 'antd';
 import React, { useContext, useLayoutEffect } from 'react';
 import { UNSAFE_RouteContext } from 'react-router';
+import type { RouteInfo } from '@/utils/utils';
 
 const HeaderTabs: React.FC = () => {
   // 从全局数据中获取 标签页state 和相关操作方法
-  const { getHeaderTabState, closeTab, switchTab, openTab } = useModel('global');
+  const { getHeaderTabState, closeTab, switchTab, openTab } =
+    useModel('global');
 
   const { matches } = useContext(UNSAFE_RouteContext);
 
   /** 对于标签页的操作, 目前只监听 remove 事件, 当触发该事件时, 从全局数据中删除对应的标签页 */
-  const onEditTab = (e: React.MouseEvent | React.KeyboardEvent | string, action: 'add' | 'remove') => {
+  const onEditTab = (
+    e: React.MouseEvent | React.KeyboardEvent | string,
+    action: 'add' | 'remove',
+  ) => {
     if (action === 'remove') {
       closeTab({ key: e as string });
     }
@@ -21,12 +25,14 @@ const HeaderTabs: React.FC = () => {
 
   /** 设置当前激活的标签页 */
   const setActiveKey = (key: string) => {
-    const activeTab = getHeaderTabState().headerTabs.find((tab) => tab.key === key);
+    const activeTab = getHeaderTabState().headerTabs.find(
+      (tab) => tab.key === key,
+    );
     if (!activeTab) {
       // 如果从state中没有找到对应的标签页, 则不进行跳转, 防止出现异常
       return;
     }
-    history.push(`${activeTab.pathname}${activeTab.search}`);
+    history.push(`${activeTab.pathname ?? ''}${activeTab.search ?? ''}`);
     const newTab = {
       key: activeTab.key,
       pathname: activeTab.pathname,
@@ -44,8 +50,10 @@ const HeaderTabs: React.FC = () => {
     const matchedRoute = matchRoutes(routes, pathname);
 
     // matchedRoute 是一个数组， 取最后一个 里面的 route.name
-    let _title =
-      matchedRoute && matchedRoute.length > 0 && (matchedRoute[matchedRoute.length - 1].route as RouteInfo)?.name;
+    const _title =
+      matchedRoute &&
+      matchedRoute.length > 0 &&
+      (matchedRoute[matchedRoute.length - 1].route as RouteInfo)?.name;
 
     const newTab = {
       key: pathname,
@@ -71,7 +79,7 @@ const HeaderTabs: React.FC = () => {
           className="tab-contents"
           type="editable-card"
           hideAdd
-          tabPosition="top"
+          tabPlacement="top"
           tabBarStyle={{}}
           activeKey={getHeaderTabState().headerTabsActiveKey}
           onTabClick={setActiveKey}

@@ -1,3 +1,4 @@
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import ActionControlAddButton from '@/components/BizButtons/ActionControlAddButton';
 import TableRowDelButton from '@/components/BizButtons/TableRowDelButton';
 import TableRowEditButton from '@/components/BizButtons/TableRowEditButton';
@@ -5,7 +6,6 @@ import useActionControl from '@/hooks/useActionControl';
 import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
 import SystemNoticeEditModal from '@/pages/system/notice/components/SystemNoticeEditModal';
 import ApiSystemNotice from '@/services/system/ApiSystemNotice';
-import { ProTable } from '@ant-design/pro-components';
 
 const SystemNoticeIndex = () => {
   const actionControl = useActionControl({
@@ -22,7 +22,7 @@ const SystemNoticeIndex = () => {
   });
 
   return (
-    <div>
+    <PageContainer>
       <ProTable
         {...actionControl.table}
         request={async (params) => {
@@ -88,7 +88,7 @@ const SystemNoticeIndex = () => {
       />
 
       <SystemNoticeEditModal {...actionControl.editModal} />
-    </div>
+    </PageContainer>
   );
 };
 

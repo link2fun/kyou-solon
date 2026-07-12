@@ -1,6 +1,5 @@
 import '@wangeditor/editor/dist/css/style.css'; // 引入 css
-
-import { IDomEditor, IToolbarConfig } from '@wangeditor/core';
+import type { IDomEditor, IToolbarConfig } from '@wangeditor/editor';
 import { Editor, Toolbar } from '@wangeditor/editor-for-react';
 import React, { useEffect, useState } from 'react';
 

@@ -1,25 +1,25 @@
-@import 'highlight.js/scss/solarized-light.scss';
+/* 全局样式（从旧 global.less 迁移，适配 antd v6 类名变化） */
 
+/* ==================== HeaderTabs 多标签页样式 ==================== */
 #layout-opened-tabs {
   position: absolute;
   z-index: 999;
-  // top: 56px;
   left: 0;
   right: 0;
   height: 48px;
-  margin-top: 0px;
+  margin-top: 0;
   margin-bottom: 8px;
-  margin-left: 0px;
+  margin-left: 0;
   padding-top: 0;
-  padding-bottom: -2px;
   overflow: hidden;
   background-color: #fafafa;
 
-
-  .ant-tabs-top >.ant-tabs-nav::before{
+  /* antd v6: .ant-tabs-bar 已移除，改用 .ant-tabs-nav */
+  .ant-tabs-top > .ant-tabs-nav::before {
     border-bottom: 1px solid #ccc;
     box-shadow: 0 1px 1px #ccc;
   }
+
   .ant-tabs-tabpane {
     display: none;
   }
@@ -27,13 +27,12 @@
   .ant-tabs-nav {
     position: relative;
     height: 44px;
-    padding-right: 10px; // 给右边一点距离, 防止操作区域一直抖动
+    padding-right: 10px;
 
     .ant-tabs-tab {
       margin-bottom: 4px;
       background-color: inherit;
       border: none;
-      //padding-left: 4px;
 
       .ant-tabs-tab-remove {
         padding-right: 0;
@@ -67,7 +66,9 @@
         width: 0;
         height: 3px;
         opacity: 0;
-        transition: width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.1s cubic-bezier(0.645, 0.045, 0.355, 1);
+        transition:
+          width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1),
+          opacity 0.1s cubic-bezier(0.645, 0.045, 0.355, 1);
         content: '';
       }
 
@@ -85,13 +86,6 @@
         }
       }
     }
-  }
-
-  .ant-tabs-bar {
-    margin: 16px 0 0;
-    border-bottom: none;
-    outline: none;
-    transition: padding 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
   }
 
   .ant-tabs-tab {
@@ -113,31 +107,10 @@
   }
 }
 
-// 媒体查询, 小屏幕时减少边距
-// @media screen and (max-width: 1024px) {
-//   .ant-pro-layout .ant-pro-layout-content {
-//     padding-block: 4px;
-//     padding-block-start: 0px;
-//     padding-inline: 5px;
-//     overflow-y: auto;
-//   }
-
-//   .ant-pro-card .ant-pro-card-body {
-//     padding-inline: 6px;
-//     padding-block: 4px;
-//   }
-
-//   div.ant-table-wrapper .ant-table.ant-table-small td.ant-table-cell {
-//     padding: 2px;
-//   }
-// }
-
-// 减少默认情况下的边距, 适应更多内容
+/* ==================== 布局内容边距调整 ==================== */
 .ant-pro-layout .ant-pro-layout-content {
   padding-block: 2px;
-  // padding-block-start: 0px;
   padding-inline: 16px;
-  // height: calc(100vh - 104px);
   overflow-y: auto;
 }
 
