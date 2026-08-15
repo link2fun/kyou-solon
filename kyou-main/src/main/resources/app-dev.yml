@@ -6,7 +6,7 @@ kyou:
     redis:
         config: |
             singleServerConfig:
-              address: "redis://127.0.0.1:6379"
+              address: "redis://127.0.0.1:6679"
               database: 15
 
 
