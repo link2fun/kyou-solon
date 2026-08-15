@@ -44,7 +44,7 @@ public class SystemNoticeController extends BaseController {
   @SaCheckPermission("system:notice:query")
   @Mapping(value = "/{noticeId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long noticeId) {
-    return success(noticeService.selectNoticeById(noticeId));
+    return successData(noticeService.selectNoticeById(noticeId));
   }
 
   /**

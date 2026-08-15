@@ -36,7 +36,7 @@ public class SystemMenuController extends BaseController {
   @Mapping(value = "/list", method = MethodType.GET)
   public AjaxResult list(SysMenu menu) {
     List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());
-    return success(menus);
+    return successData(menus);
   }
 
   /**
@@ -45,7 +45,7 @@ public class SystemMenuController extends BaseController {
   @SaCheckPermission("system:menu:query")
   @Mapping(value = "/{menuId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long menuId) {
-    return success(menuService.selectMenuById(menuId));
+    return successData(menuService.selectMenuById(menuId));
   }
 
   /**
@@ -54,7 +54,7 @@ public class SystemMenuController extends BaseController {
   @Mapping(value = "/treeselect", method = MethodType.GET)
   public AjaxResult treeselect(SysMenu menu) {
     List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());
-    return success(menuService.buildMenuTreeSelect(menus));
+    return successData(menuService.buildMenuTreeSelect(menus));
   }
 
   /**

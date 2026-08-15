@@ -24,6 +24,6 @@ public class MonitorServerController {
   public AjaxResult serverInfo() throws Exception {
     Server server = new Server();
     server.copyTo();
-    return AjaxResult.success(server);
+    return AjaxResult.successData(server);
   }
 }

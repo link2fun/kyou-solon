@@ -62,7 +62,7 @@ public class GenController extends BaseController {
     map.put("info", table);
     map.put("rows", tableColumnList);
     map.put("tables", tables);
-    return success(map);
+    return successData(map);
   }
 
   /**
@@ -132,7 +132,7 @@ public class GenController extends BaseController {
   @Mapping(value = "/preview/{tableId}", method = MethodType.GET)
   public AjaxResult preview(@Path("tableId") Long tableId) {
     Map<String, String> dataMap = genTableService.previewCode(tableId);
-    return success(dataMap);
+    return successData(dataMap);
   }
 
   /**

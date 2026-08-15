@@ -82,7 +82,7 @@ public class SystemRoleController extends BaseController {
   public AjaxResult getInfo(@Path Long roleId) {
     roleService.checkRoleDataScope(roleId);
     SysRoleDetailDTO role = roleService.selectRoleById(roleId, SysRoleDetailDTO.class);
-    return success(role);
+    return successData(role);
   }
 
   /**
@@ -171,7 +171,7 @@ public class SystemRoleController extends BaseController {
   @Mapping(value = "/optionselect", method = MethodType.GET)
   public AjaxResult optionselect() {
     ActionContext context = ActionContext.current();
-    return success(roleService.selectRoleAll(context));
+    return successData(roleService.selectRoleAll(context));
   }
 
   /**

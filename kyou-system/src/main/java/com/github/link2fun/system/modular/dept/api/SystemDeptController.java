@@ -41,7 +41,7 @@ public class SystemDeptController extends BaseController {
     final ActionContext context = ActionContext.current();
     List<SysDept> deptList = deptService.selectDeptList(context,dept);
 
-    return success(deptList);
+    return successData(deptList);
   }
 
   /**
@@ -53,7 +53,7 @@ public class SystemDeptController extends BaseController {
 
     List<SysDept> deptList = deptService.selectDeptList(ActionContext.current(), new SysDept());
     deptList.removeIf(d -> d.getDeptId().intValue() == deptId || CollectionUtil.contains(StringUtils.split(d.getAncestors(), ","), deptId + ""));
-    return success(deptList);
+    return successData(deptList);
   }
 
   /**
@@ -65,7 +65,7 @@ public class SystemDeptController extends BaseController {
   public AjaxResult getInfo(@Path Long deptId) {
     final ActionContext context = ActionContext.current();
     deptService.checkDeptDataScope(context,deptId);
-    return success(deptService.selectDeptById(deptId));
+    return successData(deptService.selectDeptById(deptId));
   }
 
   /**

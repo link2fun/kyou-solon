@@ -56,7 +56,7 @@ public class SystemDictDataController extends BaseController {
   @SaCheckPermission("system:dict:query")
   @Mapping(value = "/{dictCode}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long dictCode) {
-    return success(dictDataService.selectDictDataById(dictCode));
+    return successData(dictDataService.selectDictDataById(dictCode));
   }
 
   /**
@@ -68,7 +68,7 @@ public class SystemDictDataController extends BaseController {
     if (StringUtils.isNull(data)) {
       data = new ArrayList<>();
     }
-    return success(data);
+    return successData(data);
   }
 
   /**
