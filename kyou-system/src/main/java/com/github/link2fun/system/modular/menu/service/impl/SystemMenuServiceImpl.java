@@ -400,8 +400,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
         menu.status().eq(UserConstants.NORMAL);
       })
       .orderBy(menu -> {
-        menu.parentId();
-        menu.orderNum();
+        menu.parentId().asc();
+        menu.orderNum().asc();
       })
       .toList();
   }
