@@ -65,7 +65,7 @@ public class SystemGroupController extends BaseController {
   @SaCheckPermission("system.group.query")
   @Mapping(value = "/{groupId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long groupId) {
-    return success(groupService.getById(groupId));
+    return successData(groupService.getById(groupId));
   }
 
 
@@ -107,7 +107,7 @@ public class SystemGroupController extends BaseController {
   /** 群组选择框列表 */
   @Mapping(value = "/optionSelect", method = MethodType.GET)
   public AjaxResult optionSelect() {
-    return success(entityQuery.queryable(SysGroup.class).toList());
+    return successData(entityQuery.queryable(SysGroup.class).toList());
   }
 
 

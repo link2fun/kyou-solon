@@ -93,6 +93,6 @@ public class SysLoginController {
   public AjaxResult getRouters() {
     Long userId = SecurityUtils.getUserId();
     List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
-    return AjaxResult.success(menuService.buildMenus(menus));
+    return AjaxResult.successData(menuService.buildMenus(menus));
   }
 }

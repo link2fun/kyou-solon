@@ -54,7 +54,7 @@ public class SystemPostController extends BaseController {
   @SaCheckPermission("system:post:query")
   @Mapping(value = "/{postId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long postId) {
-    return success(postService.selectPostById(postId));
+    return successData(postService.selectPostById(postId));
   }
 
   /**
@@ -105,6 +105,6 @@ public class SystemPostController extends BaseController {
   @Mapping(value = "/optionselect", method = MethodType.GET)
   public AjaxResult optionselect() {
     List<SysPost> posts = postService.selectPostAll();
-    return success(posts);
+    return successData(posts);
   }
 }

@@ -90,20 +90,20 @@ public class MonitorCacheController {
       pieList.add(data);
     });
     result.put("commandStats", pieList);
-    return AjaxResult.success(result);
+    return AjaxResult.successData(result);
   }
 
   @SaCheckPermission("monitor:cache:list")
   @Mapping(value = "/getNames", method = MethodType.GET)
   public AjaxResult cache() {
-    return AjaxResult.success(caches);
+    return AjaxResult.successData(caches);
   }
 
   @SaCheckPermission("monitor:cache:list")
   @Mapping(value = "/getKeys/{cacheName}", method = MethodType.GET)
   public AjaxResult getCacheKeys(@Path String cacheName) {
     Iterable<String> cacheKeys = redisCache.keys(cacheName + "*");
-    return AjaxResult.success(cacheKeys);
+    return AjaxResult.successData(cacheKeys);
   }
 
   @SaCheckPermission("monitor:cache:list")
@@ -112,7 +112,7 @@ public class MonitorCacheController {
 
     Object cacheValue = redisCache.get(cacheKey);
     SysCache sysCache = new SysCache(cacheName, cacheKey, JSONUtil.toJsonStr(cacheValue));
-    return AjaxResult.success(sysCache);
+    return AjaxResult.successData(sysCache);
   }
 
   @SaCheckPermission("monitor:cache:list")

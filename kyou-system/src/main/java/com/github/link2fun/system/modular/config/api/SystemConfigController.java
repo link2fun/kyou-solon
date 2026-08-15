@@ -57,7 +57,7 @@ public class SystemConfigController extends BaseController {
   public AjaxResult getInfo(@Path Integer configId) {
     ActionContext context = ActionContext.current();
     SysConfig config = configService.findOneByConfigId(context, configId, SysConfig.class);
-    return success(config);
+    return successData(config);
   }
 
   /**
@@ -65,7 +65,7 @@ public class SystemConfigController extends BaseController {
    */
   @Mapping(value = "/configKey/{configKey}", method = MethodType.GET)
   public AjaxResult getConfigKey(@Path String configKey) {
-    return success(configService.selectConfigByKey(configKey));
+    return successData(configService.selectConfigByKey(configKey));
   }
 
   /**

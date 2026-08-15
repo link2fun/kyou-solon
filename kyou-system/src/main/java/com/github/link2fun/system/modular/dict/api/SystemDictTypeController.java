@@ -52,7 +52,7 @@ public class SystemDictTypeController extends BaseController {
   @SaCheckPermission("system:dict:query")
   @Mapping(value = "/{dictId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long dictId) {
-    return success(dictTypeService.selectDictTypeById(dictId));
+    return successData(dictTypeService.selectDictTypeById(dictId));
   }
 
   /**
@@ -111,6 +111,6 @@ public class SystemDictTypeController extends BaseController {
   @Mapping(value = "/optionselect", method = MethodType.GET)
   public AjaxResult optionselect() {
     List<SysDictType> dictTypes = dictTypeService.selectDictTypeAll();
-    return success(dictTypes);
+    return successData(dictTypes);
   }
 }

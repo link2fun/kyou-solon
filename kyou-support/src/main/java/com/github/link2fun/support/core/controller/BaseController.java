@@ -51,15 +51,15 @@ public class BaseController {
   /**
    * 返回成功消息
    */
-  public AjaxResult success(String message) {
-    return AjaxResult.success(message);
+  public AjaxResult successMessage(String message) {
+    return AjaxResult.successMessage(message);
   }
 
   /**
    * 返回成功消息
    */
-  public AjaxResult success(Object data) {
-    return AjaxResult.success(data);
+  public AjaxResult successData(Object data) {
+    return AjaxResult.successData(data);
   }
 
   /**

@@ -512,7 +512,7 @@ public class ExcelUtil<T> {
       out = new FileOutputStream(getAbsoluteFile(filename));
 
       wb.write(Context.current().outputStream());
-      return AjaxResult.success(filename);
+      return AjaxResult.successData(filename);
     } catch (Exception e) {
       log.error("导出Excel异常{}", e.getMessage());
       throw new UtilException("导出Excel失败，请联系网站管理员！");

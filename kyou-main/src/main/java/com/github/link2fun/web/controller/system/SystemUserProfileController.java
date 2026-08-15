@@ -45,7 +45,7 @@ public class SystemUserProfileController extends BaseController {
   public AjaxResult profile() {
     SessionUser currentUser = getCurrentUser();
     SysUserDTO user = currentUser.getUser();
-    AjaxResult ajax = AjaxResult.success(user);
+    AjaxResult ajax = AjaxResult.successData(user);
     ajax.put("roleGroup", userService.selectUserRoleGroup(currentUser.getUsername()));
     ajax.put("postGroup", userService.selectUserPostGroup(currentUser.getUsername()));
     return ajax;

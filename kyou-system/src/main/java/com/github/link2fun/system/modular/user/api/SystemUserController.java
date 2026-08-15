@@ -87,7 +87,7 @@ public class SystemUserController extends BaseController {
     List<SysUserDTO> userList = util.importExcel(file.getContent());
     String operName = getUsername();
     String message = userService.importUser(context, userList, updateSupport, operName);
-    return success(message);
+    return successMessage(message);
   }
 
   @Mapping(value = "/importTemplate", method = MethodType.POST)
@@ -130,7 +130,7 @@ public class SystemUserController extends BaseController {
   public AjaxResult add(@Validated @Body SysUserReq.AddReq addReq) {
     addReq.setCreateBy(getUsername());
     Long userId = userService.insertUser(addReq);
-    return AjaxResult.success(userId);
+    return AjaxResult.successData(userId);
   }
 
   /**
@@ -238,6 +238,6 @@ public class SystemUserController extends BaseController {
   @Mapping(value = "/deptTree", method = MethodType.GET)
   public AjaxResult deptTree(SysDept dept) {
 
-    return success(deptService.selectDeptTreeList(ActionContext.current(), dept));
+    return successData(deptService.selectDeptTreeList(ActionContext.current(), dept));
   }
 }

@@ -61,7 +61,7 @@ public class SysJobController extends BaseController {
   @SaCheckPermission(value = {"monitor:job:query"})
   @Mapping(value = "/{jobId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path("jobId") Long jobId) {
-    return success(jobService.selectJobById(jobId));
+    return successData(jobService.selectJobById(jobId));
   }
 
   /**
