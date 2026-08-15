@@ -1,4 +1,3 @@
-
 kyou:
     # 上传路径
     profile: /app/apps/kyou/profile
@@ -6,7 +5,7 @@ kyou:
     redis:
         config: |
             singleServerConfig:
-              address: "redis://127.0.0.1:6379"
+              address: "redis://127.0.0.1:6679"
               database: 15
 
 # 数据源
@@ -14,6 +13,6 @@ datasource:
     default:
         type: com.zaxxer.hikari.HikariDataSource
         driverClassName: com.mysql.cj.jdbc.Driver
-        jdbcUrl: jdbc:mysql://127.0.0.1:3306/kyou_solon?useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&rewriteBatchedStatements=true
+        jdbcUrl: jdbc:mysql://127.0.0.1:3606/kyou_solon?useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&rewriteBatchedStatements=true
         username: kyou
         password: kyou_pass

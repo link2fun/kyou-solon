@@ -22,9 +22,9 @@ docker-compose up -d
 
 | 服务 | Host | Port | 数据库/用户 | 密码 |
 |------|------|------|------------|------|
-| MySQL | 127.0.0.1 | 3306 | kyou_solon / kyou | kyou_pass |
-| MySQL root | 127.0.0.1 | 3306 | - / root | root |
-| Redis | 127.0.0.1 | 6379 | - | 无 |
+| MySQL | 127.0.0.1 | 3606 | kyou_solon / kyou | kyou_pass |
+| MySQL root | 127.0.0.1 | 3606 | - / root | root |
+| Redis | 127.0.0.1 | 6679 | - | 无 |
 
 ## 常用命令
 
@@ -46,21 +46,21 @@ docker-compose up -d
 
 ## 应用配置
 
-启动 Docker 后，在项目中创建 `app-local.yml`（已被 .gitignore 忽略）连接容器：
+启动 Docker 后，在项目中创建 `app-local.yml`（已被 .gitignore 忽略）连接容器。端口以 `.env.example` 为准，如你在 `.env` 中修改过端口，请相应调整：
 
 ```yaml
 kyou:
   redis:
     config: |
       singleServerConfig:
-        address: "redis://127.0.0.1:6379"
+        address: "redis://127.0.0.1:6679"
         database: 15
 
 datasource:
   default:
     type: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-    jdbcUrl: jdbc:mysql://127.0.0.1:3306/kyou_solon?useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&rewriteBatchedStatements=true
+    jdbcUrl: jdbc:mysql://127.0.0.1:3606/kyou_solon?useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&rewriteBatchedStatements=true
     username: kyou
     password: kyou_pass
 ```
