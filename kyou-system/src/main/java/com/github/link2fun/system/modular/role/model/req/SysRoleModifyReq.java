@@ -35,6 +35,7 @@ public class SysRoleModifyReq {
   private String remark;
 
 
+  @SuppressWarnings("EasyQueryFieldMissMatch")
   private List<Long> menuIds;
 
 
