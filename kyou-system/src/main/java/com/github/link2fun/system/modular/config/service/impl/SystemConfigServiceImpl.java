@@ -140,14 +140,11 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * @param config 参数配置信息
    * @return 结果
    */
+  @Tran
   @Override
   public long insertConfig(final SysConfig config) {
     // 查询数据库中是否有该参数
-    final SysConfig sysConfig = entityQuery.queryable(SysConfig.class)
-        .where(_config -> _config.configKey().eq(config.getConfigKey())).singleOrNull();
-    if (StringUtils.isNotNull(sysConfig)) {
-      throw new ServiceException(StrUtil.format("参数键名{}已存在", config.getConfigKey()));
-    }
+    checkConfigKeyUnique("新增",config);
     final long row = entityQuery.insertable(config).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
     if (row > 0) {
       ConfigContext.put(config.getConfigKey(), config.getConfigValue());
@@ -161,8 +158,10 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * @param config 参数配置信息
    * @return 结果
    */
+  @Tran
   @Override
   public long updateConfig(final SysConfig config) {
+    checkConfigKeyUnique("修改", config);
     // final SysConfig temp = getById(config.getConfigId());
     final SysConfig temp = entityQuery.queryable(SysConfig.class)
         .whereById(config.getConfigId()).singleOrNull();
@@ -208,19 +207,17 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
   }
 
   /**
-   * 校验参数键名是否唯一
+   * 校验参数键名唯一性, 不唯一时抛出业务异常
    *
+   * @param action 操作描述(如 "新增"/"修改"), 用于拼接错误文案
    * @param config 参数信息
-   * @return 结果
    */
-  @Override
-  public boolean checkConfigKeyUnique(final SysConfig config) {
+  private void checkConfigKeyUnique(final String action, final SysConfig config) {
     final SysConfig info = entityQuery.queryable(SysConfig.class)
         .where(_config -> _config.configKey().eq(config.getConfigKey())).singleOrNull();
     if (Objects.nonNull(info) && !Objects.equals(info.getConfigId(), config.getConfigId())) {
-      return UserConstants.NOT_UNIQUE;
+      throw new ServiceException(action + "参数'" + config.getConfigName() + "'失败，参数键名已存在");
     }
-    return UserConstants.UNIQUE;
   }
 
   @Override

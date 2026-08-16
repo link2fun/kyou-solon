@@ -115,12 +115,5 @@ public interface IGenTableService  {
    */
   byte[] downloadCode(String[] tableNames);
 
-  /**
-   * 修改保存参数校验
-   *
-   * @param genTable 业务信息
-   */
-  void validateEdit(GenTable genTable) throws JsonProcessingException;
-
   GenTable selectGenTableByName(String tableName);
 }

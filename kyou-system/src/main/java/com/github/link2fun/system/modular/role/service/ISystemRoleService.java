@@ -62,32 +62,8 @@ public interface ISystemRoleService {
   <T> T selectRoleById(Long roleId, Class<T> resultClass);
 
   /**
-   * 校验角色名称是否唯一
-   *
-   * @param roleName 角色信息
-   * @param roleId 角色ID
-   * @return 结果
-   */
-  boolean isRoleNameUnique(String roleName, Long roleId);
-
-  /**
-   * 校验角色权限是否唯一
-   *
-   * @param roleKey
-   * @param roleId  TODO
-   * @return 结果
-   */
-  boolean isRoleKeyUnique(String roleKey, Long roleId);
-
-  /**
-   * 校验角色是否允许操作
-   *
-   * @param roleId 角色信息
-   */
-  void checkRoleAllowed(Long roleId);
-
-  /**
    * 校验角色是否有数据权限
+   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成</p>
    *
    * @param roleId 角色id
    */
@@ -102,7 +78,7 @@ public interface ISystemRoleService {
   long countUserRoleByRoleId(Long roleId);
 
   /**
-   * 新增保存角色信息
+   * 新增保存角色信息(内部已完成名称/权限字符唯一性检查)
    *
    * @param role 角色信息
    * @return 结果
@@ -110,7 +86,7 @@ public interface ISystemRoleService {
   long insertRole(SysRoleAddReq role);
 
   /**
-   * 修改保存角色信息
+   * 修改保存角色信息(内部已完成操作权限/数据权限/唯一性检查)
    *
    * @param modifyReq 角色信息
    * @return 结果
@@ -118,7 +94,7 @@ public interface ISystemRoleService {
   long updateRole(SysRoleModifyReq modifyReq);
 
   /**
-   * 修改角色状态
+   * 修改角色状态(内部已完成操作权限/数据权限检查)
    *
    * @param changeStatusReq 角色信息
    * @return 结果
@@ -126,7 +102,7 @@ public interface ISystemRoleService {
   long changeRoleStatus(SysRoleChangeStatusReq changeStatusReq);
 
   /**
-   * 修改数据权限信息
+   * 修改数据权限信息(内部已完成操作权限/数据权限检查)
    *
    * @param changeDataScopeReq 修改数据权限请求
    * @return 结果
@@ -154,7 +130,7 @@ public interface ISystemRoleService {
   boolean deleteAuthUsers(Long roleId, List<Long> userIds);
 
   /**
-   * 批量选择授权用户角色
+   * 批量选择授权用户角色(内部已完成数据权限检查)
    *
    * @param roleId  角色ID
    * @param userIds 需要删除的用户数据ID

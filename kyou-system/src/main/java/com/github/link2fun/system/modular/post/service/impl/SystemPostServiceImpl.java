@@ -4,13 +4,14 @@ import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
-import com.github.link2fun.support.constant.UserConstants;
-import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.domain.entity.SysPost;
-import com.github.link2fun.system.modular.post.service.ISystemPostService;
 import com.github.link2fun.support.core.domain.entity.SysUserPost;
+import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.support.exception.ServiceException;
+import com.github.link2fun.system.modular.post.service.ISystemPostService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
+import org.noear.solon.data.annotation.Tran;
 
 import java.util.List;
 import java.util.Objects;
@@ -103,37 +104,25 @@ public class SystemPostServiceImpl implements ISystemPostService {
   }
 
   /**
-   * 校验岗位名称
+   * 校验岗位名称/编码在系统中是否唯一, 不唯一时抛出业务异常
    *
-   * @param post 岗位信息
-   * @return 结果
+   * @param action 操作描述(如 "新增"/"修改"), 用于拼接错误文案
+   * @param post   岗位信息
    */
-  @Override
-  public boolean checkPostNameUnique(final SysPost post) {
-    final SysPost temp = entityQuery.queryable(SysPost.class)
+  private void checkPostFieldUnique(final String action, final SysPost post) {
+    final String prefix = action + "岗位'" + post.getPostName() + "'失败，";
+    final SysPost sameName = entityQuery.queryable(SysPost.class)
       .where(_post -> _post.postName().eq(post.getPostName()))
       .singleOrNull();
-    if (Objects.nonNull(temp) && !Objects.equals(temp.getPostId(), post.getPostId())) {
-      return UserConstants.NOT_UNIQUE;
+    if (Objects.nonNull(sameName) && !Objects.equals(sameName.getPostId(), post.getPostId())) {
+      throw new ServiceException(prefix + "岗位名称已存在");
     }
-    return UserConstants.UNIQUE;
-  }
-
-  /**
-   * 校验岗位编码
-   *
-   * @param post 岗位信息
-   * @return 结果
-   */
-  @Override
-  public boolean checkPostCodeUnique(final SysPost post) {
-    final SysPost temp = entityQuery.queryable(SysPost.class)
+    final SysPost sameCode = entityQuery.queryable(SysPost.class)
       .where(_post -> _post.postCode().eq(post.getPostCode()))
       .singleOrNull();
-    if (Objects.nonNull(temp) && !Objects.equals(temp.getPostId(), post.getPostId())) {
-      return UserConstants.NOT_UNIQUE;
+    if (Objects.nonNull(sameCode) && !Objects.equals(sameCode.getPostId(), post.getPostId())) {
+      throw new ServiceException(prefix + "岗位编码已存在");
     }
-    return UserConstants.UNIQUE;
   }
 
 
@@ -157,8 +146,10 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @param post 岗位信息
    * @return 结果
    */
+  @Tran
   @Override
   public long insertPost(final SysPost post) {
+    checkPostFieldUnique("新增", post);
     return entityQuery.insertable(post)
       .executeRows();
   }
@@ -169,8 +160,10 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @param post 岗位信息
    * @return 结果
    */
+  @Tran
   @Override
   public long updatePost(final SysPost post) {
+    checkPostFieldUnique("修改", post);
     return entityQuery.updatable(post)
       .executeRows();
   }

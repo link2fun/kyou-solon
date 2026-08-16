@@ -195,6 +195,11 @@ public class GenTableServiceImpl implements IGenTableService {
   @Override
   @Tran
   public void updateGenTable(GenTable genTable) {
+    try {
+      validateEdit(genTable);
+    } catch (JsonProcessingException e) {
+      throw new ServiceException("生成参数序列化失败").withDetailMessage(e.getMessage());
+    }
     String options = JSONUtil.toJsonStr(genTable.getParams());
     genTable.setOptions(options);
     long row = entityQuery.updatable(genTable)
@@ -472,8 +477,7 @@ public class GenTableServiceImpl implements IGenTableService {
    *
    * @param genTable 业务信息
    */
-  @Override
-  public void validateEdit(GenTable genTable) throws JsonProcessingException {
+  private void validateEdit(GenTable genTable) throws JsonProcessingException {
     if (GenConstants.TPL_TREE.equals(genTable.getTplCategory())) {
       String options = objectMapper.writeValueAsString(genTable.getParams());
       JSONObject paramsObj = JSONUtil.parseObj(options);

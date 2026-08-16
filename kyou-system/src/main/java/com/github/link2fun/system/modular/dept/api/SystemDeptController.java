@@ -4,7 +4,6 @@ package com.github.link2fun.system.modular.dept.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.collection.CollectionUtil;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
@@ -75,9 +74,6 @@ public class SystemDeptController extends BaseController {
   @Log(title = "部门管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysDept dept) {
-    if (!deptService.checkDeptNameUnique(dept)) {
-      return error("新增部门'" + dept.getDeptName() + "'失败，部门名称已存在");
-    }
     dept.setCreateBy(getUsername());
     return toAjax(deptService.insertDept(dept));
   }
@@ -89,17 +85,8 @@ public class SystemDeptController extends BaseController {
   @Log(title = "部门管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysDept dept) {
-    Long deptId = dept.getDeptId();
-    deptService.checkDeptDataScope(ActionContext.current(), deptId);
-    if (!deptService.checkDeptNameUnique(dept)) {
-      return error("修改部门'" + dept.getDeptName() + "'失败，部门名称已存在");
-    } else if (dept.getParentId().equals(deptId)) {
-      return error("修改部门'" + dept.getDeptName() + "'失败，上级部门不能是自己");
-    } else if (StringUtils.equals(UserConstants.DEPT_DISABLE, dept.getStatus()) && deptService.selectNormalChildrenDeptById(deptId) > 0) {
-      return error("该部门包含未停用的子部门！");
-    }
     dept.setUpdateBy(getUsername());
-    return toAjax(deptService.updateDept(dept));
+    return toAjax(deptService.updateDept(ActionContext.current(), dept));
   }
 
   /**
@@ -109,14 +96,6 @@ public class SystemDeptController extends BaseController {
   @Log(title = "部门管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{deptId}", method = MethodType.DELETE)
   public AjaxResult remove(@Path Long deptId) {
-    if (deptService.hasChildByDeptId(deptId)) {
-      return warn("存在下级部门,不允许删除");
-    }
-    if (deptService.checkDeptExistUser(deptId)) {
-      return warn("部门存在用户,不允许删除");
-    }
-
-    deptService.checkDeptDataScope(ActionContext.current(), deptId);
-    return toAjax(deptService.deleteDeptById(deptId));
+    return toAjax(deptService.deleteDeptById(ActionContext.current(), deptId));
   }
 }

@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Init;
 import org.noear.solon.annotation.Inject;
+import org.noear.solon.data.annotation.Tran;
 
 import java.util.Comparator;
 import java.util.List;
@@ -214,8 +215,10 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @param dictType 字典类型信息
    * @return 结果
    */
+  @Tran
   @Override
   public long insertDictType(final SysDictType dictType) {
+    checkDictTypeUnique("新增", dictType);
 //    final int row = getBaseMapper().insert(dictType);
     long row = entityQuery.insertable(dictType).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
     if (row > 0) {
@@ -230,8 +233,10 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @param dictTypeNew 字典类型信息
    * @return 结果
    */
+  @Tran
   @Override
   public long updateDictType(final SysDictType dictTypeNew) {
+    checkDictTypeUnique("修改", dictTypeNew);
 
 //    final SysDictType dictTypeOld = getBaseMapper().selectById(dictTypeNew.getDictId());
     final SysDictType dictTypeOld = entityQuery.queryable(SysDictType.class)
@@ -253,21 +258,19 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
   }
 
   /**
-   * 校验字典类型称是否唯一
+   * 校验字典类型唯一性, 不唯一时抛出业务异常
    *
+   * @param action   操作描述(如 "新增"/"修改"), 用于拼接错误文案
    * @param dictType 字典类型
-   * @return 结果
    */
-  @Override
-  public boolean checkDictTypeUnique(final SysDictType dictType) {
+  private void checkDictTypeUnique(final String action, final SysDictType dictType) {
 
     final SysDictType dictTypeDb = entityQuery.queryable(SysDictType.class)
       .where(_dictType -> _dictType.dictType().eq(dictType.getDictType()))
       .singleOrNull();
-    if (Objects.nonNull(dictTypeDb) && Objects.equals(dictTypeDb.getDictId(), dictType.getDictId())) {
-      return UserConstants.UNIQUE;
+    if (Objects.isNull(dictTypeDb) || Objects.equals(dictTypeDb.getDictId(), dictType.getDictId())) {
+      return;
     }
-
-    return UserConstants.NOT_UNIQUE;
+    throw new ServiceException(action + "字典'" + dictType.getDictName() + "'失败，字典类型已存在");
   }
 }

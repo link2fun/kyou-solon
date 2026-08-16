@@ -1,7 +1,6 @@
 package com.github.link2fun.system.modular.user.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.convert.Convert;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
@@ -12,7 +11,6 @@ import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.SysUser;
-import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
@@ -140,24 +138,8 @@ public class SystemUserController extends BaseController {
   @Log(title = "用户管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysUserReq.UpdateReq user) {
-    final ActionContext context = ActionContext.current();
-    userService.checkUserAllowed(user.getUserId());
-    userService.checkUserDataScope(context, user.getUserId());
-
-
-    if (!userService.isColumnValueUnique(SysUserProxy.TABLE.userName(), user.getUserName(), user.getUserId())) {
-      return error("修改用户'" + user.getUserName() + "'失败，登录账号已存在");
-    }
-
-    if (!userService.isColumnValueUnique(SysUserProxy.TABLE.phonenumber(), user.getPhonenumber(), user.getUserId())) {
-      return error("修改用户'" + user.getUserName() + "'失败，手机号码已存在");
-    }
-
-    if (!userService.isColumnValueUnique(SysUserProxy.TABLE.email(), user.getEmail(), user.getUserId())) {
-      return error("修改用户'" + user.getUserName() + "'失败，邮箱账号已存在");
-    }
     user.setUpdateBy(getUsername());
-    return toAjax(userService.updateUser(user));
+    return toAjax(userService.updateUser(ActionContext.current(), user));
   }
 
   /**
@@ -167,9 +149,6 @@ public class SystemUserController extends BaseController {
   @Log(title = "用户管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{userIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> userIds) {
-    if (CollectionUtil.contains(userIds, getUserId())) {
-      return error("当前用户不能删除");
-    }
     ActionContext context = ActionContext.current();
     return toAjax(userService.deleteUserByIds(context, userIds));
   }
@@ -181,12 +160,9 @@ public class SystemUserController extends BaseController {
   @Log(title = "用户管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/resetPwd", method = MethodType.PUT)
   public AjaxResult resetPwd(@Body SysUser user) {
-    ActionContext context = ActionContext.current();
-    userService.checkUserAllowed(user.getUserId());
-    userService.checkUserDataScope(context, user.getUserId());
     user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
     user.setUpdateBy(getUsername());
-    return toAjax(userService.resetPwd(user));
+    return toAjax(userService.resetPwd(ActionContext.current(), user));
   }
 
   /**
@@ -196,11 +172,8 @@ public class SystemUserController extends BaseController {
   @Log(title = "用户管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/changeStatus", method = MethodType.PUT)
   public AjaxResult changeStatus(@Body SysUser user) {
-    ActionContext context = ActionContext.current();
-    userService.checkUserAllowed(user.getUserId());
-    userService.checkUserDataScope(context, user.getUserId());
     user.setUpdateBy(getUsername());
-    return toAjax(userService.updateUserStatus(user));
+    return toAjax(userService.updateUserStatus(ActionContext.current(), user));
   }
 
   /**
@@ -225,9 +198,7 @@ public class SystemUserController extends BaseController {
   @Log(title = "用户管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authRole", method = MethodType.PUT)
   public AjaxResult insertAuthRole(Long userId, List<Long> roleIds) {
-    ActionContext context = ActionContext.current();
-    userService.checkUserDataScope(context, userId);
-    userService.insertUserAuth(userId, roleIds);
+    userService.insertUserAuth(ActionContext.current(), userId, roleIds);
     return success();
   }
 

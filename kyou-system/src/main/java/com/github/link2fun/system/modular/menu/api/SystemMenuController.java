@@ -3,7 +3,6 @@ package com.github.link2fun.system.modular.menu.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.convert.Convert;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
@@ -76,11 +75,6 @@ public class SystemMenuController extends BaseController {
   @Log(title = "菜单管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysMenu menu) {
-    if (!menuService.checkMenuNameUnique(menu)) {
-      return error("新增菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
-    } else if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StringUtils.ishttp(menu.getPath())) {
-      return error("新增菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
-    }
     menu.setCreateBy(getUsername());
     return toAjax(menuService.insertMenu(menu));
   }
@@ -92,13 +86,6 @@ public class SystemMenuController extends BaseController {
   @Log(title = "菜单管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysMenu menu) {
-    if (!menuService.checkMenuNameUnique(menu)) {
-      return error("修改菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
-    } else if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StringUtils.ishttp(menu.getPath())) {
-      return error("修改菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
-    } else if (menu.getMenuId().equals(menu.getParentId())) {
-      return error("修改菜单'" + menu.getMenuName() + "'失败，上级菜单不能选择自己");
-    }
     menu.setUpdateBy(getUsername());
     return toAjax(menuService.updateMenu(menu));
   }
@@ -110,12 +97,6 @@ public class SystemMenuController extends BaseController {
   @Log(title = "菜单管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{menuId}", method = MethodType.DELETE)
   public AjaxResult remove(@Path("menuId") Long menuId) {
-    if (menuService.hasChildByMenuId(menuId)) {
-      return warn("存在子菜单,不允许删除");
-    }
-    if (menuService.checkMenuExistRole(menuId)) {
-      return warn("菜单已分配,不允许删除");
-    }
     return toAjax(menuService.deleteMenuById(menuId));
   }
 }

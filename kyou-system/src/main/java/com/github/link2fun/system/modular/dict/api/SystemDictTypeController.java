@@ -62,9 +62,6 @@ public class SystemDictTypeController extends BaseController {
   @Log(title = "字典类型", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysDictType dict) {
-    if (!dictTypeService.checkDictTypeUnique(dict)) {
-      return error("新增字典'" + dict.getDictName() + "'失败，字典类型已存在");
-    }
     dict.setCreateBy(getUsername());
     return toAjax(dictTypeService.insertDictType(dict));
   }
@@ -76,9 +73,6 @@ public class SystemDictTypeController extends BaseController {
   @Log(title = "字典类型", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysDictType dict) {
-    if (!dictTypeService.checkDictTypeUnique(dict)) {
-      return error("修改字典'" + dict.getDictName() + "'失败，字典类型已存在");
-    }
     dict.setUpdateBy(getUsername());
     return toAjax(dictTypeService.updateDictType(dict));
   }

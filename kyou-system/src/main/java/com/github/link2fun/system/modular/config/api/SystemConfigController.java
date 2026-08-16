@@ -75,9 +75,6 @@ public class SystemConfigController extends BaseController {
   @Log(title = "参数管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysConfig config) {
-    if (!configService.checkConfigKeyUnique(config)) {
-      return error("新增参数'" + config.getConfigName() + "'失败，参数键名已存在");
-    }
     config.setCreateBy(getUsername());
     return toAjax(configService.insertConfig(config));
   }
@@ -89,9 +86,6 @@ public class SystemConfigController extends BaseController {
   @Log(title = "参数管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysConfig config) {
-    if (!configService.checkConfigKeyUnique(config)) {
-      return error("修改参数'" + config.getConfigName() + "'失败，参数键名已存在");
-    }
     config.setUpdateBy(getUsername());
     return toAjax(configService.updateConfig(config));
   }

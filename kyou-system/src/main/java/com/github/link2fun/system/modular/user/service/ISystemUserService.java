@@ -102,14 +102,8 @@ public interface ISystemUserService {
   boolean isColumnValueUnique(SQLStringTypeColumn<SysUserProxy> column, String columnValue, final Long userId);
 
   /**
-   * 校验用户是否允许操作
-   *
-   * @param userId 用户信息
-   */
-  void checkUserAllowed(Long userId);
-
-  /**
    * 校验用户是否有数据权限
+   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成</p>
    *
    * @param context
    * @param userId  用户id
@@ -117,7 +111,7 @@ public interface ISystemUserService {
   void checkUserDataScope(final ActionContext context, Long userId);
 
   /**
-   * 新增用户信息
+   * 新增用户信息(内部已完成唯一性检查)
    *
    * @param user 用户信息
    * @return 结果
@@ -133,31 +127,34 @@ public interface ISystemUserService {
   boolean registerUser(SysUser user);
 
   /**
-   * 修改用户信息
+   * 修改用户信息(内部已完成操作权限/数据权限/唯一性检查)
    *
-   * @param user 用户信息
+   * @param context  操作上下文, 含有当前用户信息
+   * @param user     用户信息
    * @return 结果
    */
-  long updateUser(SysUserReq.UpdateReq user);
+  long updateUser(final ActionContext context, SysUserReq.UpdateReq user);
 
   /**
-   * 用户授权角色
+   * 用户授权角色(内部已完成数据权限检查)
    *
+   * @param context 操作上下文, 含有当前用户信息
    * @param userId  用户ID
    * @param roleIds 角色组
    */
-  void insertUserAuth(Long userId, List<Long> roleIds);
+  void insertUserAuth(final ActionContext context, Long userId, List<Long> roleIds);
 
   /**
-   * 修改用户状态
+   * 修改用户状态(内部已完成操作权限/数据权限检查)
    *
-   * @param user 用户信息
+   * @param context 操作上下文, 含有当前用户信息
+   * @param user    用户信息
    * @return 结果
    */
-  long updateUserStatus(SysUser user);
+  long updateUserStatus(final ActionContext context, SysUser user);
 
   /**
-   * 修改用户基本信息
+   * 修改用户基本信息(内部已完成手机号/邮箱唯一性检查)
    *
    * @param user 用户信息
    * @return 结果
@@ -174,12 +171,13 @@ public interface ISystemUserService {
   boolean updateUserAvatar(String userName, String avatar);
 
   /**
-   * 重置用户密码
+   * 重置用户密码(内部已完成操作权限/数据权限检查)
    *
-   * @param user 用户信息
+   * @param context 操作上下文, 含有当前用户信息
+   * @param user    用户信息(密码需已加密)
    * @return 结果
    */
-  long resetPwd(SysUser user);
+  long resetPwd(final ActionContext context, SysUser user);
 
   /**
    * 重置用户密码

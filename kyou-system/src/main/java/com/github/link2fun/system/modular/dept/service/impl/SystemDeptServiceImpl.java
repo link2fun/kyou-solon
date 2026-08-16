@@ -24,6 +24,7 @@ import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
+import org.noear.solon.data.annotation.Tran;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -199,8 +200,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param deptId 部门ID
    * @return 子部门数
    */
-  @Override
-  public long selectNormalChildrenDeptById(final Long deptId) {
+  private long selectNormalChildrenDeptById(final Long deptId) {
 
     return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
       .where(_dept -> _dept.status().eq(UserConstants.NORMAL))
@@ -215,8 +215,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param deptId 部门ID
    * @return 结果
    */
-  @Override
-  public boolean hasChildByDeptId(final Long deptId) {
+  private boolean hasChildByDeptId(final Long deptId) {
 
     return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
       .where(_dept -> _dept.parentId().eq(deptId))
@@ -230,30 +229,25 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param deptId 部门ID
    * @return 结果 true 存在 false 不存在
    */
-  @Override
-  public boolean checkDeptExistUser(final Long deptId) {
+  private boolean checkDeptExistUser(final Long deptId) {
     return userService.checkDeptExistUser(deptId);
   }
 
   /**
-   * 校验部门名称是否唯一
+   * 校验部门名称唯一性, 不唯一时抛出业务异常
    *
-   * @param dept 部门信息
-   * @return 结果
+   * @param action 操作描述(如 "新增"/"修改"), 用于拼接错误文案
+   * @param dept   部门信息
    */
-  @Override
-  public boolean checkDeptNameUnique(final SysDept dept) {
-
+  private void checkDeptNameUnique(final String action, final SysDept dept) {
     final SysDept temp = entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
       .where(_dept -> _dept.deptName().eq(dept.getDeptName()))
       .where(_dept -> _dept.parentId().eq(dept.getParentId()))
       .where(_dept -> _dept.delFlag().eq(UserConstants.NORMAL))
       .singleOrNull();
     if (Objects.nonNull(temp) && !Objects.equals(temp.getDeptId(), dept.getDeptId())) {
-      return UserConstants.NOT_UNIQUE;
+      throw new ServiceException(action + "部门'" + dept.getDeptName() + "'失败，部门名称已存在");
     }
-
-    return UserConstants.UNIQUE;
   }
 
   /**
@@ -278,8 +272,11 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param dept 部门信息
    * @return 结果
    */
+  @Tran
   @Override
   public long insertDept(final SysDept dept) {
+    checkDeptNameUnique("新增", dept);
+
     final SysDept parentDept = self.selectDeptById(dept.getParentId());
     if (!StrUtil.equals(parentDept.getStatus(), UserConstants.DEPT_NORMAL)) {
       throw new ServiceException("部门停用，不允许新增");
@@ -293,11 +290,23 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   /**
    * 修改保存部门信息
    *
-   * @param dept 部门信息
+   * @param context 操作上下文, 含有当前用户信息
+   * @param dept    部门信息
    * @return 结果
    */
+  @Tran
   @Override
-  public long updateDept(final SysDept dept) {
+  public long updateDept(final ActionContext context, final SysDept dept) {
+    final Long deptId = dept.getDeptId();
+    checkDeptDataScope(context, deptId);
+    checkDeptNameUnique("修改", dept);
+    if (dept.getParentId().equals(deptId)) {
+      throw new ServiceException("修改部门'" + dept.getDeptName() + "'失败，上级部门不能是自己");
+    }
+    if (StringUtils.equals(UserConstants.DEPT_DISABLE, dept.getStatus()) && selectNormalChildrenDeptById(deptId) > 0) {
+      throw new ServiceException("该部门包含未停用的子部门！");
+    }
+
     SysDept newParentDept = self.selectDeptById(dept.getParentId());
     SysDept oldDept = self.selectDeptById(dept.getDeptId());
     if (StringUtils.isNotNull(newParentDept) && StringUtils.isNotNull(oldDept)) {
@@ -346,18 +355,21 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   /**
    * 删除部门管理信息
    *
-   * @param deptId 部门ID
+   * @param context 操作上下文, 含有当前用户信息
+   * @param deptId  部门ID
    * @return 结果
    */
+  @Tran
   @Override
-  public boolean deleteDeptById(final Long deptId) {
+  public boolean deleteDeptById(final ActionContext context, final Long deptId) {
 
-    if (self.hasChildByDeptId(deptId)) {
+    if (hasChildByDeptId(deptId)) {
       throw new ServiceException("存在下级部门,不允许删除");
     }
-    if (self.checkDeptExistUser(deptId)) {
+    if (checkDeptExistUser(deptId)) {
       throw new ServiceException("部门存在用户,不允许删除");
     }
+    checkDeptDataScope(context, deptId);
 
     return entityQuery.updatable(SysDept.class)
       .setColumns(dept -> dept.delFlag().set(UserConstants.DEPT_DELETED))
