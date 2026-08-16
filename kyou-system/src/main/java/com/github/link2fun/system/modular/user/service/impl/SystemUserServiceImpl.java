@@ -45,7 +45,6 @@ import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import com.github.link2fun.system.modular.userrole.service.ISystemUserRoleService;
 import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.system.tool.SystemConfigContext;
-import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -405,8 +404,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    *
    * @param userId 用户信息
    */
-  @Override
-  public void checkUserAllowed(final Long userId) {
+  private void checkUserAllowed(final Long userId) {
     if (StringUtils.isNotNull(userId) && SysUser.isAdmin(userId)) {
       throw new ServiceException("不允许操作超级管理员用户");
     }
@@ -414,6 +412,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
   /**
    * 校验用户是否有数据权限
+   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成</p>
    *
    * @param context 操作上下文, 含有当前用户信息
    * @param userId  用户id
@@ -431,6 +430,26 @@ public class SystemUserServiceImpl implements ISystemUserService {
   }
 
   /**
+   * 校验登录账号/手机号/邮箱在系统中是否唯一, 不唯一时抛出业务异常
+   *
+   * @param action 操作描述(如 "新增"/"修改"), 用于拼接错误文案
+   * @param userId 当前用户id(编辑时排除自身), 新增时为 null
+   */
+  private void checkUserFieldUnique(final String action, final String userName, final String phonenumber,
+                                    final String email, final Long userId) {
+    final String prefix = action + "用户'" + userName + "'失败，";
+    if (!isColumnValueUnique(SysUserProxy.TABLE.userName(), userName, userId)) {
+      throw new ServiceException(prefix + "登录账号已存在");
+    }
+    if (!isColumnValueUnique(SysUserProxy.TABLE.phonenumber(), phonenumber, userId)) {
+      throw new ServiceException(prefix + "手机号码已存在");
+    }
+    if (!isColumnValueUnique(SysUserProxy.TABLE.email(), email, userId)) {
+      throw new ServiceException(prefix + "邮箱账号已存在");
+    }
+  }
+
+  /**
    * 新增用户信息
    *
    * @param addReq 用户信息
@@ -439,9 +458,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Tran
   @Override
   public Long insertUser(final SysUserReq.AddReq addReq) {
-    Preconditions.checkArgument(self.isColumnValueUnique(SysUserProxy.TABLE.userName(),addReq.getUserName(), null), "新增用户'" + addReq.getUserName() + "'失败，登录账号已存在");
-    Preconditions.checkArgument(self.isColumnValueUnique(SysUserProxy.TABLE.phonenumber(), addReq.getPhonenumber(), null), "新增用户'" + addReq.getUserName() + "'失败，手机号码已存在");
-    Preconditions.checkArgument(self.isColumnValueUnique(SysUserProxy.TABLE.email(), addReq.getEmail(), null), "新增用户'" + addReq.getUserName() + "'失败，邮箱账号已存在");
+    checkUserFieldUnique("新增", addReq.getUserName(), addReq.getPhonenumber(), addReq.getEmail(), null);
 
     SysUser user = addReq.transferTo(SysUser.class);
 
@@ -483,12 +500,17 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 修改用户信息
    *
+   * @param context  操作上下文, 含有当前用户信息
    * @param updateReq 用户信息
    * @return 结果
    */
+  @Tran
   @Override
-  public long updateUser(final SysUserReq.UpdateReq updateReq) {
+  public long updateUser(final ActionContext context, final SysUserReq.UpdateReq updateReq) {
     Long userId = updateReq.getUserId();
+    checkUserAllowed(userId);
+    checkUserDataScope(context, userId);
+    checkUserFieldUnique("修改", updateReq.getUserName(), updateReq.getPhonenumber(), updateReq.getEmail(), userId);
 
 
 //    final SysUser sysUser = getBaseMapper().selectById(userId);
@@ -515,12 +537,14 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 用户授权角色
    *
+   * @param context 操作上下文, 含有当前用户信息
    * @param userId  用户ID
    * @param roleIds 角色组
    */
   @Tran(policy = TranPolicy.required)
   @Override
-  public void insertUserAuth(final Long userId, final List<Long> roleIds) {
+  public void insertUserAuth(final ActionContext context, final Long userId, final List<Long> roleIds) {
+    checkUserDataScope(context, userId);
     // 新增用户与角色关联
     userRoleService.updateMappingsByUserId(userId, roleIds);
   }
@@ -528,11 +552,15 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 修改用户状态
    *
-   * @param user 用户信息
+   * @param context 操作上下文, 含有当前用户信息
+   * @param user    用户信息
    * @return 结果
    */
+  @Tran
   @Override
-  public long updateUserStatus(final SysUser user) {
+  public long updateUserStatus(final ActionContext context, final SysUser user) {
+    checkUserAllowed(user.getUserId());
+    checkUserDataScope(context, user.getUserId());
 //    return getBaseMapper().updateById(user);
     return entityQuery.updatable(user)
       .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
@@ -540,13 +568,15 @@ public class SystemUserServiceImpl implements ISystemUserService {
   }
 
   /**
-   * 修改用户基本信息
+   * 修改用户基本信息(个人中心)
    *
    * @param user 用户信息
    * @return 结果
    */
+  @Tran
   @Override
   public long updateUserProfile(final SysUser user) {
+    checkUserFieldUnique("修改", user.getUserName(), user.getPhonenumber(), user.getEmail(), user.getUserId());
 //    return getBaseMapper().updateById(user);
     return entityQuery.updatable(user)
       .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
@@ -572,11 +602,15 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 重置用户密码
    *
-   * @param user 用户信息
+   * @param context 操作上下文, 含有当前用户信息
+   * @param user    用户信息(密码需已加密)
    * @return 结果
    */
+  @Tran
   @Override
-  public long resetPwd(final SysUser user) {
+  public long resetPwd(final ActionContext context, final SysUser user) {
+    checkUserAllowed(user.getUserId());
+    checkUserDataScope(context, user.getUserId());
     return entityQuery.updatable(SysUser.class)
       .where(userProxy -> userProxy.userId().eq(user.getUserId()))
       .setColumns(userProxy -> userProxy.password().set(user.getPassword()))
@@ -607,6 +641,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    */
   @Override
   public boolean deleteUserById(final Long userId) {
+    checkUserAllowed(userId);
     // 删除用户与角色关联
     userRoleService.deleteUserRoleByUserId(userId);
     // 删除用户与岗位表
@@ -629,9 +664,12 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public boolean deleteUserByIds(final ActionContext context, final List<Long> userIds) {
 
+    if (CollectionUtil.contains(userIds, SecurityUtils.getUserId())) {
+      throw new ServiceException("当前用户不能删除");
+    }
     for (final Long userId : userIds) {
-      self.checkUserAllowed(userId);
-      self.checkUserDataScope(context, userId);
+      checkUserAllowed(userId);
+      checkUserDataScope(context, userId);
     }
 
     // 删除用户与角色关联

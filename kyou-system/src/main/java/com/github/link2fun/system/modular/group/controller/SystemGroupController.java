@@ -1,9 +1,6 @@
 package com.github.link2fun.system.modular.group.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.core.enums.SQLExecuteStrategyEnum;
-import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
@@ -35,9 +32,6 @@ public class SystemGroupController extends BaseController {
 
   @Inject
   private ISystemGroupService groupService;
-
-  @Db
-  private EasyEntityQuery entityQuery;
 
 
   /** 获取群组列表 */
@@ -74,10 +68,7 @@ public class SystemGroupController extends BaseController {
   @Mapping(value = "/add", method = MethodType.POST)
   @Log(title = "群组管理", businessType = BusinessType.INSERT)
   public AjaxResult add(@Validated @Body SysGroup group) {
-    if (groupService.checkGroupNameUnique(group.getGroupName(), group.getGroupId())) {
-      return error("新增群组'" + group.getGroupName() + "'失败，群组名称已存在");
-    }
-    return toAjax(entityQuery.insertable(group).executeRows());
+    return toAjax(groupService.insertGroup(group));
   }
 
 
@@ -85,12 +76,8 @@ public class SystemGroupController extends BaseController {
   @SaCheckPermission("system.group.edit")
   @Mapping(value = "/edit", method = MethodType.POST)
   public AjaxResult edit(SysGroup group) {
-    if (groupService.checkGroupNameUnique(group.getGroupName(), group.getGroupId())) {
-      return error("修改群组'" + group.getGroupName() + "'失败，群组名称已存在");
-    }
     group.setUpdateBy(getUsername());
-    return toAjax(entityQuery.updatable(group)
-      .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS).executeRows());
+    return toAjax(groupService.updateGroup(group));
   }
 
 
@@ -98,16 +85,14 @@ public class SystemGroupController extends BaseController {
   @SaCheckPermission("system.group.remove")
   @Mapping(value = "/{groupIds}", method = MethodType.DELETE)
   public AjaxResult remove(List<Long> groupIds) {
-    return toAjax(entityQuery.deletable(SysGroup.class)
-      .allowDeleteStatement(true)
-      .where(group -> group.groupId().in(groupIds)).executeRows());
+    return toAjax(groupService.deleteGroupByIds(groupIds));
   }
 
 
   /** 群组选择框列表 */
   @Mapping(value = "/optionSelect", method = MethodType.GET)
   public AjaxResult optionSelect() {
-    return successData(entityQuery.queryable(SysGroup.class).toList());
+    return successData(groupService.listAll());
   }
 
 

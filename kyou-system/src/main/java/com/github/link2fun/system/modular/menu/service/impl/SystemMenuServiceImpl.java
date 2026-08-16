@@ -11,6 +11,7 @@ import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.proxy.SysMenuProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
+import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.domain.vo.MetaVo;
@@ -312,8 +313,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menuId 菜单ID
    * @return 结果 true 存在 false 不存在
    */
-  @Override
-  public boolean hasChildByMenuId(final Long menuId) {
+  private boolean hasChildByMenuId(final Long menuId) {
     return entityQuery.queryable(SysMenu.class)
       .where(menu -> menu.parentId().eq(menuId))
       .any();
@@ -325,9 +325,30 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menuId 菜单ID
    * @return 结果 true 存在 false 不存在
    */
-  @Override
-  public boolean checkMenuExistRole(final Long menuId) {
+  private boolean checkMenuExistRole(final Long menuId) {
     return roleMenuService.countByMenuId(menuId) > 0L;
+  }
+
+  /**
+   * 校验菜单名称唯一性及外链地址格式, 不通过时抛出业务异常
+   *
+   * @param action 操作描述(如 "新增"/"修改"), 用于拼接错误文案
+   * @param menu   菜单信息
+   */
+  private void checkMenuFieldUnique(final String action, final SysMenu menu) {
+    final String prefix = action + "菜单'" + menu.getMenuName() + "'失败，";
+    final SysMenu temp = entityQuery.queryable(SysMenu.class)
+      .where(menu1 -> {
+        menu1.parentId().eq(menu.getParentId());
+        menu1.menuName().eq(menu.getMenuName());
+      })
+      .singleOrNull();
+    if (Objects.nonNull(temp) && !Objects.equals(menu.getMenuId(), temp.getMenuId())) {
+      throw new ServiceException(prefix + "菜单名称已存在");
+    }
+    if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StringUtils.ishttp(menu.getPath())) {
+      throw new ServiceException(prefix + "地址必须以http(s)://开头");
+    }
   }
 
   /**
@@ -336,8 +357,10 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menu 菜单信息
    * @return 结果
    */
+  @Tran
   @Override
   public long insertMenu(final SysMenu menu) {
+    checkMenuFieldUnique("新增", menu);
     return entityQuery.insertable(menu)
       .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
       .executeRows(true);
@@ -349,8 +372,13 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menu 菜单信息
    * @return 结果
    */
+  @Tran
   @Override
   public long updateMenu(final SysMenu menu) {
+    checkMenuFieldUnique("修改", menu);
+    if (menu.getMenuId().equals(menu.getParentId())) {
+      throw new ServiceException("修改菜单'" + menu.getMenuName() + "'失败，上级菜单不能选择自己");
+    }
     return entityQuery.updatable(menu)
       .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
       .executeRows();
@@ -362,33 +390,19 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menuId 菜单ID
    * @return 结果
    */
+  @Tran
   @Override
   public long deleteMenuById(final Long menuId) {
+    if (hasChildByMenuId(menuId)) {
+      throw new ServiceException("存在子菜单,不允许删除");
+    }
+    if (checkMenuExistRole(menuId)) {
+      throw new ServiceException("菜单已分配,不允许删除");
+    }
     return entityQuery.deletable(SysMenu.class)
       .allowDeleteStatement(true)
       .where(menu -> menu.menuId().eq(menuId))
       .executeRows();
-  }
-
-  /**
-   * 校验菜单名称是否唯一
-   *
-   * @param menu 菜单信息
-   * @return 结果
-   */
-  @Override
-  public boolean checkMenuNameUnique(final SysMenu menu) {
-
-    final SysMenu temp = entityQuery.queryable(SysMenu.class)
-      .where(menu1 -> {
-        menu1.parentId().eq(menu.getParentId());
-        menu1.menuName().eq(menu.getMenuName());
-      })
-      .singleOrNull();
-    if (Objects.nonNull(temp) && !Objects.equals(menu.getMenuId(), temp.getMenuId())) {
-      return UserConstants.NOT_UNIQUE;
-    }
-    return UserConstants.UNIQUE;
   }
 
   @Tran(policy = TranPolicy.supports)

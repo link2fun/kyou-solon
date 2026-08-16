@@ -66,14 +66,6 @@ public interface ISystemConfigService {
    */
   void resetConfigCache();
 
-  /**
-   * 校验参数键名是否唯一
-   *
-   * @param config 参数信息
-   * @return 结果
-   */
-  boolean checkConfigKeyUnique(SysConfig config);
-
   /** 列出数据库中所有的配置 */
   List<SysConfig> listAll();
 

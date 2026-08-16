@@ -99,12 +99,4 @@ public interface ISystemDictTypeService {
    */
   long updateDictType(SysDictType dictType);
 
-  /**
-   * 校验字典类型称是否唯一
-   *
-   * @param dictType 字典类型
-   * @return 结果
-   */
-  boolean checkDictTypeUnique(SysDictType dictType);
-
 }

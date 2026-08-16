@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
+import org.noear.solon.data.annotation.Tran;
 
 import java.util.List;
 import java.util.Objects;
@@ -188,8 +189,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param roleId 角色ID
    * @return 结果
    */
-  @Override
-  public boolean isRoleNameUnique(final String roleName, Long roleId) {
+  private boolean isRoleNameUnique(final String roleName, Long roleId) {
 
     final Long roleIdSameRoleName = entityQuery.queryable(SysRole.class)
       .where((_role) -> _role.roleName().eq(roleName))
@@ -207,8 +207,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param roleKey 角色信息
    * @return 结果
    */
-  @Override
-  public boolean isRoleKeyUnique(final String roleKey, Long roleId) {
+  private boolean isRoleKeyUnique(final String roleKey, Long roleId) {
     final Long roleIdSameRokeKey = entityQuery.queryable(SysRole.class)
       .where((_role) -> _role.roleKey().eq(roleKey))
       .select(SysRoleProxy::roleId)
@@ -224,10 +223,25 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    *
    * @param roleId 角色ID
    */
-  @Override
-  public void checkRoleAllowed(final Long roleId) {
+  private void checkRoleAllowed(final Long roleId) {
     if (Objects.nonNull(roleId) && SysRole.isAdmin(roleId)) {
       throw new ServiceException(StrUtil.format("不允许操作超级管理员角色"));
+    }
+  }
+
+  /**
+   * 校验角色名称/权限字符在系统中是否唯一, 不唯一时抛出业务异常
+   *
+   * @param action 操作描述(如 "新增"/"修改"), 用于拼接错误文案
+   * @param roleId 当前角色id(编辑时排除自身), 新增时为 null
+   */
+  private void checkRoleFieldUnique(final String action, final String roleName, final String roleKey, final Long roleId) {
+    final String prefix = action + "角色'" + roleName + "'失败，";
+    if (!isRoleNameUnique(roleName, roleId)) {
+      throw new ServiceException(prefix + "角色名称已存在");
+    }
+    if (!isRoleKeyUnique(roleKey, roleId)) {
+      throw new ServiceException(prefix + "角色权限已存在");
     }
   }
 
@@ -265,8 +279,10 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param role 角色信息
    * @return 结果
    */
+  @Tran
   @Override
   public long insertRole(final SysRoleAddReq role) {
+    checkRoleFieldUnique("新增", role.getRoleName(), role.getRoleKey(), null);
 
     SysRole entity = role.toEntity();
     long row = entityQuery.insertable(entity).executeRows(true);
@@ -283,9 +299,14 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param modifyReq 角色信息
    * @return 结果
    */
+  @Tran
   @Override
   public long updateRole(final SysRoleModifyReq modifyReq) {
     Long roleId = modifyReq.getRoleId();
+    checkRoleAllowed(roleId);
+    checkRoleDataScope(roleId);
+    checkRoleFieldUnique("修改", modifyReq.getRoleName(), modifyReq.getRoleKey(), roleId);
+
     SysRole role = entityQuery.queryable(SysRole.class)
       .whereById(roleId)
       .singleNotNull();
@@ -305,8 +326,11 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param changeStatusReq 角色信息
    * @return 结果
    */
+  @Tran
   @Override
   public long changeRoleStatus(final SysRoleChangeStatusReq changeStatusReq) {
+    checkRoleAllowed(changeStatusReq.getRoleId());
+    checkRoleDataScope(changeStatusReq.getRoleId());
     return entityQuery.updatable(SysRole.class)
       .whereById(changeStatusReq.getRoleId())
       .setColumns(role -> role.status().set(changeStatusReq.getStatus()))
@@ -319,8 +343,11 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param changeDataScopeReq 角色信息
    * @return 结果
    */
+  @Tran
   @Override
   public long authDataScope(final SysRoleChangeDataScopeReq changeDataScopeReq) {
+    checkRoleAllowed(changeDataScopeReq.getRoleId());
+    checkRoleDataScope(changeDataScopeReq.getRoleId());
 
     // 修改角色信息
     long executeRows = entityQuery.updatable(SysRole.class)
@@ -344,6 +371,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param roleIds 需要删除的角色ID
    * @return 结果
    */
+  @Tran
   @Override
   public long deleteRoleByIds(final List<Long> roleIds) {
     for (Long roleId : roleIds) {
@@ -396,8 +424,10 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param userIds 需要删除的用户数据ID
    * @return 结果
    */
+  @Tran
   @Override
   public Boolean insertAuthUsers(final Long roleId, final List<Long> userIds) {
+    checkRoleDataScope(roleId);
     return userRoleService.batchUserRole(roleId, userIds);
   }
 

@@ -8,7 +8,6 @@ import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysUser;
-import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.SecurityUtils;
@@ -70,13 +69,6 @@ public class SystemUserProfileController extends BaseController {
     user.setPhonenumber(updateUserRequest.getPhonenumber());
     user.setSex(updateUserRequest.getSex());
 
-    if (!userService.isColumnValueUnique(SysUserProxy.TABLE.phonenumber(), user.getPhonenumber(), user.getUserId())) {
-      return error("修改用户'" + user.getUserName() + "'失败，手机号码已存在");
-    }
-    if (!userService.isColumnValueUnique(SysUserProxy.TABLE.email(),user.getEmail(), user.getUserId())) {
-
-      return error("修改用户'" + user.getUserName() + "'失败，邮箱账号已存在");
-    }
     if (userService.updateUserProfile(user) > 0) {
       // 更新缓存用户信息
       final SysUserDTO sysUserDTO = userService.selectUserByUserName(user.getUserName());

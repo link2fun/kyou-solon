@@ -92,11 +92,6 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysRoleAddReq addReq) {
-    if (!roleService.isRoleNameUnique(addReq.getRoleName(), null)) {
-      return error("新增角色'" + addReq.getRoleName() + "'失败，角色名称已存在");
-    } else if (!roleService.isRoleKeyUnique(addReq.getRoleKey(), null)) {
-      return error("新增角色'" + addReq.getRoleName() + "'失败，角色权限已存在");
-    }
     return toAjax(roleService.insertRole(addReq));
 
   }
@@ -108,14 +103,6 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysRoleModifyReq modifyReq) {
-    roleService.checkRoleAllowed(modifyReq.getRoleId());
-    roleService.checkRoleDataScope(modifyReq.getRoleId());
-    if (!roleService.isRoleNameUnique(modifyReq.getRoleName(), modifyReq.getRoleId())) {
-      return error("修改角色'" + modifyReq.getRoleName() + "'失败，角色名称已存在");
-    } else if (!roleService.isRoleKeyUnique(modifyReq.getRoleKey(), modifyReq.getRoleId())) {
-      return error("修改角色'" + modifyReq.getRoleName() + "'失败，角色权限已存在");
-    }
-
     if (roleService.updateRole(modifyReq) > 0) {
       // 更新缓存用户权限
       SessionUser currentUser = getCurrentUser();
@@ -137,8 +124,6 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/dataScope", method = MethodType.PUT)
   public AjaxResult dataScope(@Validated @Body SysRoleChangeDataScopeReq changeDataScopeReq) {
-    roleService.checkRoleAllowed(changeDataScopeReq.getRoleId());
-    roleService.checkRoleDataScope(changeDataScopeReq.getRoleId());
     return toAjax(roleService.authDataScope(changeDataScopeReq));
   }
 
@@ -149,8 +134,6 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/changeStatus", method = MethodType.PUT)
   public AjaxResult changeStatus(@Validated @Body SysRoleChangeStatusReq changeStatusReq) {
-    roleService.checkRoleAllowed(changeStatusReq.getRoleId());
-    roleService.checkRoleDataScope(changeStatusReq.getRoleId());
     return toAjax(roleService.changeRoleStatus(changeStatusReq));
   }
 
@@ -225,7 +208,6 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authUser/selectAll", method = MethodType.PUT)
   public AjaxResult selectAuthUserAll(Long roleId, List<Long> userIds) {
-    roleService.checkRoleDataScope(roleId);
     return toAjax(roleService.insertAuthUsers(roleId, userIds));
   }
 

@@ -52,22 +52,6 @@ public interface ISystemPostService {
   List<Long> selectPostListByUserId(Long userId);
 
   /**
-   * 校验岗位名称
-   *
-   * @param post 岗位信息
-   * @return 结果
-   */
-  boolean checkPostNameUnique(SysPost post);
-
-  /**
-   * 校验岗位编码
-   *
-   * @param post 岗位信息
-   * @return 结果
-   */
-  boolean checkPostCodeUnique(SysPost post);
-
-  /**
    * 批量删除岗位信息
    *
    * @param postIds 需要删除的岗位ID

@@ -64,11 +64,6 @@ public class SystemPostController extends BaseController {
   @Log(title = "岗位管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysPost post) {
-    if (!postService.checkPostNameUnique(post)) {
-      return error("新增岗位'" + post.getPostName() + "'失败，岗位名称已存在");
-    } else if (!postService.checkPostCodeUnique(post)) {
-      return error("新增岗位'" + post.getPostName() + "'失败，岗位编码已存在");
-    }
     post.setCreateBy(getUsername());
     return toAjax(postService.insertPost(post));
   }
@@ -80,11 +75,6 @@ public class SystemPostController extends BaseController {
   @Log(title = "岗位管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysPost post) {
-    if (!postService.checkPostNameUnique(post)) {
-      return error("修改岗位'" + post.getPostName() + "'失败，岗位名称已存在");
-    } else if (!postService.checkPostCodeUnique(post)) {
-      return error("修改岗位'" + post.getPostName() + "'失败，岗位编码已存在");
-    }
     post.setUpdateBy(getUsername());
     return toAjax(postService.updatePost(post));
   }

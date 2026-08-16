@@ -2,7 +2,6 @@ package com.github.link2fun.generator.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.link2fun.generator.domain.GenTable;
 import com.github.link2fun.generator.domain.GenTableColumn;
 import com.github.link2fun.generator.service.IGenTableColumnService;
@@ -108,8 +107,7 @@ public class GenController extends BaseController {
   @SaCheckPermission("tool:gen:edit")
   @Log(title = "代码生成", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult editSave(@Validated @Body GenTable genTable) throws JsonProcessingException {
-    genTableService.validateEdit(genTable);
+  public AjaxResult editSave(@Validated @Body GenTable genTable) {
     genTableService.updateGenTable(genTable);
     return success();
   }
