@@ -24,7 +24,7 @@ import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -272,7 +272,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param dept 部门信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long insertDept(final SysDept dept) {
     checkDeptNameUnique("新增", dept);
@@ -294,7 +294,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param dept    部门信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updateDept(final ActionContext context, final SysDept dept) {
     final Long deptId = dept.getDeptId();
@@ -359,7 +359,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param deptId  部门ID
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public boolean deleteDeptById(final ActionContext context, final Long deptId) {
 

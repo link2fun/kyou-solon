@@ -11,7 +11,7 @@ import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 import java.util.Objects;
@@ -146,7 +146,7 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @param post 岗位信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long insertPost(final SysPost post) {
     checkPostFieldUnique("新增", post);
@@ -160,7 +160,7 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @param post 岗位信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updatePost(final SysPost post) {
     checkPostFieldUnique("修改", post);

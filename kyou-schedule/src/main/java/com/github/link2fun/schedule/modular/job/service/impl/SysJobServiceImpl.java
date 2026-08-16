@@ -20,7 +20,7 @@ import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Init;
 import org.noear.solon.annotation.Inject;
 import org.noear.solon.core.handle.Context;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.scheduling.ScheduledAnno;
 import org.noear.solon.scheduling.scheduled.JobHolder;
 import org.noear.solon.scheduling.scheduled.manager.IJobManager;
@@ -116,7 +116,7 @@ public class SysJobServiceImpl implements ISysJobService {
    * @param job 调度信息
    */
   @Override
-  @Tran
+  @Transaction
   public long pauseJob(SysJob job) {
     job.setStatus(ScheduleConstants.Status.PAUSE.getValue());
 //    int rows = getBaseMapper().updateById(job);
@@ -137,7 +137,7 @@ public class SysJobServiceImpl implements ISysJobService {
    * @param job 调度信息
    */
   @Override
-  @Tran
+  @Transaction
   public long resumeJob(SysJob job) {
     job.setStatus(ScheduleConstants.Status.NORMAL.getValue());
     long rows = entityQuery.updatable(SysJob.class)
@@ -164,7 +164,7 @@ public class SysJobServiceImpl implements ISysJobService {
    * @param job 调度信息
    */
   @Override
-  @Tran
+  @Transaction
   public long deleteJob(SysJob job) {
     Long jobId = job.getJobId();
     long rows = entityQuery.deletable(SysJob.class)
@@ -184,7 +184,7 @@ public class SysJobServiceImpl implements ISysJobService {
    * @param jobIds 需要删除的任务ID
    */
   @Override
-  @Tran
+  @Transaction
   public void deleteJobByIds(List<Long> jobIds) {
     for (Long jobId : jobIds) {
       entityQuery.queryable(SysJob.class)
@@ -200,7 +200,7 @@ public class SysJobServiceImpl implements ISysJobService {
    * @param job 调度信息
    */
   @Override
-  @Tran
+  @Transaction
   public long changeStatus(SysJob job) {
     long rows = 0;
     String status = job.getStatus();
@@ -218,7 +218,7 @@ public class SysJobServiceImpl implements ISysJobService {
    * @param job 调度信息
    */
   @Override
-  @Tran
+  @Transaction
   public boolean run(SysJob job) throws Throwable {
 //    final SysJob sysJob = getBaseMapper().selectById(job.getJobId());
     final SysJob sysJob = entityQuery.queryable(SysJob.class)
@@ -267,7 +267,7 @@ public class SysJobServiceImpl implements ISysJobService {
    * @param job 调度信息 调度信息
    */
   @Override
-  @Tran
+  @Transaction
   public long insertJob(SysJob job) {
     job.setStatus(ScheduleConstants.Status.PAUSE.getValue());
 //    int rows = getBaseMapper().insert(job);
@@ -288,7 +288,7 @@ public class SysJobServiceImpl implements ISysJobService {
    * @param job 调度信息
    */
   @Override
-  @Tran
+  @Transaction
   public long updateJob(SysJob job) {
 //    SysJob properties = getBaseMapper().selectById(job.getJobId());
     SysJob properties = entityQuery.queryable(SysJob.class)

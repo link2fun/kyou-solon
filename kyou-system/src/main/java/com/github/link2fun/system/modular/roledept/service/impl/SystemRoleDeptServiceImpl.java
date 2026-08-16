@@ -8,7 +8,7 @@ import com.github.link2fun.support.core.domain.entity.proxy.SysRoleDeptProxy;
 import com.github.link2fun.system.modular.roledept.service.ISystemRoleDeptService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,7 +28,7 @@ public class SystemRoleDeptServiceImpl implements ISystemRoleDeptService {
    * @param deptIds 部门id集合
    */
   @Override
-  @Tran
+  @Transaction
   public void updateMappings(final Long roleId, final List<Long> deptIds) {
     if (CollectionUtil.isEmpty(deptIds)) {
       // 如果新的部门列表为空,则删除所有现有映射

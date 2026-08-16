@@ -18,7 +18,7 @@ import com.google.common.base.Preconditions;
 
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.data.tran.TranPolicy;
 
 import java.util.List;
@@ -40,7 +40,7 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * @return 参数配置信息
    */
   @Override
-  @Tran(policy = TranPolicy.supports)
+  @Transaction(policy = TranPolicy.supports)
   public <T> T findOneByConfigId(ActionContext context, final Integer configId, Class<T> resultClass) {
     Preconditions.checkNotNull(configId, "configId is null");
 
@@ -106,7 +106,7 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * @return 分页结果
    */
   @Override
-  @Tran(policy = TranPolicy.supports)
+  @Transaction(policy = TranPolicy.supports)
   public <T> Page<T> pageSearchConfig(final ActionContext context, final Page<T> page, final SysConfig searchReq,
       Class<T> resultClass) {
     if (Objects.isNull(searchReq)) {
@@ -140,7 +140,7 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * @param config 参数配置信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long insertConfig(final SysConfig config) {
     // 查询数据库中是否有该参数
@@ -158,7 +158,7 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * @param config 参数配置信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updateConfig(final SysConfig config) {
     checkConfigKeyUnique("修改", config);

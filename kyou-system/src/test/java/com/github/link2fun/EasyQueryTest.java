@@ -80,7 +80,7 @@ public class EasyQueryTest {
 //      .where(s -> s.dept().deptName().eq("测试部门"))
       .where((user, dept, userRole, role) -> dept.deptName().eq("测试部门"))
       .include(SysUserProxy::dept)
-      .includes(SysUserProxy::roles)
+      .include(SysUserProxy::roles)
       .toList();
     System.out.println(list1.size());
 

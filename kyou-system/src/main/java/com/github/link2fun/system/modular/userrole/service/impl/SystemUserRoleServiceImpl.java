@@ -10,7 +10,7 @@ import com.google.common.base.Preconditions;
 
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -131,7 +131,7 @@ public class SystemUserRoleServiceImpl implements ISystemUserRoleService {
    * @param userId  用户ID
    * @param roleIds 角色ID集合
    */
-  @Tran
+  @Transaction
   @Override
   public void updateMappingsByUserId(final Long userId, final List<Long> roleIds) {
     Preconditions.checkNotNull(userId, "用户ID不能为空");

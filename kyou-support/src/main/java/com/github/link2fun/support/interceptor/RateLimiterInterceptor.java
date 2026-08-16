@@ -11,6 +11,7 @@ import org.noear.solon.core.aspect.Invocation;
 import org.redisson.api.*;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 
 /**
  * 限流拦截器
@@ -45,7 +46,7 @@ public class RateLimiterInterceptor implements Interceptor {
       // 需要删除原来的限流器
       limiter.delete();
       // 再重新设置限流器
-      final boolean trySetRate = limiter.trySetRate(RateType.OVERALL, rateLimiter.count(), rateLimiter.time(), RateIntervalUnit.SECONDS);
+      final boolean trySetRate = limiter.trySetRate(RateType.OVERALL, rateLimiter.count(), Duration.ofSeconds(rateLimiter.time()));
       if (!trySetRate) {
         log.warn("设置限流器参数失败: {}", combineKey);
       } else {

@@ -8,7 +8,7 @@ import com.github.link2fun.support.core.domain.entity.proxy.SysRoleMenuProxy;
 import com.github.link2fun.system.modular.rolemenu.service.ISystemRoleMenuService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,7 +41,7 @@ public class SystemRoleMenuServiceImpl implements ISystemRoleMenuService {
    * @param menuIds 菜单id集合
    */
   @Override
-  @Tran
+  @Transaction
   public void updateMappings(final Long roleId, final List<Long> menuIds) {
     if (CollectionUtil.isEmpty(menuIds)) {
       // 如果新的菜单列表为空,则删除所有现有映射

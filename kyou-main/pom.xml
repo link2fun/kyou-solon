@@ -24,10 +24,10 @@
     <dependency>
       <groupId>org.noear</groupId>
       <artifactId>solon-web</artifactId>
-      <!-- 排除 snack3, 改用 jackson -->
+      <!-- 排除 snack4, 改用 jackson -->
       <exclusions>
         <exclusion>
-          <artifactId>solon-serialization-snack3</artifactId>
+          <artifactId>solon-serialization-snack4</artifactId>
           <groupId>org.noear</groupId>
         </exclusion>
       </exclusions>
@@ -58,7 +58,7 @@
 
     <dependency>
       <groupId>org.noear</groupId>
-      <artifactId>solon.logging.logback</artifactId>
+      <artifactId>solon-logging-logback</artifactId>
     </dependency>
 
     <!-- kyou system -->
@@ -91,11 +91,10 @@
 
     <finalName>${project.artifactId}-${project.version}-r${buildNumber}</finalName>
     <plugins>
-      <!-- 配置打包插件（并打包成胖包） -->
+      <!-- 配置打包插件（并打包成胖包），版本由 solon-parent 统一管理 -->
       <plugin>
         <groupId>org.noear</groupId>
         <artifactId>solon-maven-plugin</artifactId>
-        <version>3.0.5</version>
         <configuration>
           <!-- 指定启动主类 -->
           <mainClass>com.github.link2fun.KyouApp</mainClass>

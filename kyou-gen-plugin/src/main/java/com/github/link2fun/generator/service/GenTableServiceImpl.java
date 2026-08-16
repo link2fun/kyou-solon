@@ -27,7 +27,6 @@ import com.github.link2fun.support.utils.SecurityUtils;
 import com.github.link2fun.support.utils.StringUtils;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.anyline.metadata.Table;
 import org.anyline.proxy.ServiceProxy;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -38,7 +37,7 @@ import org.noear.solon.Solon;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
 import org.noear.solon.core.BeanWrap;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import javax.sql.DataSource;
 import java.io.ByteArrayOutputStream;
@@ -118,7 +117,7 @@ public class GenTableServiceImpl implements IGenTableService {
     String anylineServiceName = Solon.context().getWrapsOfType(DataSource.class).stream().filter(BeanWrap::typed)
       .findFirst().map(BeanWrap::name).orElse("default");
 
-    LinkedHashMap<String, Table<?>> tables = ServiceProxy.service(anylineServiceName).metadata().tables();
+    var tables = ServiceProxy.service(anylineServiceName).metadata().tables();
     List<GenTable> dataList = tables.values().stream()
       .filter(info -> !StrUtil.containsAny(info.getName(), "qrtz_", "gen_"))
       .map(t -> {
@@ -161,7 +160,7 @@ public class GenTableServiceImpl implements IGenTableService {
       .map(BeanWrap::name)
       .orElse("default");
 
-    LinkedHashMap<String, Table<?>> tables = ServiceProxy.service(anylineServiceName).metadata().tables();
+    var tables = ServiceProxy.service(anylineServiceName).metadata().tables();
     return tables.values().stream()
       .filter(info -> StrUtil.containsAny(info.getName(), tableNames))
       .map(t -> {
@@ -183,7 +182,7 @@ public class GenTableServiceImpl implements IGenTableService {
   @Override
   public List<GenTable> selectGenTableAll() {
     return entityQuery.queryable(GenTable.class)
-      .includes(GenTableProxy::columns)
+      .include(GenTableProxy::columns)
       .toList();
   }
 
@@ -193,7 +192,7 @@ public class GenTableServiceImpl implements IGenTableService {
    * @param genTable 业务信息
    */
   @Override
-  @Tran
+  @Transaction
   public void updateGenTable(GenTable genTable) {
     try {
       validateEdit(genTable);
@@ -219,7 +218,7 @@ public class GenTableServiceImpl implements IGenTableService {
    * @param tableIds 需要删除的数据ID
    */
   @Override
-  @Tran
+  @Transaction
   public void deleteGenTableByIds(Long[] tableIds) {
     entityQuery.deletable(GenTable.class)
       .allowDeleteStatement(true)
@@ -237,7 +236,7 @@ public class GenTableServiceImpl implements IGenTableService {
    * @param tableList 导入表列表
    */
   @Override
-  @Tran
+  @Transaction
   public void importGenTable(List<GenTable> tableList) {
     String operatorName = SecurityUtils.getUsername();
     try {
@@ -357,11 +356,11 @@ public class GenTableServiceImpl implements IGenTableService {
    * @param tableName 表名称
    */
   @Override
-  @Tran
+  @Transaction
   public void syncDb(String tableName) {
     GenTable table = entityQuery.queryable(GenTable.class)
       .where(genTable -> genTable.tableName().eq(tableName))
-      .includes(GenTableProxy::columns)
+      .include(GenTableProxy::columns)
       .singleNotNull();
     List<GenTableColumn> tableColumns = table.getColumns();
     Map<String, GenTableColumn> tableColumnMap = tableColumns.stream().collect(Collectors.toMap(GenTableColumn::getColumnName, Function.identity()));
@@ -440,7 +439,7 @@ public class GenTableServiceImpl implements IGenTableService {
 
     GenTable table = entityQuery.queryable(GenTable.class)
       .where(proxy -> proxy.tableName().eq(tableName))
-      .includes(GenTableProxy::columns)
+      .include(GenTableProxy::columns)
       .singleNotNull();
 
     // 设置主子表信息
@@ -501,7 +500,7 @@ public class GenTableServiceImpl implements IGenTableService {
   public GenTable selectGenTableByName(String tableName) {
     return entityQuery.queryable(GenTable.class)
       .where(proxy -> proxy.tableName().eq(tableName))
-      .includes(GenTableProxy::columns)
+      .include(GenTableProxy::columns)
       .singleNotNull();
   }
 
