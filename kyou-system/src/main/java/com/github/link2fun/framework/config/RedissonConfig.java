@@ -20,7 +20,7 @@ import org.noear.solon.cache.redisson.RedissonCacheService;
 import org.noear.solon.data.cache.CacheService;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
-import org.redisson.solon.RedissonSupplier;
+import org.redisson.solon.RedissonClientOriginalSupplier;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,7 +65,7 @@ public class RedissonConfig {
 
 
   @Bean(value = "redissonClient", typed = true)
-  public RedissonClient redissonClient(@Inject("${kyou.redis}") RedissonSupplier supplier, @Inject ObjectMapper objectMapper) {
+  public RedissonClient redissonClient(@Inject("${kyou.redis}") RedissonClientOriginalSupplier supplier, @Inject ObjectMapper objectMapper) {
 
     return supplier
       .withConfig(config -> config.setCodec(new JsonJacksonCodec(objectMapper)))

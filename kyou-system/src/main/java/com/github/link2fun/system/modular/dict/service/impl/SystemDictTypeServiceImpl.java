@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Init;
 import org.noear.solon.annotation.Inject;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.Comparator;
 import java.util.List;
@@ -215,7 +215,7 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @param dictType 字典类型信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long insertDictType(final SysDictType dictType) {
     checkDictTypeUnique("新增", dictType);
@@ -233,7 +233,7 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @param dictTypeNew 字典类型信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updateDictType(final SysDictType dictTypeNew) {
     checkDictTypeUnique("修改", dictTypeNew);

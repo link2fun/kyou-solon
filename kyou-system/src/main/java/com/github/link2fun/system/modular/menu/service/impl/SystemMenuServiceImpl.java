@@ -25,7 +25,7 @@ import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.data.tran.TranPolicy;
 
 import java.util.*;
@@ -357,7 +357,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menu 菜单信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long insertMenu(final SysMenu menu) {
     checkMenuFieldUnique("新增", menu);
@@ -372,7 +372,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menu 菜单信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updateMenu(final SysMenu menu) {
     checkMenuFieldUnique("修改", menu);
@@ -390,7 +390,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menuId 菜单ID
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long deleteMenuById(final Long menuId) {
     if (hasChildByMenuId(menuId)) {
@@ -405,7 +405,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
       .executeRows();
   }
 
-  @Tran(policy = TranPolicy.supports)
+  @Transaction(policy = TranPolicy.supports)
   @Override
   public List<SysMenu> selectMenuTreeAll() {
     return entityQuery.queryable(SysMenu.class)

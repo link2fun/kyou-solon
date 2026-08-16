@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 import java.util.Objects;
@@ -279,7 +279,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param role 角色信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long insertRole(final SysRoleAddReq role) {
     checkRoleFieldUnique("新增", role.getRoleName(), role.getRoleKey(), null);
@@ -299,7 +299,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param modifyReq 角色信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updateRole(final SysRoleModifyReq modifyReq) {
     Long roleId = modifyReq.getRoleId();
@@ -326,7 +326,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param changeStatusReq 角色信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long changeRoleStatus(final SysRoleChangeStatusReq changeStatusReq) {
     checkRoleAllowed(changeStatusReq.getRoleId());
@@ -343,7 +343,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param changeDataScopeReq 角色信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long authDataScope(final SysRoleChangeDataScopeReq changeDataScopeReq) {
     checkRoleAllowed(changeDataScopeReq.getRoleId());
@@ -371,7 +371,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param roleIds 需要删除的角色ID
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long deleteRoleByIds(final List<Long> roleIds) {
     for (Long roleId : roleIds) {
@@ -424,7 +424,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param userIds 需要删除的用户数据ID
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public Boolean insertAuthUsers(final Long roleId, final List<Long> userIds) {
     checkRoleDataScope(roleId);

@@ -11,9 +11,8 @@ import org.noear.solon.annotation.Mapping;
 import org.noear.solon.annotation.SolonMain;
 import org.noear.solon.core.Lifecycle;
 import org.noear.solon.core.convert.Converter;
-import org.noear.solon.core.event.EventBus;
 import org.noear.solon.scheduling.annotation.EnableScheduling;
-import org.noear.solon.serialization.jackson.JacksonRenderFactory;
+import org.noear.solon.serialization.jackson.JacksonStringSerializer;
 import org.noear.solon.web.staticfiles.StaticMappings;
 import org.noear.solon.web.staticfiles.repository.FileStaticRepository;
 
@@ -42,15 +41,15 @@ public class KyouApp {
       });
 
       final long MAX_SAFE_INTEGER = 9007199254740991L;
-      EventBus.subscribe(JacksonRenderFactory.class, jacksonRenderFactory -> {
+      app.context().getBeanAsync(JacksonStringSerializer.class, jacksonSerializer -> {
         final Converter<Long, Object> converter = value -> {
           if (value != null && value < MAX_SAFE_INTEGER) {
             return value;
           }
           return String.valueOf(value);
         };
-        jacksonRenderFactory.addConvertor(Long.class, converter);
-        jacksonRenderFactory.addConvertor(long.class, converter);
+        jacksonSerializer.addEncoder(Long.class, converter);
+        jacksonSerializer.addEncoder(long.class, converter);
       });
 
       /* 提示：path 可以是目录或单文件；repository 只能是目录（表示这个 path 映射到这个 repository 里） */
@@ -61,7 +60,7 @@ public class KyouApp {
 
       // 添加一个ThreadLocal工厂，使用TransmittableThreadLocal, 来支持跨线程传递
       // noinspection rawtypes
-      app.factoryManager().threadLocalFactory((applyFor, i) -> new TransmittableThreadLocal());
+      app.factories().threadLocalFactory((applyFor, i) -> new TransmittableThreadLocal());
     });
 
     long times = System.currentTimeMillis() - start;

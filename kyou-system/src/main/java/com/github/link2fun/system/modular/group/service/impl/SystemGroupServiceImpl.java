@@ -12,7 +12,7 @@ import com.github.link2fun.system.modular.group.service.ISystemGroupService;
 
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 import java.util.Objects;
@@ -56,7 +56,7 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
   /**
    * 新增群组(内部已完成名称唯一性检查)
    */
-  @Tran
+  @Transaction
   @Override
   public long insertGroup(final SysGroup group) {
     checkGroupNameUnique("新增", group);
@@ -66,7 +66,7 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
   /**
    * 修改群组(内部已完成名称唯一性检查)
    */
-  @Tran
+  @Transaction
   @Override
   public long updateGroup(final SysGroup group) {
     checkGroupNameUnique("修改", group);
@@ -77,7 +77,7 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
   /**
    * 批量删除群组
    */
-  @Tran
+  @Transaction
   @Override
   public long deleteGroupByIds(final List<Long> groupIds) {
     return entityQuery.deletable(SysGroup.class)

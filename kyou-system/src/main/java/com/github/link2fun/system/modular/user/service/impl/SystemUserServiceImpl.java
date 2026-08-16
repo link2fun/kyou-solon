@@ -50,7 +50,7 @@ import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
 import org.noear.solon.core.handle.Result;
 import org.noear.solon.core.util.DataThrowable;
-import org.noear.solon.data.annotation.Tran;
+import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.data.tran.TranPolicy;
 
 import java.util.Date;
@@ -269,7 +269,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId()))
       .where(whereExpression)
       .include(SysUserProxy::dept)
-      .includes(SysUserProxy::roles)
+      .include(SysUserProxy::roles)
       .selectAutoInclude(SysUserDTO.class);
   }
 
@@ -455,7 +455,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param addReq 用户信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public Long insertUser(final SysUserReq.AddReq addReq) {
     checkUserFieldUnique("新增", addReq.getUserName(), addReq.getPhonenumber(), addReq.getEmail(), null);
@@ -504,7 +504,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param updateReq 用户信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updateUser(final ActionContext context, final SysUserReq.UpdateReq updateReq) {
     Long userId = updateReq.getUserId();
@@ -541,7 +541,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param userId  用户ID
    * @param roleIds 角色组
    */
-  @Tran(policy = TranPolicy.required)
+  @Transaction(policy = TranPolicy.required)
   @Override
   public void insertUserAuth(final ActionContext context, final Long userId, final List<Long> roleIds) {
     checkUserDataScope(context, userId);
@@ -556,7 +556,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param user    用户信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updateUserStatus(final ActionContext context, final SysUser user) {
     checkUserAllowed(user.getUserId());
@@ -573,7 +573,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param user 用户信息
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long updateUserProfile(final SysUser user) {
     checkUserFieldUnique("修改", user.getUserName(), user.getPhonenumber(), user.getEmail(), user.getUserId());
@@ -606,7 +606,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param user    用户信息(密码需已加密)
    * @return 结果
    */
-  @Tran
+  @Transaction
   @Override
   public long resetPwd(final ActionContext context, final SysUser user) {
     checkUserAllowed(user.getUserId());

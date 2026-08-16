@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.noear</groupId>
     <artifactId>solon-parent</artifactId>
-    <version>3.4.2</version>
+    <version>4.0.5</version>
     <relativePath/>
   </parent>
 
@@ -31,11 +31,11 @@
   <properties>
     <kyou.version>0.0.1</kyou.version>
     <java.version>17</java.version>
-    <jackson.version>2.17.0</jackson.version>
-    <mysql.connector.version>8.0.30</mysql.connector.version>
-    <sa-token.redisson.version>1.44.0</sa-token.redisson.version>
-    <poi.version>5.1.0</poi.version>
-    <easy-query.version>3.0.60</easy-query.version>
+    <jackson.version>2.21.4</jackson.version>
+    <mysql.connector.version>26.7.0</mysql.connector.version>
+    <sa-token.version>1.45.0</sa-token.version>
+    <poi.version>5.5.1</poi.version>
+    <easy-query.version>3.2.15</easy-query.version>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -47,9 +47,16 @@
     <dependencies>
       <!-- Mysql驱动包 -->
       <dependency>
-        <groupId>mysql</groupId>
-        <artifactId>mysql-connector-java</artifactId>
+        <groupId>com.mysql</groupId>
+        <artifactId>mysql-connector-j</artifactId>
         <version>${mysql.connector.version}</version>
+      </dependency>
+
+      <!-- sa-token solon 插件 -->
+      <dependency>
+        <groupId>cn.dev33</groupId>
+        <artifactId>sa-token-solon-plugin</artifactId>
+        <version>${sa-token.version}</version>
       </dependency>
 
       <!-- 结合 redisson 实现 SaTokenDao -->
@@ -57,14 +64,21 @@
       <dependency>
         <groupId>cn.dev33</groupId>
         <artifactId>sa-token-redisson</artifactId>
-        <version>${sa-token.redisson.version}</version>
+        <version>${sa-token.version}</version>
       </dependency>
 
       <!-- sa-token JSON 序列化支持 (SaJsonTemplate 实现) -->
       <dependency>
         <groupId>cn.dev33</groupId>
         <artifactId>sa-token-jackson</artifactId>
-        <version>${sa-token.redisson.version}</version>
+        <version>${sa-token.version}</version>
+      </dependency>
+
+      <!-- sa-token-redisson 传递的 redisson 与 solon 生态版本不一致，统一跟随 solon-parent 管理的版本 -->
+      <dependency>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson</artifactId>
+        <version>${redisson.version}</version>
       </dependency>
 
       <!-- hutool工具 -->
@@ -86,7 +100,7 @@
       <dependency>
         <groupId>cn.idev.excel</groupId>
         <artifactId>fastexcel</artifactId>
-        <version>1.0.0</version>
+        <version>1.3.0</version>
       </dependency>
 
 
@@ -102,23 +116,14 @@
         <version>${kyou.version}</version>
       </dependency>
 
-      <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml -->
+      <!-- Jackson BOM 统一管理全家族版本（annotations/core/databind/yaml/jsr310 等），
+           避免单独钉 core/databind 时 annotations 仍跟随 solon-parent 导致版本错位 -->
       <dependency>
-        <groupId>com.fasterxml.jackson.dataformat</groupId>
-        <artifactId>jackson-dataformat-yaml</artifactId>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-core</artifactId>
-        <version>${jackson.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <!-- 代码生成 -->
@@ -143,7 +148,7 @@
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
-        <version>2.22.1</version>
+        <version>2.26.1</version>
         <scope>compile</scope>
       </dependency>
 
@@ -151,7 +156,7 @@
       <dependency>
         <groupId>net.bytebuddy</groupId>
         <artifactId>byte-buddy</artifactId>
-        <version>1.14.12</version>
+        <version>1.18.11</version>
       </dependency>
 
     </dependencies>

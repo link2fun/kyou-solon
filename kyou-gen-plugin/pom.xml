@@ -30,12 +30,12 @@
     <dependency>
       <groupId>org.anyline</groupId>
       <artifactId>anyline-environment-solon-plugin</artifactId>
-      <version>8.7.2-jdk17-20241022</version>
+      <version>17.7.6-20260815</version>
     </dependency>
     <dependency>
       <groupId>org.anyline</groupId>
       <artifactId>anyline-data-jdbc-mysql</artifactId>
-      <version>8.7.2-jdk17-20241022</version>
+      <version>17.7.6-20260815</version>
     </dependency>
 
     <!--velocity代码生成使用模板 -->
