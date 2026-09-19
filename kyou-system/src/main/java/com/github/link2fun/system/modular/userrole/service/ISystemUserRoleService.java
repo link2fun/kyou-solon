@@ -47,19 +47,12 @@ public interface ISystemUserRoleService {
   List<Long> findRoleIdListByUserId(Long userId);
 
   /**
-   * 建立用户和角色关联
+   * 重新分配用户的角色, 用户最终持有的角色与 roleIds 完全一致
    *
    * @param userId  用户ID
-   * @param roleIds 角色ID集合
+   * @param roleIds 角色ID集合, null 或空集合表示清空
    */
-  void updateMappingsByUserId(Long userId, List<Long> roleIds);
-
-  /**
-   * 通过用户ID删除用户和角色关联
-   *
-   * @param userId 用户ID
-   */
-  void deleteUserRoleByUserId(Long userId);
+  void reassignRoles(Long userId, List<Long> roleIds);
 
   /**
    * 批量删除用户角色关联信息

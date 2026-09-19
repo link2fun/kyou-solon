@@ -61,6 +61,7 @@ public interface ISystemUserService {
   SysUserDTO selectUserByUserName(String userName);
 
 
+  /** 构造已预加载部门与角色的用户 DTO 查询 */
   Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression2<SysUserProxy, SysDeptProxy> whereExpression);
 
   /** 根据用户 tokenInfo 查询登录用户信息 */
@@ -92,12 +93,13 @@ public interface ISystemUserService {
 
 
   /**
-   * 判断某一列的值是否是唯一的
+   * 判断某一列的值是否未被占用（唯一）。返回 true 表示没有任何一行用了这个值,
+   * 或唯一用了这个值的那一行就是 userId 自己(编辑时排除自身)。
    *
    * @param column      列
    * @param columnValue 列的值
-   * @param userId      用户id, 会排除当前用户
-   * @return 结果
+   * @param userId      当前用户id, 用于排除自身; 新增场景传 null
+   * @return true 表示该值未被其他行占用
    */
   boolean isColumnValueUnique(SQLStringTypeColumn<SysUserProxy> column, String columnValue, final Long userId);
 
@@ -189,14 +191,6 @@ public interface ISystemUserService {
   boolean resetUserPwd(String userName, String password);
 
   /**
-   * 通过用户ID删除用户
-   *
-   * @param userId 用户ID
-   * @return 结果
-   */
-  boolean deleteUserById(Long userId);
-
-  /**
    * 批量删除用户信息
    *
    * @param context
@@ -232,5 +226,6 @@ public interface ISystemUserService {
    */
   Long findUserIdByUserName(String userName);
 
-  SysUser getById(long userId);
+  /** 根据用户ID查询用户 */
+  SysUser getByIdNotNull(long userId);
 }

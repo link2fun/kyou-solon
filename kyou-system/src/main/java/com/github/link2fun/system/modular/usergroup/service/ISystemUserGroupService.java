@@ -6,13 +6,12 @@ import java.util.List;
 public interface ISystemUserGroupService {
 
   /**
-   * 给用户分配多个群组, 没有在分配群组内的会进行取消
+   * 重新分配用户的群组, 用户最终持有的群组与 groupIds 完全一致
    *
    * @param userId   用户ID
-   * @param groupIds 群组ID List
-   * @return 是否成功
+   * @param groupIds 群组ID集合, null 或空集合表示清空
    */
-  boolean assignGroups(Long userId, List<Long> groupIds);
+  void reassignGroups(Long userId, List<Long> groupIds);
 
   /**
    * 向群组中添加多个用户

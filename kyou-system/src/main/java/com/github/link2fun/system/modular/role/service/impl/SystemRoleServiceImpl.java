@@ -58,6 +58,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   @Db
   private EasyEntityQuery entityQuery;
 
+  /** 按条件分页查询角色, 受数据范围约束 */
   @DataScope(deptAlias = SysDept.TABLE_ALIAS)
   @Override
   public <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> page, final SysRole searchReq, Class<T> resultClass) {
@@ -288,7 +289,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
     long row = entityQuery.insertable(entity).executeRows(true);
     final List<Long> menuIds = role.getMenuIds();
 
-    roleMenuService.updateMappings(entity.getRoleId(), menuIds);
+    roleMenuService.reassignMenus(entity.getRoleId(), menuIds);
 
     return row;
   }
@@ -315,7 +316,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
     long row = entityQuery.updatable(role).executeRows();
 
-    roleMenuService.updateMappings(roleId, modifyReq.getMenuIds());
+    roleMenuService.reassignMenus(roleId, modifyReq.getMenuIds());
 
     return row;
   }
@@ -349,7 +350,6 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
     checkRoleAllowed(changeDataScopeReq.getRoleId());
     checkRoleDataScope(changeDataScopeReq.getRoleId());
 
-    // 修改角色信息
     long executeRows = entityQuery.updatable(SysRole.class)
       .whereById(changeDataScopeReq.getRoleId())
       .setColumns(role -> {
@@ -358,8 +358,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       })
       .executeRows();
 
-    // 修改角色与部门关联关系
-    roleDeptService.updateMappings(changeDataScopeReq.getRoleId(), changeDataScopeReq.getDeptIds());
+    roleDeptService.reassignDepts(changeDataScopeReq.getRoleId(), changeDataScopeReq.getDeptIds());
 
     return executeRows;
   }
@@ -400,6 +399,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    *
    * @return 结果
    */
+  @Transaction
   @Override
   public boolean removeUserRoleMapping(Long userId, Long roleId) {
     return userRoleService.removeMapping(userId, roleId);
@@ -412,6 +412,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param userIds 需要取消授权的用户数据ID
    * @return 结果
    */
+  @Transaction
   @Override
   public boolean deleteAuthUsers(final Long roleId, final List<Long> userIds) {
     return userRoleService.deleteUserRoleInfos(roleId, userIds);
@@ -444,6 +445,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       .singleOrNull();
   }
 
+  /** 根据角色ID集合查询角色 */
   @Override
   public List<SysRole> listByIds(List<Long> roleIdList) {
     return entityQuery.queryable(SysRole.class).whereByIds(roleIdList).toList();

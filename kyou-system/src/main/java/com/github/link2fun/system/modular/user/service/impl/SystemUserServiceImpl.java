@@ -263,6 +263,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   }
 
 
+  /** 构造已预加载部门与角色的用户 DTO 查询 */
   @Override
   public Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression2<SysUserProxy, SysDeptProxy> whereExpression) {
     return entityQuery.queryable(SysUser.class)
@@ -371,6 +372,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
 
 
+  /** 判断某一列的值是否未被占用（唯一） */
   @Override
   public boolean isColumnValueUnique(SQLStringTypeColumn<SysUserProxy> column, final String columnValue, final Long userId) {
     if (StrUtil.isBlank(columnValue)) {
@@ -381,21 +383,21 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
     final List<Long> userIdList = entityQuery.queryable(SysUser.class)
       .where(user -> {
-        // 采用动态拼接
         new SQLStringTypeColumnImpl<>(user.getEntitySQLContext(), user.getTable(), column.getValue()).eq(columnValue);
         user.delFlag().eq(UserConstants.NORMAL);
       })
       .selectColumn(SysUserProxy::userId)
       .toList();
 
+    if (CollectionUtil.isEmpty(userIdList)) {
+      return true;
+    }
+
     if (CollectionUtil.size(userIdList) > 1) {
-      // 当有两个用户的手机号一致的时候, 肯定算是重复了
       return false;
     }
 
-
-    // 如果只有一个用户, 判断是否是当前用户, 当包含时,说明 数据跟当前用户(传入的用户)重复, 即自己跟自己一样
-    return CollectionUtil.contains(userIdList, userId);
+    return Objects.equals(userIdList.get(0), userId);
   }
 
 
@@ -477,10 +479,8 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .executeRows(true);
     Long userId = user.getUserId();
 
-    // 保存用户岗位关联
-    userPostService.updateMappingsByUserId(userId, addReq.getPostIds());
-    // 保存用户与角色关联
-    userRoleService.updateMappingsByUserId(userId, addReq.getRoleIds());
+    userPostService.reassignPosts(userId, addReq.getPostIds());
+    userRoleService.reassignRoles(userId, addReq.getRoleIds());
     return userId;
   }
 
@@ -519,13 +519,10 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .singleNotNull();
 
 
-    // 更新用户与角色关联
-    userRoleService.updateMappingsByUserId(userId, updateReq.getRoleIds());
+    userRoleService.reassignRoles(userId, updateReq.getRoleIds());
 
-    // 更新用户与岗位关联
-    userPostService.updateMappingsByUserId(userId, updateReq.getPostIds());
+    userPostService.reassignPosts(userId, updateReq.getPostIds());
 
-    // sysUser 从 user 复制属性
     BeanUtil.copyProperties(updateReq, sysUser);
 
 //    return getBaseMapper().updateById(sysUser);
@@ -545,8 +542,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public void insertUserAuth(final ActionContext context, final Long userId, final List<Long> roleIds) {
     checkUserDataScope(context, userId);
-    // 新增用户与角色关联
-    userRoleService.updateMappingsByUserId(userId, roleIds);
+    userRoleService.reassignRoles(userId, roleIds);
   }
 
   /**
@@ -634,33 +630,13 @@ public class SystemUserServiceImpl implements ISystemUserService {
   }
 
   /**
-   * 通过用户ID删除用户
-   *
-   * @param userId 用户ID
-   * @return 结果
-   */
-  @Override
-  public boolean deleteUserById(final Long userId) {
-    checkUserAllowed(userId);
-    // 删除用户与角色关联
-    userRoleService.deleteUserRoleByUserId(userId);
-    // 删除用户与岗位表
-    userPostService.deleteUserPostByUserId(userId);
-
-    return entityQuery.updatable(SysUser.class)
-      .setColumns(user -> user.delFlag().set(UserConstants.DELETED))
-      .where(user -> user.userId().eq(userId))
-      .executeRows() > 0;
-
-  }
-
-  /**
    * 批量删除用户信息
    *
    * @param context 操作上下文, 含有当前用户信息
    * @param userIds 需要删除的用户ID
    * @return 结果
    */
+  @Transaction
   @Override
   public boolean deleteUserByIds(final ActionContext context, final List<Long> userIds) {
 
@@ -791,8 +767,9 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .orElse(-1L);
   }
 
+  /** 根据用户ID查询用户 */
   @Override
-  public SysUser getById(long userId) {
+  public SysUser getByIdNotNull(long userId) {
     return entityQuery.queryable(SysUser.class).whereById(userId).singleNotNull();
   }
 }

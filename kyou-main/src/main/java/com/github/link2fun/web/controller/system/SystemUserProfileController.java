@@ -61,7 +61,7 @@ public class SystemUserProfileController extends BaseController {
 
     final SessionUser currentUser = SaSessionBizTool.getCurrentUser();
 
-    final SysUser user = userService.getById(userId);
+    final SysUser user = userService.getByIdNotNull(userId);
 
 
     user.setNickName(updateUserRequest.getNickName());
@@ -90,7 +90,7 @@ public class SystemUserProfileController extends BaseController {
     SessionUser currentUser = getCurrentUser();
     String userName = currentUser.getUsername();
     final Long userId = currentUser.getUserId();
-    final SysUser user = userService.getById(userId);
+    final SysUser user = userService.getByIdNotNull(userId);
     final String password = user.getPassword();
     if (!SecurityUtils.matchesPassword(oldPassword, password)) {
       return error("修改密码失败，旧密码错误");

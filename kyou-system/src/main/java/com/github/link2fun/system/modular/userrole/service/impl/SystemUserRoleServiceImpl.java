@@ -5,21 +5,24 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import com.github.link2fun.support.core.domain.entity.proxy.SysUserRoleProxy;
+import com.github.link2fun.support.easyquery.MappingSync;
 import com.github.link2fun.system.modular.userrole.service.ISystemUserRoleService;
-import com.google.common.base.Preconditions;
-
-import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.data.annotation.Transaction;
+import org.noear.solon.annotation.Inject;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Component
 public class SystemUserRoleServiceImpl implements ISystemUserRoleService {
   @Db
   private EasyEntityQuery entityQuery;
+
+  @Inject
+  private MappingSync mappingSync;
+
+  @Inject
+  private UserRoleMapping userRoleMapping;
 
   /**
    * 通过角色ID查询角色使用数量
@@ -126,79 +129,14 @@ public class SystemUserRoleServiceImpl implements ISystemUserRoleService {
   }
 
   /**
-   * 建立用户和角色关联
+   * 重新分配用户的角色, 用户最终持有的角色与 roleIds 完全一致
    *
    * @param userId  用户ID
-   * @param roleIds 角色ID集合
-   */
-  @Transaction
-  @Override
-  public void updateMappingsByUserId(final Long userId, final List<Long> roleIds) {
-    Preconditions.checkNotNull(userId, "用户ID不能为空");
-
-    if (CollectionUtil.isEmpty(roleIds)) {
-      log.debug("[更新用户角色关系] 没有角色要关联, 直接删除已存在的关联关系");
-      // 没有角色要关联, 直接删除已存在的关联关系
-      entityQuery.deletable(SysUserRole.class)
-          .where(userRole -> userRole.userId().eq(userId))
-          .allowDeleteStatement(true)
-          .executeRows();
-      return;
-    }
-
-    // 查询现有的用户-角色映射关系
-    List<Long> existRoleIds = entityQuery.queryable(SysUserRole.class)
-        .where(userRole -> userRole.userId().eq(userId))
-        .selectColumn(SysUserRoleProxy::roleId)
-        .toList();
-
-    // 需要新增的角色ID
-    List<Long> toInsertRoleIds = roleIds.stream()
-        .filter(roleId -> !existRoleIds.contains(roleId))
-        .collect(Collectors.toList());
-
-    // 需要删除的角色ID
-    List<Long> toDeleteRoleIds = existRoleIds.stream()
-        .filter(roleId -> !roleIds.contains(roleId))
-        .collect(Collectors.toList());
-
-    // 执行新增
-    if (!CollectionUtil.isEmpty(toInsertRoleIds)) {
-      log.debug("[更新用户角色关系] 有角色要新增, 新增: {}", toInsertRoleIds);
-      final List<SysUserRole> userRoleList = toInsertRoleIds.stream()
-          .map(roleId -> {
-            SysUserRole userRole = new SysUserRole();
-            userRole.setUserId(userId);
-            userRole.setRoleId(roleId);
-            return userRole;
-          }).collect(Collectors.toList());
-      entityQuery.insertable(userRoleList).batch().executeRows();
-    }
-
-    // 执行删除
-    if (!CollectionUtil.isEmpty(toDeleteRoleIds)) {
-      log.debug("[更新用户角色关系] 有角色要删除, 删除: {}", toDeleteRoleIds);
-      entityQuery.deletable(SysUserRole.class)
-          .where(userRole -> {
-            userRole.userId().eq(userId);
-            userRole.roleId().in(toDeleteRoleIds);
-          })
-          .allowDeleteStatement(true)
-          .executeRows();
-    }
-  }
-
-  /**
-   * 通过用户ID删除用户和角色关联
-   *
-   * @param userId 用户ID
+   * @param roleIds 角色ID集合, null 或空集合表示清空
    */
   @Override
-  public void deleteUserRoleByUserId(final Long userId) {
-    entityQuery.deletable(SysUserRole.class)
-        .allowDeleteStatement(true)
-        .where(userRole -> userRole.userId().eq(userId))
-        .executeRows();
+  public void reassignRoles(final Long userId, final List<Long> roleIds) {
+    mappingSync.sync(userRoleMapping, userId, roleIds);
   }
 
   /**
