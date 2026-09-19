@@ -5,13 +5,12 @@ import java.util.List;
 public interface ISystemRoleDeptService {
 
   /**
-   * 更新角色和部门的关系
-   * 
-   * @param roleId  角色id*
-   * @param deptIds 部门id集合
+   * 重新分配角色的部门, 角色最终可见的部门与 deptIds 完全一致
+   *
+   * @param roleId  角色ID
+   * @param deptIds 部门ID集合, null 或空集合表示清空
    */
-
-  void updateMappings(Long roleId, List<Long> deptIds);
+  void reassignDepts(Long roleId, List<Long> deptIds);
 
   /**
    * 批量删除角色部门关联信息

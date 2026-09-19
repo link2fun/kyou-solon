@@ -12,12 +12,12 @@ public interface ISystemRoleMenuService {
   long countByMenuId(Long menuId);
 
   /**
-   * 更新角色和菜单的关系
-   * 
-   * @param roleId  角色id
-   * @param menuIds 菜单id集合
+   * 重新分配角色的菜单, 角色最终可见的菜单与 menuIds 完全一致
+   *
+   * @param roleId  角色ID
+   * @param menuIds 菜单ID集合, null 或空集合表示清空
    */
-  void updateMappings(Long roleId, List<Long> menuIds);
+  void reassignMenus(Long roleId, List<Long> menuIds);
 
   /**
    * 批量删除角色菜单关联信息

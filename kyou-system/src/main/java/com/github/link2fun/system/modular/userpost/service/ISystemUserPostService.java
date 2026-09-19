@@ -5,14 +5,6 @@ import java.util.List;
 public interface ISystemUserPostService {
 
   /**
-   * 通过岗位ID查询岗位使用数量
-   *
-   * @param postId 岗位ID
-   * @return 结果
-   */
-  long countUserPostById(Long postId);
-
-  /**
    * 根据用户ID查询岗位IDList
    *
    * @param userId 用户ID
@@ -21,19 +13,12 @@ public interface ISystemUserPostService {
   List<Long> findPostIdListByUserId(Long userId);
 
   /**
-   * 建立用户和岗位关联
+   * 重新分配用户的岗位, 用户最终持有的岗位与 postIds 完全一致
    *
    * @param userId  用户ID
-   * @param postIds 岗位ID集合
+   * @param postIds 岗位ID集合, null 或空集合表示清空
    */
-  void updateMappingsByUserId(Long userId, List<Long> postIds);
-
-  /**
-   * 通过用户ID删除用户和岗位关联
-   *
-   * @param userId 用户ID
-   */
-  void deleteUserPostByUserId(Long userId);
+  void reassignPosts(Long userId, List<Long> postIds);
 
   /**
    * 批量删除用户岗位关联信息

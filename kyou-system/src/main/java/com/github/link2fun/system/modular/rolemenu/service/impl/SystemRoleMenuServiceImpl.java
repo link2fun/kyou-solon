@@ -4,21 +4,24 @@ import cn.hutool.core.collection.CollectionUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.domain.entity.SysRoleMenu;
-import com.github.link2fun.support.core.domain.entity.proxy.SysRoleMenuProxy;
+import com.github.link2fun.support.easyquery.MappingSync;
 import com.github.link2fun.system.modular.rolemenu.service.ISystemRoleMenuService;
-import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.data.annotation.Transaction;
+import org.noear.solon.annotation.Inject;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Slf4j
 @Component
 public class SystemRoleMenuServiceImpl implements ISystemRoleMenuService {
 
   @Db
   private EasyEntityQuery entityQuery;
+
+  @Inject
+  private MappingSync mappingSync;
+
+  @Inject
+  private RoleMenuMapping roleMenuMapping;
 
   /**
    * 查询菜单使用数量
@@ -33,67 +36,15 @@ public class SystemRoleMenuServiceImpl implements ISystemRoleMenuService {
       .count();
   }
 
-
   /**
-   * 更新角色和菜单的关系
+   * 重新分配角色的菜单, 角色最终可见的菜单与 menuIds 完全一致
    *
-   * @param roleId  角色id
-   * @param menuIds 菜单id集合
+   * @param roleId  角色ID
+   * @param menuIds 菜单ID集合, null 或空集合表示清空
    */
   @Override
-  @Transaction
-  public void updateMappings(final Long roleId, final List<Long> menuIds) {
-    if (CollectionUtil.isEmpty(menuIds)) {
-      // 如果新的菜单列表为空,则删除所有现有映射
-      entityQuery.deletable(SysRoleMenu.class)
-        .where(roleMenu -> roleMenu.roleId().eq(roleId))
-        .allowDeleteStatement(true)
-        .executeRows();
-      return;
-    }
-
-    // 查询现有的角色-菜单映射关系
-    List<Long> existMenuIds = entityQuery.queryable(SysRoleMenu.class)
-      .where(roleMenu -> roleMenu.roleId().eq(roleId))
-      .selectColumn(SysRoleMenuProxy::menuId)
-      .toList();
-
-    // 需要新增的菜单ID
-    List<Long> toInsertMenuIds = menuIds.stream()
-      .filter(menuId -> !existMenuIds.contains(menuId))
-      .collect(Collectors.toList());
-
-    // 需要删除的菜单ID
-    List<Long> toDeleteMenuIds = existMenuIds.stream()
-      .filter(menuId -> !menuIds.contains(menuId))
-      .collect(Collectors.toList());
-
-    // 执行新增
-    if (!CollectionUtil.isEmpty(toInsertMenuIds)) {
-      // 组装新增数据
-      final List<SysRoleMenu> roleMenuList = toInsertMenuIds.stream()
-        .map(menuId -> {
-          SysRoleMenu sysRoleMenu = new SysRoleMenu();
-          sysRoleMenu.setRoleId(roleId);
-          sysRoleMenu.setMenuId(menuId);
-          return sysRoleMenu;
-        }).collect(Collectors.toList());
-      // 执行新增
-      entityQuery.insertable(roleMenuList)
-        .batch()
-        .executeRows();
-    }
-
-    // 执行删除
-    if (!CollectionUtil.isEmpty(toDeleteMenuIds)) {
-      entityQuery.deletable(SysRoleMenu.class)
-        .where(roleMenu -> {
-          roleMenu.roleId().eq(roleId);
-          roleMenu.menuId().in(toDeleteMenuIds);
-        })
-        .allowDeleteStatement(true)
-        .executeRows();
-    }
+  public void reassignMenus(final Long roleId, final List<Long> menuIds) {
+    mappingSync.sync(roleMenuMapping, roleId, menuIds);
   }
 
   /**
