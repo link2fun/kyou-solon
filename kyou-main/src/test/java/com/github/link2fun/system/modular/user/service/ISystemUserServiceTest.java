@@ -15,7 +15,7 @@ import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Import(profiles = "classpath:app-dev.yml", scanPackages = "com.github.link2fun")
+@Import(profiles = "classpath:app-test.yml", scanPackages = "com.github.link2fun")
 @SolonTest(value = KyouApp.class)
 @ExtendWith(SolonJUnit5Extension.class)
 public class ISystemUserServiceTest {
@@ -23,12 +23,11 @@ public class ISystemUserServiceTest {
   @Inject
   private ISystemUserService userService;
 
+  /** 按用户名查询 admin, 校验部门与角色信息一并带出 */
   @Test
   public void selectUserByUserName() {
     final SysUserDTO admin = userService.selectUserByUserName("admin");
-    // 断言 部门主键不为空
     assertNotNull(admin.getDeptId(), "部门主键不为空");
-    // 断言 部门信息不能为空
     assertNotNull(admin.getDept(), "部门信息不能为空");
     assertNotNull(admin.getDept().getDeptId());
     assertNotNull(admin.getDept().getDeptName());
@@ -37,13 +36,12 @@ public class ISystemUserServiceTest {
   }
 
 
+  /** 新增用户后按 ID 回查, 校验字段一致 */
   @Rollback
   @Test
   public void testSelectUserById() {
 
     SysUserReq.AddReq user = new SysUserReq.AddReq();
-    // 生成一个用户对象
-//    user.setUserId();
     user.setDeptId(0L);
     user.setUserName("username");
     user.setNickName("nickname");
@@ -57,20 +55,10 @@ public class ISystemUserServiceTest {
     user.setCreateBy("creator");
     user.setRemark("remark");
 
-    // 插入一条新用户
     Long userId = userService.insertUser(user);
 
-    // 查询并校验
     SysUserDTO userDTO = userService.selectUserById(userId);
     assertNotNull(userDTO);
     assertEquals(user.getUserName(), userDTO.getUserName());
   }
-
-  @Test
-  public void selectUserById() {
-  }
-
-
-
-
 }
