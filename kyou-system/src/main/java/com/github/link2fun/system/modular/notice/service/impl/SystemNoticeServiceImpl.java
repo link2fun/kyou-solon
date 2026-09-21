@@ -2,16 +2,18 @@ package com.github.link2fun.system.modular.notice.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.core.api.pagination.EasyPageResult;
+import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.notice.model.SysNotice;
+import com.github.link2fun.system.modular.notice.model.proxy.SysNoticeProxy;
 import com.github.link2fun.system.modular.notice.service.ISystemNoticeService;
 
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -19,6 +21,7 @@ public class SystemNoticeServiceImpl implements ISystemNoticeService {
 
   @Db
   private EasyEntityQuery entityQuery;
+
   /**
    * 查询公告信息
    *
@@ -38,32 +41,32 @@ public class SystemNoticeServiceImpl implements ISystemNoticeService {
    */
   @Override
   public List<SysNotice> selectNoticeList(final SysNotice notice) {
+    return buildQuery(notice).toList();
+  }
 
-    return entityQuery.queryable(SysNotice.class)
-      .where(noticeQuery -> {
-        noticeQuery.noticeTitle().like(StrUtil.isNotBlank(notice.getNoticeTitle()), notice.getNoticeTitle()); // 公告标题
-        noticeQuery.noticeType().eq(StrUtil.isNotBlank(notice.getNoticeType()), notice.getNoticeType()); // 公告类型
-        noticeQuery.createBy().like(StrUtil.isNotBlank(notice.getCreateBy()), notice.getCreateBy()); // 创建者
-      }).toList();
+  /** 构造公告列表查询 */
+  private EntityQueryable<SysNoticeProxy, SysNotice> buildQuery(final SysNotice searchReq) {
+    EntityQueryable<SysNoticeProxy, SysNotice> queryable = entityQuery.queryable(SysNotice.class);
+    if (Objects.isNull(searchReq)) {
+      return queryable;
+    }
+    return queryable.where(noticeQuery -> {
+      noticeQuery.noticeTitle().like(StrUtil.isNotBlank(searchReq.getNoticeTitle()), searchReq.getNoticeTitle()); // 公告标题
+      noticeQuery.noticeType().eq(StrUtil.isNotBlank(searchReq.getNoticeType()), searchReq.getNoticeType()); // 公告类型
+      noticeQuery.createBy().like(StrUtil.isNotBlank(searchReq.getCreateBy()), searchReq.getCreateBy()); // 创建者
+    });
   }
 
   /**
    * 根据搜索条件进行分页查询通知列表。
    *
-   * @param page      分页适配器
-   * @param searchReq 搜索请求
+   * @param pageRequest 分页适配器
+   * @param searchReq   搜索请求
    * @return 分页结果
    */
   @Override
-  public Page<SysNotice> pageSearch(final Page<SysNotice> page, final SysNotice searchReq) {
-
-    EasyPageResult<SysNotice> pageResult = entityQuery.queryable(SysNotice.class)
-      .where(noticeQuery -> {
-        noticeQuery.noticeTitle().like(StrUtil.isNotBlank(searchReq.getNoticeTitle()), searchReq.getNoticeTitle()); // 公告标题
-        noticeQuery.noticeType().eq(StrUtil.isNotBlank(searchReq.getNoticeType()), searchReq.getNoticeType()); // 公告类型
-        noticeQuery.createBy().like(StrUtil.isNotBlank(searchReq.getCreateBy()), searchReq.getCreateBy()); // 创建者
-      }).toPageResult(page.getPageNum(), page.getPageSize());
-    return Page.of(pageResult);
+  public Page<SysNotice> pageSearch(final Page<SysNotice> pageRequest, final SysNotice searchReq) {
+    return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**

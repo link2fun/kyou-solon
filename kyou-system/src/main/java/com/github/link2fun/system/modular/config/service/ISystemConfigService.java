@@ -36,7 +36,7 @@ public interface ISystemConfigService {
   <T> List<T> selectConfigList(SysConfig config, Class<T> resultClass);
 
   /** 分页查询 参数配置 */
-  <T> Page<T> pageSearchConfig(ActionContext context, Page<T> page, SysConfig searchReq, Class<T> resultClass);
+  <T> Page<T> pageSearchConfig(ActionContext context, Page<T> pageRequest, SysConfig searchReq, Class<T> resultClass);
 
   /**
    * 新增参数配置

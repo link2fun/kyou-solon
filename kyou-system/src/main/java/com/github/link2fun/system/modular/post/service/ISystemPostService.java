@@ -1,7 +1,7 @@
 package com.github.link2fun.system.modular.post.service;
 
-import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.domain.entity.SysPost;
+import com.github.link2fun.support.core.page.Page;
 
 import java.util.List;
 
@@ -22,11 +22,11 @@ public interface ISystemPostService {
   /**
    * 根据搜索条件进行分页查询岗位信息。
    *
-   * @param page      分页适配器
-   * @param searchReq 搜索条件
+   * @param pageRequest 分页适配器
+   * @param searchReq   搜索条件
    * @return 分页结果
    */
-  Page<SysPost> pageSearch(Page<SysPost> page, SysPost searchReq);
+  Page<SysPost> pageSearch(Page<SysPost> pageRequest, SysPost searchReq);
 
   /**
    * 查询所有岗位

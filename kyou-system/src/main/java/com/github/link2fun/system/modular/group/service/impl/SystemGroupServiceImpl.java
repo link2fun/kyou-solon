@@ -6,8 +6,9 @@ import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.page.Page;
-import com.github.link2fun.support.exception.ServiceException;
+import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.system.modular.group.model.SysGroup;
+import com.github.link2fun.system.modular.group.model.proxy.SysGroupProxy;
 import com.github.link2fun.system.modular.group.service.ISystemGroupService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +16,6 @@ import org.noear.solon.annotation.Component;
 import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
-import java.util.Objects;
 
 /** 系统用户组 Service Impl */
 @Slf4j
@@ -29,13 +29,13 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
    * 根据搜索条件分页查询系统群组信息。
    */
   @Override
-  public Page<SysGroup> pageSearchGroup(Page<SysGroup> page, SysGroup searchReq) {
+  public Page<SysGroup> pageSearchGroup(Page<SysGroup> pageRequest, SysGroup searchReq) {
 
     EasyPageResult<SysGroup> pageResult = entityQuery.queryable(SysGroup.class)
       .where(group -> group.groupName().like(StrUtil.isNotBlank(searchReq.getGroupName()), searchReq.getGroupName()))
       .where(group -> group.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus()))
-      .toPageResult(page.getPageNum(), page.getPageSize());
-    return Page.of(pageResult);
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
+    return Page.of(pageRequest, pageResult);
   }
 
   /**
@@ -45,12 +45,12 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
    * @param group  群组信息
    */
   private void checkGroupNameUnique(final String action, final SysGroup group) {
-    final SysGroup temp = entityQuery.queryable(SysGroup.class)
+    final List<Long> sameNameIds = entityQuery.queryable(SysGroup.class)
       .where(_group -> _group.groupName().eq(group.getGroupName()))
-      .singleOrNull();
-    if (Objects.nonNull(temp) && !Objects.equals(temp.getGroupId(), group.getGroupId())) {
-      throw new ServiceException(action + "群组'" + group.getGroupName() + "'失败，群组名称已存在");
-    }
+      .select(SysGroupProxy::groupId)
+      .toList();
+    UniqueChecker.checkOrThrow(sameNameIds, group.getGroupId(),
+      action + "群组'" + group.getGroupName() + "'失败，群组名称已存在");
   }
 
   /**

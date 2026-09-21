@@ -11,11 +11,11 @@ public interface ISystemGroupService {
   /**
    * 根据搜索条件分页查询系统群组信息。
    *
-   * @param page      分页适配器
-   * @param searchReq 搜索条件
+   * @param pageRequest 分页适配器
+   * @param searchReq   搜索条件
    * @return 分页查询结果
    */
-  Page<SysGroup> pageSearchGroup(Page<SysGroup> page, SysGroup searchReq);
+  Page<SysGroup> pageSearchGroup(Page<SysGroup> pageRequest, SysGroup searchReq);
 
   /**
    * 新增群组(内部已完成名称唯一性检查)
