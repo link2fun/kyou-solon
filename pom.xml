@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.noear</groupId>
     <artifactId>solon-parent</artifactId>
-    <version>4.0.5</version>
+    <version>4.1.0</version>
     <relativePath/>
   </parent>
 
@@ -35,7 +35,7 @@
     <mysql.connector.version>26.7.0</mysql.connector.version>
     <sa-token.version>1.45.0</sa-token.version>
     <poi.version>5.5.1</poi.version>
-    <easy-query.version>3.2.15</easy-query.version>
+    <easy-query.version>3.2.16</easy-query.version>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
