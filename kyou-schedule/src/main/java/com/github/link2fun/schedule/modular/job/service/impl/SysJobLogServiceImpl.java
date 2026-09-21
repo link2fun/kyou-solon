@@ -103,7 +103,7 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
   }
 
   @Override
-  public Page<SysJobLog> pageSearchJobLog(final Page<SysJobLog> page, final SysJobLog searchReq) {
+  public Page<SysJobLog> pageSearchJobLog(final Page<SysJobLog> pageRequest, final SysJobLog searchReq) {
 
     EasyPageResult<SysJobLog> pageResult = entityQuery.queryable(SysJobLog.class)
       .where(jobLogQuery -> {
@@ -115,7 +115,7 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
         jobLogQuery.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
       })
       .orderBy(jobLog -> jobLog.jobLogId().desc())
-      .toPageResult(page.getPageNum(), page.getPageSize());
-    return Page.of(pageResult);
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
+    return Page.of(pageRequest, pageResult);
   }
 }

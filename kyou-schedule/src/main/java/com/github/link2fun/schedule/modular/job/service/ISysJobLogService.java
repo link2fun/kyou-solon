@@ -6,7 +6,7 @@ import com.github.link2fun.support.core.page.Page;
 
 import java.util.List;
 
-public interface ISysJobLogService  {
+public interface ISysJobLogService {
 
   /**
    * 获取quartz调度器日志的计划任务
@@ -52,5 +52,5 @@ public interface ISysJobLogService  {
    */
   void cleanJobLog();
 
-  Page<SysJobLog> pageSearchJobLog(Page<SysJobLog> page, SysJobLog jobLog);
+  Page<SysJobLog> pageSearchJobLog(Page<SysJobLog> pageRequest, SysJobLog jobLog);
 }

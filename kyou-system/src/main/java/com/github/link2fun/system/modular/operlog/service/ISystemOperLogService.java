@@ -21,11 +21,11 @@ public interface ISystemOperLogService {
   /**
    * 查询系统操作日志集合
    *
-   * @param page    分页信息
-   * @param operLog 操作日志对象
+   * @param pageRequest 分页信息
+   * @param operLog     操作日志对象
    * @return 操作日志集合
    */
-  Page<SysOperLog> selectOperLogList(final Page<SysOperLog> page, SysOperLog operLog);
+  Page<SysOperLog> selectOperLogList(final Page<SysOperLog> pageRequest, SysOperLog operLog);
 
   /**
    * 批量删除系统操作日志

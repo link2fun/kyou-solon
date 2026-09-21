@@ -34,12 +34,12 @@ public class SystemLogininforServiceImpl implements ISystemLogininforService {
   /**
    * 查询系统登录日志集合
    *
-   * @param page      分页适配器
-   * @param searchReq 访问日志对象
+   * @param pageRequest 分页适配器
+   * @param searchReq   访问日志对象
    * @return 登录记录集合
    */
   @Override
-  public Page<SysLogininfor> selectLogininforList(final Page<SysLogininfor> page, final SysLogininfor searchReq) {
+  public Page<SysLogininfor> selectLogininforList(final Page<SysLogininfor> pageRequest, final SysLogininfor searchReq) {
 
     EasyPageResult<SysLogininfor> pageResult = entityQuery.queryable(SysLogininfor.class)
       .where(s -> {
@@ -49,9 +49,9 @@ public class SystemLogininforServiceImpl implements ISystemLogininforService {
         s.loginTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime());
         s.loginTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
       })
-      .toPageResult(page.getPageNum(), page.getPageSize());
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
 
-    return Page.of(pageResult);
+    return Page.of(pageRequest, pageResult);
 
   }
 

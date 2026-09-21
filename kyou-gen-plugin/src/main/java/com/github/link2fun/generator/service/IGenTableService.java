@@ -1,8 +1,6 @@
 package com.github.link2fun.generator.service;
 
 
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.link2fun.generator.domain.GenTable;
 import com.github.link2fun.support.core.page.Page;
 
@@ -14,24 +12,24 @@ import java.util.Map;
  *
  * @author ruoyi
  */
-public interface IGenTableService  {
+public interface IGenTableService {
   /**
    * 查询业务列表
    *
-   * @param page    分页对象
-   * @param searchReq 查询条件
+   * @param pageRequest 分页对象
+   * @param searchReq   查询条件
    * @return 业务集合
    */
-  Page<GenTable> selectGenTableList(final Page<GenTable> page, GenTable searchReq);
+  Page<GenTable> selectGenTableList(final Page<GenTable> pageRequest, GenTable searchReq);
 
   /**
    * 查询据库列表
    *
-   * @param page   分页对象
-   * @param searchReq 查询条件
+   * @param pageRequest 分页对象
+   * @param searchReq   查询条件
    * @return 数据库表集合
    */
-  Page<GenTable> selectDbTableList(final Page<GenTable> page, GenTable searchReq);
+  Page<GenTable> selectDbTableList(final Page<GenTable> pageRequest, GenTable searchReq);
 
   /**
    * 查询据库列表

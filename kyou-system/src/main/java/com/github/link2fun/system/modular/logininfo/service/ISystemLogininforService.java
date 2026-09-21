@@ -22,11 +22,11 @@ public interface ISystemLogininforService {
   /**
    * 查询系统登录日志集合
    *
-   * @param page      分页适配器
-   * @param searchReq 访问日志对象
+   * @param pageRequest 分页适配器
+   * @param searchReq   访问日志对象
    * @return 登录记录集合
    */
-  Page<SysLogininfor> selectLogininforList(final Page<SysLogininfor> page, SysLogininfor searchReq);
+  Page<SysLogininfor> selectLogininforList(final Page<SysLogininfor> pageRequest, SysLogininfor searchReq);
 
   /**
    * 批量删除系统登录日志

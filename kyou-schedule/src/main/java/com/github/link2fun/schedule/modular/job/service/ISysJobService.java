@@ -8,16 +8,16 @@ import com.github.link2fun.support.exception.job.TaskException;
 import java.util.List;
 
 
-public interface ISysJobService  {
+public interface ISysJobService {
 
   /**
    * 获取quartz调度器的计划任务
    *
-   * @param page
-   * @param searchReq 调度信息
+   * @param pageRequest
+   * @param searchReq   调度信息
    * @return 调度任务集合
    */
-  Page<SysJob> selectJobList(final Page<SysJob> page, SysJob searchReq);
+  Page<SysJob> selectJobList(final Page<SysJob> pageRequest, SysJob searchReq);
 
   /**
    * 通过调度任务ID查询调度信息
@@ -101,6 +101,7 @@ public interface ISysJobService  {
 
   /**
    * 根据任务名称 获取任务
+   *
    * @param jobName 任务名称
    * @return 任务信息
    */
