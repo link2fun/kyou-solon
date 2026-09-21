@@ -106,14 +106,13 @@ public class Page<T> implements EasyPageResult<T>, Model {
 
     if (Context.current().param("totalRow") == null) {
       // 没有传总行数, 需要执行 count 查询
-      return new Page<>(pageNum, pageSize,-1,true);
+      return new Page<>(pageNum, pageSize, -1, true);
     }
     final long totalRow = Context.current().paramAsLong("totalRow");
 
 
     return new Page<>(pageNum, pageSize, totalRow, false);
   }
-
 
 
   /**
@@ -190,8 +189,21 @@ public class Page<T> implements EasyPageResult<T>, Model {
     this.setSearchCount(isSearchCount);
   }
 
-  public static <T> Page<T> of(EasyPageResult<T> pageResult) {
-    Page<T> page = new Page<>();
+  /**
+   * 静态构造方法: 以请求分页参数为基准, 用查询结果回填记录与总数
+   *
+   * @param pageRequest 请求分页参数
+   * @param pageResult  查询结果
+   * @param <T>         请求记录类型
+   * @param <R>         结果记录类型
+   * @return 页定义
+   */
+  public static <T, R> Page<R> of(Page<T> pageRequest, EasyPageResult<R> pageResult) {
+    Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+    Objects.requireNonNull(pageResult, "pageResult must not be null");
+    Page<R> page = new Page<>();
+    page.setCurrent(pageRequest.getPageNum());
+    page.setSize(pageRequest.getPageSize());
     page.setRecords(pageResult.getData());
     page.setTotal(pageResult.getTotal());
     return page;

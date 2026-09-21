@@ -20,10 +20,10 @@ import com.github.link2fun.generator.util.VelocityInitializer;
 import com.github.link2fun.generator.util.VelocityUtils;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.GenConstants;
+import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.text.CharsetKit;
 import com.github.link2fun.support.exception.ServiceException;
-import com.github.link2fun.support.utils.SecurityUtils;
 import com.github.link2fun.support.utils.StringUtils;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +44,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -87,12 +90,12 @@ public class GenTableServiceImpl implements IGenTableService {
   /**
    * 查询业务列表
    *
-   * @param page      分页对象
-   * @param searchReq 查询条件
+   * @param pageRequest 分页对象
+   * @param searchReq   查询条件
    * @return 业务集合
    */
   @Override
-  public Page<GenTable> selectGenTableList(final Page<GenTable> page, GenTable searchReq) {
+  public Page<GenTable> selectGenTableList(final Page<GenTable> pageRequest, GenTable searchReq) {
 
 
     EasyPageResult<GenTable> pageResult = entityQuery.queryable(GenTable.class)
@@ -101,8 +104,8 @@ public class GenTableServiceImpl implements IGenTableService {
         proxy.tableComment().like(StrUtil.isNotBlank(searchReq.getTableComment()), searchReq.getTableComment());
         proxy.createTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime());
         proxy.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
-      }).toPageResult(page.getPageNum(), page.getPageSize(), page.getTotal());
-    return Page.of(pageResult);
+      }).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal());
+    return Page.of(pageRequest, pageResult);
   }
 
   /**
@@ -112,7 +115,7 @@ public class GenTableServiceImpl implements IGenTableService {
    * @return 数据库表集合
    */
   @Override
-  public Page<GenTable> selectDbTableList(final Page<GenTable> page, GenTable searchReq) {
+  public Page<GenTable> selectDbTableList(final Page<GenTable> pageRequest, GenTable searchReq) {
 
     String anylineServiceName = Solon.context().getWrapsOfType(DataSource.class).stream().filter(BeanWrap::typed)
       .findFirst().map(BeanWrap::name).orElse("default");
@@ -238,7 +241,7 @@ public class GenTableServiceImpl implements IGenTableService {
   @Override
   @Transaction
   public void importGenTable(List<GenTable> tableList) {
-    String operatorName = SecurityUtils.getUsername();
+    String operatorName = ActionContext.current().getUsername();
     try {
       for (GenTable table : tableList) {
         String tableName = table.getTableName();

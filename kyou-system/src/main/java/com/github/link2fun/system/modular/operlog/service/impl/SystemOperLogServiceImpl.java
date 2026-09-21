@@ -34,12 +34,12 @@ public class SystemOperLogServiceImpl implements ISystemOperLogService {
   /**
    * 查询系统操作日志集合
    *
-   * @param page      分页对象
-   * @param searchReq 操作日志对象
+   * @param pageRequest 分页对象
+   * @param searchReq   操作日志对象
    * @return 操作日志集合
    */
   @Override
-  public Page<SysOperLog> selectOperLogList(final Page<SysOperLog> page, final SysOperLog searchReq) {
+  public Page<SysOperLog> selectOperLogList(final Page<SysOperLog> pageRequest, final SysOperLog searchReq) {
 
     EasyPageResult<SysOperLog> pageResult = entityQuery.queryable(SysOperLog.class)
       .where(operLog -> {
@@ -53,9 +53,9 @@ public class SystemOperLogServiceImpl implements ISystemOperLogService {
         operLog.operTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
 
       })
-      .toPageResult(page.getPageNum(), page.getPageSize());
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
 
-    return Page.of(pageResult);
+    return Page.of(pageRequest, pageResult);
   }
 
   /**

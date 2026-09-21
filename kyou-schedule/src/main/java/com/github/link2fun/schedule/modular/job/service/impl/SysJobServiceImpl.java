@@ -28,7 +28,10 @@ import org.noear.solon.scheduling.scheduled.manager.IJobManager;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -80,12 +83,12 @@ public class SysJobServiceImpl implements ISysJobService {
   /**
    * 获取quartz调度器的计划任务列表
    *
-   * @param page      分页对象
-   * @param searchReq 调度信息
+   * @param pageRequest 分页对象
+   * @param searchReq   调度信息
    * @return 调度任务集合
    */
   @Override
-  public Page<SysJob> selectJobList(final Page<SysJob> page, SysJob searchReq) {
+  public Page<SysJob> selectJobList(final Page<SysJob> pageRequest, SysJob searchReq) {
     EasyPageResult<SysJob> pageResult = entityQuery.queryable(SysJob.class)
       .where(job -> {
         job.jobName().like(StrUtil.isNotBlank(searchReq.getJobName()), searchReq.getJobName());
@@ -93,8 +96,8 @@ public class SysJobServiceImpl implements ISysJobService {
         job.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus());
         job.invokeTarget().like(StrUtil.isNotBlank(searchReq.getInvokeTarget()), searchReq.getInvokeTarget());
       })
-      .toPageResult(page.getPageNum(), page.getPageSize(),page.getTotal());
-    return Page.of(pageResult);
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal());
+    return Page.of(pageRequest, pageResult);
   }
 
   /**
