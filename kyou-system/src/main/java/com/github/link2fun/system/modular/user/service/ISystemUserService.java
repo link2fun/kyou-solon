@@ -1,15 +1,12 @@
 package com.github.link2fun.system.modular.user.service;
 
-import cn.dev33.satoken.stp.SaTokenInfo;
 import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.core.expression.lambda.SQLActionExpression2;
-import com.easy.query.core.proxy.columns.types.SQLStringTypeColumn;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
-import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
 import com.github.link2fun.system.modular.user.model.req.SysUserReq;
@@ -26,31 +23,31 @@ public interface ISystemUserService {
    * 根据条件分页查询用户列表
    *
    * @param context
-   * @param page      分页适配器
-   * @param searchReq 用户信息
+   * @param pageRequest 分页适配器
+   * @param searchReq   用户信息
    * @return 用户信息集合信息
    */
-  <T> Page<T> selectUserList(final ActionContext context, Page<T> page, SysUser searchReq, Class<T> resultClass);
+  <T> Page<T> selectUserList(final ActionContext context, Page<T> pageRequest, SysUser searchReq, Class<T> resultClass);
 
   /**
    * 根据条件分页查询已分配用户角色列表
    *
    * @param context
-   * @param page      分页适配器
-   * @param searchReq 用户信息
+   * @param pageRequest 分页适配器
+   * @param searchReq   用户信息
    * @return 用户信息集合信息
    */
-  Page<AllocatedUserDTO> selectAllocatedList(final ActionContext context, Page<AllocatedUserDTO> page, SysUser searchReq);
+  Page<AllocatedUserDTO> selectAllocatedList(final ActionContext context, Page<AllocatedUserDTO> pageRequest, SysUser searchReq);
 
   /**
    * 根据条件分页查询未分配用户角色列表
    *
    * @param context
-   * @param page      分页适配器
-   * @param searchReq 用户信息
+   * @param pageRequest 分页适配器
+   * @param searchReq   用户信息
    * @return 用户信息集合信息
    */
-  Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, Page<AllocatedUserDTO> page, SysUser searchReq);
+  Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, Page<AllocatedUserDTO> pageRequest, SysUser searchReq);
 
   /**
    * 通过用户名查询用户
@@ -63,9 +60,6 @@ public interface ISystemUserService {
 
   /** 构造已预加载部门与角色的用户 DTO 查询 */
   Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression2<SysUserProxy, SysDeptProxy> whereExpression);
-
-  /** 根据用户 tokenInfo 查询登录用户信息 */
-  SessionUser selectCurrentUserByTokenInfo(SaTokenInfo tokenInfo);
 
   /**
    * 通过用户ID查询用户
@@ -91,17 +85,9 @@ public interface ISystemUserService {
    */
   String selectUserPostGroup(String userName);
 
+  /** 判断登录账号是否未被占用(空值视为可用), 供注册等外部流程探测 */
+  boolean isUserNameAvailable(String userName);
 
-  /**
-   * 判断某一列的值是否未被占用（唯一）。返回 true 表示没有任何一行用了这个值,
-   * 或唯一用了这个值的那一行就是 userId 自己(编辑时排除自身)。
-   *
-   * @param column      列
-   * @param columnValue 列的值
-   * @param userId      当前用户id, 用于排除自身; 新增场景传 null
-   * @return true 表示该值未被其他行占用
-   */
-  boolean isColumnValueUnique(SQLStringTypeColumn<SysUserProxy> column, String columnValue, final Long userId);
 
   /**
    * 校验用户是否有数据权限
@@ -131,8 +117,8 @@ public interface ISystemUserService {
   /**
    * 修改用户信息(内部已完成操作权限/数据权限/唯一性检查)
    *
-   * @param context  操作上下文, 含有当前用户信息
-   * @param user     用户信息
+   * @param context 操作上下文, 含有当前用户信息
+   * @param user    用户信息
    * @return 结果
    */
   long updateUser(final ActionContext context, SysUserReq.UpdateReq user);

@@ -6,7 +6,6 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
-import com.github.link2fun.support.annotation.DataScope;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
@@ -16,8 +15,10 @@ import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
 import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.support.easyquery.DataScope;
+import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
-import com.github.link2fun.support.utils.SecurityUtils;
+
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.role.model.req.SysRoleAddReq;
@@ -29,7 +30,6 @@ import com.github.link2fun.system.modular.roledept.service.ISystemRoleDeptServic
 import com.github.link2fun.system.modular.rolemenu.service.ISystemRoleMenuService;
 import com.github.link2fun.system.modular.userrole.service.ISystemUserRoleService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.formula.functions.T;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
 import org.noear.solon.data.annotation.Transaction;
@@ -59,9 +59,10 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   private EasyEntityQuery entityQuery;
 
   /** 按条件分页查询角色, 受数据范围约束 */
-  @DataScope(deptAlias = SysDept.TABLE_ALIAS)
   @Override
-  public <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> page, final SysRole searchReq, Class<T> resultClass) {
+  public <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> pageRequest, final SysRole searchReq, Class<T> resultClass) {
+
+    final DataScope dataScope = DataScope.of(entityQuery, context);
 
     EntityQueryable<SysRoleProxy, SysRole> queryable = entityQuery.queryable(SysRole.class)
       .where((role) -> {
@@ -75,9 +76,9 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
         role.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime()); // 结束时间检索
       })
       .where(roleOuter -> {
-        if (StrUtil.isNotBlank(searchReq.getParams().getDataScope())) {
+        if (dataScope.filters()) {
+          // 角色列表按「角色下有可见用户」判定, 故数据范围作用在关联用户/部门的子查询上
           roleOuter.expression().exists(() -> {
-            //
             return entityQuery.queryable(SysRole.class)
               .leftJoin(SysUserRole.class, (role, userRole) -> role.roleId().eq(userRole.roleId()))
               .leftJoin(SysUser.class, (role, userRole, user) -> userRole.userId().eq(user.userId()))
@@ -85,7 +86,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
               .leftJoin(SysDept.class, (role, userRole, user, dept) -> user.deptId().eq(dept.deptId()))
               .asAlias(SysDept.TABLE_ALIAS)
               .where((role, userRole, user, dept) -> {
-                role.expression().sql(searchReq.getParams().getDataScope()); // 数据范围过滤
+                dataScope.applyTo(role, dept.deptId(), user.userId()); // 数据范围过滤
                 role.roleId().eq(roleOuter.roleId());
               });
           });
@@ -96,15 +97,15 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
     if (resultClass == SysRole.class) {
       // 传入的就是 SysRole 类型, 不查询关联信息
       //noinspection unchecked
-      return (Page<T>) Page.of(queryable.toPageResult(page.getPageNum(), page.getPageSize()));
+      return (Page<T>) Page.of(pageRequest, queryable.toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize()));
     }
 
 
     EasyPageResult<T> pageResult = queryable
       .selectAutoInclude(resultClass)
-      .toPageResult(page.getPageNum(), page.getPageSize());
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
 
-    return Page.of(pageResult);
+    return Page.of(pageRequest, pageResult);
   }
 
 
@@ -159,7 +160,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    */
   @Override
   public List<SysRole> selectRoleAll(ActionContext context) {
-    return self.selectRoleList(context, Page.ofAll(), new SysRole(), SysRole.class).getRecords();
+    return selectRoleList(context, Page.ofAll(), new SysRole(), SysRole.class).getRecords();
   }
 
 
@@ -171,7 +172,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @return 角色对象信息
    */
   @Override
-  public <T>  T selectRoleById(final Long roleId, Class<T> resultClass) {
+  public <T> T selectRoleById(final Long roleId, Class<T> resultClass) {
     EntityQueryable<SysRoleProxy, SysRole> queryable = entityQuery.queryable(SysRole.class).whereById(roleId);
     if (resultClass == SysRole.class) {
       // 传入的就是 SysRole 类型, 不查询关联信息
@@ -184,48 +185,12 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   }
 
   /**
-   * 校验角色名称是否唯一
-   *
-   * @param roleName  角色名称
-   * @param roleId 角色ID
-   * @return 结果
-   */
-  private boolean isRoleNameUnique(final String roleName, Long roleId) {
-
-    final Long roleIdSameRoleName = entityQuery.queryable(SysRole.class)
-      .where((_role) -> _role.roleName().eq(roleName))
-      .select(SysRoleProxy::roleId)
-      .singleOrNull();
-    if (Objects.nonNull(roleIdSameRoleName) && !Objects.equals(roleIdSameRoleName, roleId)) {
-      return UserConstants.NOT_UNIQUE;
-    }
-    return UserConstants.UNIQUE;
-  }
-
-  /**
-   * 校验角色权限是否唯一
-   *
-   * @param roleKey 角色信息
-   * @return 结果
-   */
-  private boolean isRoleKeyUnique(final String roleKey, Long roleId) {
-    final Long roleIdSameRokeKey = entityQuery.queryable(SysRole.class)
-      .where((_role) -> _role.roleKey().eq(roleKey))
-      .select(SysRoleProxy::roleId)
-      .singleOrNull();
-    if (Objects.nonNull(roleIdSameRokeKey) && !Objects.equals(roleIdSameRokeKey, roleId)) {
-      return UserConstants.NOT_UNIQUE;
-    }
-    return UserConstants.UNIQUE;
-  }
-
-  /**
    * 校验角色是否允许操作
    *
    * @param roleId 角色ID
    */
   private void checkRoleAllowed(final Long roleId) {
-    if (Objects.nonNull(roleId) && SysRole.isAdmin(roleId)) {
+    if (Objects.nonNull(roleId) && SysRole.isSuperAdminRole(roleId)) {
       throw new ServiceException(StrUtil.format("不允许操作超级管理员角色"));
     }
   }
@@ -238,12 +203,16 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    */
   private void checkRoleFieldUnique(final String action, final String roleName, final String roleKey, final Long roleId) {
     final String prefix = action + "角色'" + roleName + "'失败，";
-    if (!isRoleNameUnique(roleName, roleId)) {
-      throw new ServiceException(prefix + "角色名称已存在");
-    }
-    if (!isRoleKeyUnique(roleKey, roleId)) {
-      throw new ServiceException(prefix + "角色权限已存在");
-    }
+    final List<Long> sameNameIds = entityQuery.queryable(SysRole.class)
+      .where((_role) -> _role.roleName().eq(roleName))
+      .select(SysRoleProxy::roleId)
+      .toList();
+    UniqueChecker.checkOrThrow(sameNameIds, roleId, prefix + "角色名称已存在");
+    final List<Long> sameKeyIds = entityQuery.queryable(SysRole.class)
+      .where((_role) -> _role.roleKey().eq(roleKey))
+      .select(SysRoleProxy::roleId)
+      .toList();
+    UniqueChecker.checkOrThrow(sameKeyIds, roleId, prefix + "角色权限已存在");
   }
 
   /**
@@ -253,10 +222,10 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    */
   @Override
   public void checkRoleDataScope(final Long roleId) {
-    if (!SysUser.isAdmin(SecurityUtils.getUserId())) {
+    if (!ActionContext.current().isSuperAdmin()) {
       SysRole role = new SysRole();
       role.setRoleId(roleId);
-      List<SysRole> roles = self.selectRoleList(ActionContext.current(), Page.ofLimit(1), role,SysRole.class ).getRecords();
+      List<SysRole> roles = selectRoleList(ActionContext.current(), Page.ofLimit(1), role, SysRole.class).getRecords();
       if (StringUtils.isEmpty(roles)) {
         throw new ServiceException("没有权限访问角色数据！");
       }
@@ -394,42 +363,26 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       .executeRows();
   }
 
-  /**
-   * 取消授权用户角色
-   *
-   * @return 结果
-   */
+  /** 取消单个用户的角色授权 */
   @Transaction
   @Override
-  public boolean removeUserRoleMapping(Long userId, Long roleId) {
-    return userRoleService.removeMapping(userId, roleId);
+  public void unassignUser(final Long roleId, final Long userId) {
+    userRoleService.unassignUser(roleId, userId);
   }
 
-  /**
-   * 批量取消授权用户角色
-   *
-   * @param roleId  角色ID
-   * @param userIds 需要取消授权的用户数据ID
-   * @return 结果
-   */
+  /** 批量取消授权用户角色 */
   @Transaction
   @Override
-  public boolean deleteAuthUsers(final Long roleId, final List<Long> userIds) {
-    return userRoleService.deleteUserRoleInfos(roleId, userIds);
+  public void unassignUsers(final Long roleId, final List<Long> userIds) {
+    userRoleService.unassignUsers(roleId, userIds);
   }
 
-  /**
-   * 批量选择授权用户角色
-   *
-   * @param roleId  角色ID
-   * @param userIds 需要删除的用户数据ID
-   * @return 结果
-   */
+  /** 批量为角色授权用户 */
   @Transaction
   @Override
-  public Boolean insertAuthUsers(final Long roleId, final List<Long> userIds) {
+  public void assignUsers(final Long roleId, final List<Long> userIds) {
     checkRoleDataScope(roleId);
-    return userRoleService.batchUserRole(roleId, userIds);
+    userRoleService.assignUsers(roleId, userIds);
   }
 
   /**

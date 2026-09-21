@@ -6,20 +6,21 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
-import com.github.link2fun.framework.tool.DataScopeTool;
-import com.github.link2fun.support.annotation.DataScope;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
+import com.github.link2fun.support.core.domain.entity.SysRoleDept;
+import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import com.github.link2fun.support.core.text.Convert;
+import com.github.link2fun.support.easyquery.DataScope;
+import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
-import com.github.link2fun.support.core.domain.entity.SysRoleDept;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
@@ -28,7 +29,6 @@ import org.noear.solon.data.annotation.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 
 @Slf4j
@@ -58,15 +58,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    */
   @Override
   public boolean hasDeptPermission(final ActionContext context, final Long deptId) {
-    if (context.isAdmin()) {
-      return true;
-    }
-
-    return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
-      .where(_dept -> _dept.deptId().eq(deptId))
-      .where(_dept -> _dept.expression().sql(DataScopeTool.buildDeptDataScopeFilterSQL(context)))
-      .any();
-
+    return DataScope.of(entityQuery, context).containsDept(deptId);
   }
 
   /**
@@ -77,20 +69,16 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @return 部门信息集合
    */
   @Override
-  @DataScope(deptAlias = SysDept.TABLE_ALIAS)
   public List<SysDept> selectDeptList(final ActionContext context, final SysDept searchReq) {
 
+    final DataScope dataScope = DataScope.of(entityQuery, context);
     return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
       .where(_dept -> _dept.delFlag().eq(UserConstants.DEPT_NORMAL))
       .where(_dept -> _dept.deptId().eq(IdUtils.isIdValid(searchReq.getDeptId()), searchReq.getDeptId()))
       .where(_dept -> _dept.parentId().eq(IdUtils.isIdValid(searchReq.getParentId()), searchReq.getParentId()))
       .where(_dept -> _dept.deptName().like(StrUtil.isNotBlank(searchReq.getDeptName()), searchReq.getDeptName()))
       .where(_dept -> _dept.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus()))
-      .where(_dept -> {
-        if (StrUtil.isNotBlank(searchReq.getParams().getDataScope())) {
-          _dept.expression().sql(searchReq.getParams().getDataScope());
-        }
-      })
+      .where(_dept -> dataScope.applyTo(_dept, _dept.deptId(), null))
       .orderBy(dept -> {
         dept.parentId().asc();
         dept.orderNum().asc();
@@ -107,7 +95,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    */
   @Override
   public List<TreeSelect> selectDeptTreeList(final ActionContext context, final SysDept dept) {
-    final List<SysDept> deptList = self.selectDeptList(context, dept);
+    final List<SysDept> deptList = selectDeptList(context, dept);
     return self.buildDeptTreeSelect(deptList);
   }
 
@@ -240,14 +228,14 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param dept   部门信息
    */
   private void checkDeptNameUnique(final String action, final SysDept dept) {
-    final SysDept temp = entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
+    final List<Long> sameNameIds = entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
       .where(_dept -> _dept.deptName().eq(dept.getDeptName()))
       .where(_dept -> _dept.parentId().eq(dept.getParentId()))
       .where(_dept -> _dept.delFlag().eq(UserConstants.NORMAL))
-      .singleOrNull();
-    if (Objects.nonNull(temp) && !Objects.equals(temp.getDeptId(), dept.getDeptId())) {
-      throw new ServiceException(action + "部门'" + dept.getDeptName() + "'失败，部门名称已存在");
-    }
+      .select(SysDeptProxy::deptId)
+      .toList();
+    UniqueChecker.checkOrThrow(sameNameIds, dept.getDeptId(),
+      action + "部门'" + dept.getDeptName() + "'失败，部门名称已存在");
   }
 
   /**
