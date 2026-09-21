@@ -11,27 +11,27 @@ import org.noear.solon.annotation.Component;
 import java.util.Collection;
 import java.util.List;
 
-/** 用户-角色关联表的操作集, 宿主是用户; 以角色为宿主见 {@link RoleUserMapping} */
+/** 用户-角色关联表的操作集, 宿主是角色; 以用户为宿主见 {@link UserRoleMapping} */
 @Component
-public class UserRoleMapping implements MappingOps {
+public class RoleUserMapping implements MappingOps {
 
   @Db
   private EasyEntityQuery entityQuery;
 
-  /** 查询用户当前关联的全部角色 ID */
+  /** 查询角色当前关联的全部用户 ID */
   @Override
-  public List<Long> findTargetIds(final Long userId) {
+  public List<Long> findTargetIds(final Long roleId) {
     return entityQuery.queryable(SysUserRole.class)
-      .where(userRole -> userRole.userId().eq(userId))
-      .selectColumn(SysUserRoleProxy::roleId)
+      .where(userRole -> userRole.roleId().eq(roleId))
+      .selectColumn(SysUserRoleProxy::userId)
       .toList();
   }
 
-  /** 批量建立用户-角色关联 */
+  /** 批量建立角色-用户关联 */
   @Override
-  public void link(final Long userId, final Collection<Long> roleIds) {
-    final List<SysUserRole> userRoles = roleIds.stream()
-      .map(roleId -> {
+  public void link(final Long roleId, final Collection<Long> userIds) {
+    final List<SysUserRole> userRoles = userIds.stream()
+      .map(userId -> {
         SysUserRole userRole = new SysUserRole();
         userRole.setUserId(userId);
         userRole.setRoleId(roleId);
@@ -41,26 +41,26 @@ public class UserRoleMapping implements MappingOps {
     entityQuery.insertable(userRoles).batch().executeRows();
   }
 
-  /** 批量解除用户-角色关联 */
+  /** 批量解除角色-用户关联 */
   @Override
-  public void unlink(final Long userId, final Collection<Long> roleIds) {
+  public void unlink(final Long roleId, final Collection<Long> userIds) {
     entityQuery.deletable(SysUserRole.class)
       .where(userRole -> {
-        userRole.userId().eq(userId);
-        userRole.roleId().in(roleIds);
+        userRole.roleId().eq(roleId);
+        userRole.userId().in(userIds);
       })
       .allowDeleteStatement(true)
       .executeRows();
   }
 
-  /** 解除这些用户的全部角色关联, 空集合时不执行任何操作 */
+  /** 解除这些角色的全部用户关联, 空集合时不执行任何操作 */
   @Override
-  public void unlinkAll(final Collection<Long> userIds) {
-    if (CollectionUtil.isEmpty(userIds)) {
+  public void unlinkAll(final Collection<Long> roleIds) {
+    if (CollectionUtil.isEmpty(roleIds)) {
       return;
     }
     entityQuery.deletable(SysUserRole.class)
-      .where(userRole -> userRole.userId().in(userIds))
+      .where(userRole -> userRole.roleId().in(roleIds))
       .allowDeleteStatement(true)
       .executeRows();
   }

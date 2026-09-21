@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.userpost.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.domain.entity.SysUserPost;
@@ -52,11 +53,14 @@ public class UserPostMapping implements MappingOps {
       .executeRows();
   }
 
-  /** 解除用户的全部岗位关联 */
+  /** 解除这些用户的全部岗位关联, 空集合时不执行任何操作 */
   @Override
-  public void unlinkAll(final Long userId) {
+  public void unlinkAll(final Collection<Long> userIds) {
+    if (CollectionUtil.isEmpty(userIds)) {
+      return;
+    }
     entityQuery.deletable(SysUserPost.class)
-      .where(userPost -> userPost.userId().eq(userId))
+      .where(userPost -> userPost.userId().in(userIds))
       .allowDeleteStatement(true)
       .executeRows();
   }

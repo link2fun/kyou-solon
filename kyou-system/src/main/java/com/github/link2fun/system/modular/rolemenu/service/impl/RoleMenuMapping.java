@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.rolemenu.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.domain.entity.SysRoleMenu;
@@ -52,11 +53,14 @@ public class RoleMenuMapping implements MappingOps {
       .executeRows();
   }
 
-  /** 解除角色的全部菜单关联 */
+  /** 解除这些角色的全部菜单关联, 空集合时不执行任何操作 */
   @Override
-  public void unlinkAll(final Long roleId) {
+  public void unlinkAll(final Collection<Long> roleIds) {
+    if (CollectionUtil.isEmpty(roleIds)) {
+      return;
+    }
     entityQuery.deletable(SysRoleMenu.class)
-      .where(roleMenu -> roleMenu.roleId().eq(roleId))
+      .where(roleMenu -> roleMenu.roleId().in(roleIds))
       .allowDeleteStatement(true)
       .executeRows();
   }

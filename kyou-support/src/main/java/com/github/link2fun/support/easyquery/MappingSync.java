@@ -6,11 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.data.annotation.Transaction;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -46,7 +42,7 @@ public class MappingSync {
     if (desired.isEmpty()) {
       if (!existing.isEmpty()) {
         log.debug("[关联表同步] 目标集合为空, 清空全部关联, ownerId={}", ownerId);
-        ops.unlinkAll(ownerId);
+        ops.unlinkAll(List.of(ownerId));
       }
       return;
     }

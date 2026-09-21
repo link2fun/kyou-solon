@@ -1,21 +1,15 @@
 package com.github.link2fun.system.modular.userpost.service.impl;
 
-import cn.hutool.core.collection.CollectionUtil;
-import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.solon.annotation.Db;
-import com.github.link2fun.support.core.domain.entity.SysUserPost;
 import com.github.link2fun.support.easyquery.MappingSync;
 import com.github.link2fun.system.modular.userpost.service.ISystemUserPostService;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 
 @Component
 public class SystemUserPostServiceImpl implements ISystemUserPostService {
-
-  @Db
-  private EasyEntityQuery entityQuery;
 
   @Inject
   private MappingSync mappingSync;
@@ -45,20 +39,10 @@ public class SystemUserPostServiceImpl implements ISystemUserPostService {
     mappingSync.sync(userPostMapping, userId, postIds);
   }
 
-  /**
-   * 批量删除用户岗位关联信息
-   *
-   * @param userIds 用户ID集合
-   */
+  /** 批量删除用户岗位关联信息 */
   @Override
+  @Transaction
   public void deleteUserPost(final List<Long> userIds) {
-    if (CollectionUtil.isEmpty(userIds)) {
-      return;
-    }
-
-    entityQuery.deletable(SysUserPost.class)
-        .allowDeleteStatement(true)
-        .where(userPost -> userPost.userId().in(userIds))
-        .executeRows();
+    userPostMapping.unlinkAll(userIds);
   }
 }

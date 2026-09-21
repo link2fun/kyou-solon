@@ -187,8 +187,8 @@ public class MappingSyncTest {
 
     /** 记录清空关联的调用 */
     @Override
-    public void unlinkAll(final Long ownerId) {
-      unlinkedAllOwners.add(ownerId);
+    public void unlinkAll(final Collection<Long> ownerIds) {
+      unlinkedAllOwners.addAll(ownerIds);
     }
   }
 }

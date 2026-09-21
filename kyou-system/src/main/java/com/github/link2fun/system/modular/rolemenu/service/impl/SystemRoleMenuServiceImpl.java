@@ -1,6 +1,5 @@
 package com.github.link2fun.system.modular.rolemenu.service.impl;
 
-import cn.hutool.core.collection.CollectionUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.domain.entity.SysRoleMenu;
@@ -8,6 +7,7 @@ import com.github.link2fun.support.easyquery.MappingSync;
 import com.github.link2fun.system.modular.rolemenu.service.ISystemRoleMenuService;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
+import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 
@@ -47,19 +47,10 @@ public class SystemRoleMenuServiceImpl implements ISystemRoleMenuService {
     mappingSync.sync(roleMenuMapping, roleId, menuIds);
   }
 
-  /**
-   * 批量删除角色菜单关联信息
-   *
-   * @param roleIds 需要删除的数据ID
-   */
+  /** 批量删除角色菜单关联信息 */
   @Override
+  @Transaction
   public void removeByRoleIds(final List<Long> roleIds) {
-    if (CollectionUtil.isEmpty(roleIds)) {
-      return;
-    }
-    entityQuery.deletable(SysRoleMenu.class)
-      .where(roleMenu -> roleMenu.roleId().in(roleIds))
-      .allowDeleteStatement(true)
-      .executeRows();
+    roleMenuMapping.unlinkAll(roleIds);
   }
 }
