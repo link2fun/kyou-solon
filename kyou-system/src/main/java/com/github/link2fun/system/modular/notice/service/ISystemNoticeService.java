@@ -30,11 +30,11 @@ public interface ISystemNoticeService {
   /**
    * 根据搜索条件进行分页查询通知列表。
    *
-   * @param page      分页适配器
-   * @param searchReq 搜索请求
+   * @param pageRequest 分页适配器
+   * @param searchReq   搜索请求
    * @return 分页结果
    */
-  Page<SysNotice> pageSearch(Page<SysNotice> page, SysNotice searchReq);
+  Page<SysNotice> pageSearch(Page<SysNotice> pageRequest, SysNotice searchReq);
 
   /**
    * 新增公告

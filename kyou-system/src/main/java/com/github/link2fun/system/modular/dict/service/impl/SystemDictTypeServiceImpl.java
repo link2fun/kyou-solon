@@ -3,13 +3,15 @@ package com.github.link2fun.system.modular.dict.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.core.api.pagination.EasyPageResult;
+import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.core.domain.entity.SysDictType;
+import com.github.link2fun.support.core.domain.entity.proxy.SysDictTypeProxy;
 import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.DictUtils;
 import com.github.link2fun.system.modular.dict.service.ISystemDictDataService;
@@ -42,8 +44,6 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
 
   /**
    * 项目启动时，初始化字典到缓存
-   *
-   * @link <a href="https://solon.noear.org/article/603">@Init 用法说明</a>
    */
   @Init
   public void init() {
@@ -59,36 +59,33 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    */
   @Override
   public List<SysDictType> selectDictTypeList(final SysDictType searchReq) {
+    return buildQuery(searchReq).toList();
+  }
 
-
-    return entityQuery.queryable(SysDictType.class)
+  /** 构造字典类型列表查询 */
+  private EntityQueryable<SysDictTypeProxy, SysDictType> buildQuery(final SysDictType searchReq) {
+    EntityQueryable<SysDictTypeProxy, SysDictType> queryable = entityQuery.queryable(SysDictType.class);
+    if (Objects.isNull(searchReq)) {
+      return queryable;
+    }
+    return queryable
       .where(dictType -> dictType.dictName().like(StrUtil.isNotBlank(searchReq.getDictName()), searchReq.getDictName())) // 字典名称
       .where(dictType -> dictType.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus())) // 状态
       .where(dictType -> dictType.dictType().like(StrUtil.isNotBlank(searchReq.getDictType()), searchReq.getDictType())) // 字典类型
       .where(dictType -> dictType.createTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime())) // 开始时间
-      .where(dictType -> dictType.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime())) // 结束时间
-      .toList();
-
+      .where(dictType -> dictType.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime())); // 结束时间
   }
 
   /**
    * 根据条件分页查询字典类型
    *
-   * @param page      分页对象
-   * @param searchReq 查询条件
+   * @param pageRequest 分页对象
+   * @param searchReq   查询条件
    * @return 字典类型分页数据
    */
   @Override
-  public Page<SysDictType> pageSearch(final Page<SysDictType> page, final SysDictType searchReq) {
-
-    EasyPageResult<SysDictType> pageResult = entityQuery.queryable(SysDictType.class)
-      .where(dictType -> dictType.dictName().like(StrUtil.isNotBlank(searchReq.getDictName()), searchReq.getDictName())) // 字典名称
-      .where(dictType -> dictType.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus())) // 状态
-      .where(dictType -> dictType.dictType().like(StrUtil.isNotBlank(searchReq.getDictType()), searchReq.getDictType())) // 字典类型
-      .where(dictType -> dictType.createTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime())) // 开始时间
-      .where(dictType -> dictType.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime())) // 结束时间
-      .toPageResult(page.getPageNum(), page.getPageSize(),page.getTotal());
-    return Page.of(pageResult);
+  public Page<SysDictType> pageSearch(final Page<SysDictType> pageRequest, final SysDictType searchReq) {
+    return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**
@@ -264,13 +261,11 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @param dictType 字典类型
    */
   private void checkDictTypeUnique(final String action, final SysDictType dictType) {
-
-    final SysDictType dictTypeDb = entityQuery.queryable(SysDictType.class)
+    final List<Long> sameTypeIds = entityQuery.queryable(SysDictType.class)
       .where(_dictType -> _dictType.dictType().eq(dictType.getDictType()))
-      .singleOrNull();
-    if (Objects.isNull(dictTypeDb) || Objects.equals(dictTypeDb.getDictId(), dictType.getDictId())) {
-      return;
-    }
-    throw new ServiceException(action + "字典'" + dictType.getDictName() + "'失败，字典类型已存在");
+      .select(SysDictTypeProxy::dictId)
+      .toList();
+    UniqueChecker.checkOrThrow(sameTypeIds, dictType.getDictId(),
+      action + "字典'" + dictType.getDictName() + "'失败，字典类型已存在");
   }
 }

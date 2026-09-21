@@ -2,12 +2,13 @@ package com.github.link2fun.system.modular.post.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.core.api.pagination.EasyPageResult;
+import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.domain.entity.SysPost;
 import com.github.link2fun.support.core.domain.entity.SysUserPost;
+import com.github.link2fun.support.core.domain.entity.proxy.SysPostProxy;
 import com.github.link2fun.support.core.page.Page;
-import com.github.link2fun.support.exception.ServiceException;
+import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
@@ -33,37 +34,32 @@ public class SystemPostServiceImpl implements ISystemPostService {
    */
   @Override
   public List<SysPost> selectPostList(final SysPost searchReq) {
-    return entityQuery.queryable(SysPost.class)
-      .where(post -> {
-        post.postCode().like(StrUtil.isNotBlank(searchReq.getPostCode()), searchReq.getPostCode()); // 岗位编码
-        post.postName().like(StrUtil.isNotBlank(searchReq.getPostName()), searchReq.getPostName()); // 岗位名称
-        post.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus()); // 状态
-      })
-      .toList();
+    return buildQuery(searchReq).toList();
+  }
+
+  /** 构造岗位列表查询 */
+  private EntityQueryable<SysPostProxy, SysPost> buildQuery(final SysPost searchReq) {
+    EntityQueryable<SysPostProxy, SysPost> queryable = entityQuery.queryable(SysPost.class);
+    if (Objects.isNull(searchReq)) {
+      return queryable;
+    }
+    return queryable.where(post -> {
+      post.postCode().like(StrUtil.isNotBlank(searchReq.getPostCode()), searchReq.getPostCode()); // 岗位编码
+      post.postName().like(StrUtil.isNotBlank(searchReq.getPostName()), searchReq.getPostName()); // 岗位名称
+      post.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus()); // 状态
+    });
   }
 
   /**
    * 根据搜索条件进行分页查询岗位信息。
    *
-   * @param page      分页适配器
-   * @param searchReq 搜索条件
+   * @param pageRequest 分页适配器
+   * @param searchReq   搜索条件
    * @return 分页结果
    */
   @Override
-  public Page<SysPost> pageSearch(Page<SysPost> page, SysPost searchReq) {
-    if (Objects.isNull(searchReq)) {
-      EasyPageResult<SysPost> pageResult = entityQuery.queryable(SysPost.class)
-        .toPageResult(page.getPageNum(), page.getPageSize());
-      return Page.of(pageResult);
-    }
-    EasyPageResult<SysPost> pageResult = entityQuery.queryable(SysPost.class)
-      .where(post -> {
-        post.postCode().like(StrUtil.isNotBlank(searchReq.getPostCode()), searchReq.getPostCode()); // 岗位编码
-        post.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus()); // 状态
-        post.postName().like(StrUtil.isNotBlank(searchReq.getPostName()), searchReq.getPostName()); // 岗位名称
-      })
-      .toPageResult(page.getPageNum(), page.getPageSize());
-    return Page.of(pageResult);
+  public Page<SysPost> pageSearch(final Page<SysPost> pageRequest, final SysPost searchReq) {
+    return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**
@@ -111,18 +107,16 @@ public class SystemPostServiceImpl implements ISystemPostService {
    */
   private void checkPostFieldUnique(final String action, final SysPost post) {
     final String prefix = action + "岗位'" + post.getPostName() + "'失败，";
-    final SysPost sameName = entityQuery.queryable(SysPost.class)
+    final List<Long> sameNameIds = entityQuery.queryable(SysPost.class)
       .where(_post -> _post.postName().eq(post.getPostName()))
-      .singleOrNull();
-    if (Objects.nonNull(sameName) && !Objects.equals(sameName.getPostId(), post.getPostId())) {
-      throw new ServiceException(prefix + "岗位名称已存在");
-    }
-    final SysPost sameCode = entityQuery.queryable(SysPost.class)
+      .select(SysPostProxy::postId)
+      .toList();
+    UniqueChecker.checkOrThrow(sameNameIds, post.getPostId(), prefix + "岗位名称已存在");
+    final List<Long> sameCodeIds = entityQuery.queryable(SysPost.class)
       .where(_post -> _post.postCode().eq(post.getPostCode()))
-      .singleOrNull();
-    if (Objects.nonNull(sameCode) && !Objects.equals(sameCode.getPostId(), post.getPostId())) {
-      throw new ServiceException(prefix + "岗位编码已存在");
-    }
+      .select(SysPostProxy::postId)
+      .toList();
+    UniqueChecker.checkOrThrow(sameCodeIds, post.getPostId(), prefix + "岗位编码已存在");
   }
 
 

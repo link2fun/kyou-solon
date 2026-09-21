@@ -6,11 +6,10 @@ import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.domain.TreeSelect;
-import com.github.link2fun.support.core.domain.entity.SysMenu;
-import com.github.link2fun.support.core.domain.entity.SysRole;
-import com.github.link2fun.support.core.domain.entity.SysUser;
+import com.github.link2fun.support.core.domain.entity.*;
 import com.github.link2fun.support.core.domain.entity.proxy.SysMenuProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
+import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
@@ -19,16 +18,17 @@ import com.github.link2fun.system.domain.vo.RouterVo;
 import com.github.link2fun.system.modular.menu.service.ISystemMenuService;
 import com.github.link2fun.system.modular.menu.util.MenuUtils;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
-import com.github.link2fun.support.core.domain.entity.SysRoleMenu;
 import com.github.link2fun.system.modular.rolemenu.service.ISystemRoleMenuService;
-import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
 import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.data.tran.TranPolicy;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -69,8 +69,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    */
   @Override
   public List<SysMenu> selectMenuList(final SysMenu searchReq, final Long userId) {
-    if (SysUser.isAdmin(userId)) {
-      // 如果是管理员，返回所有菜单
+    if (SysUser.isSuperAdmin(userId)) {
+      // 如果是超管，返回所有菜单
       return entityQuery.queryable(SysMenu.class)
         .where(menu -> {
           menu.menuName().like(StrUtil.isNotBlank(searchReq.getMenuName()), searchReq.getMenuName());
@@ -180,7 +180,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   @Override
   public List<SysMenu> selectMenuTreeByUserId(final Long userId) {
     final List<SysMenu> menuList;
-    if (SysUser.isAdmin(userId)) {
+    if (SysUser.isSuperAdmin(userId)) {
 
       menuList = self.selectMenuTreeAll();
 
@@ -336,18 +336,22 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menu   菜单信息
    */
   private void checkMenuFieldUnique(final String action, final SysMenu menu) {
-    final String prefix = action + "菜单'" + menu.getMenuName() + "'失败，";
-    final SysMenu temp = entityQuery.queryable(SysMenu.class)
+    final List<Long> sameNameIds = entityQuery.queryable(SysMenu.class)
       .where(menu1 -> {
         menu1.parentId().eq(menu.getParentId());
         menu1.menuName().eq(menu.getMenuName());
       })
-      .singleOrNull();
-    if (Objects.nonNull(temp) && !Objects.equals(menu.getMenuId(), temp.getMenuId())) {
-      throw new ServiceException(prefix + "菜单名称已存在");
-    }
+      .select(SysMenuProxy::menuId)
+      .toList();
+    UniqueChecker.checkOrThrow(sameNameIds, menu.getMenuId(),
+      action + "菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
+    checkMenuPathFormat(action, menu);
+  }
+
+  /** 校验外链菜单的地址必须以 http(s):// 开头 */
+  private void checkMenuPathFormat(final String action, final SysMenu menu) {
     if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StringUtils.ishttp(menu.getPath())) {
-      throw new ServiceException(prefix + "地址必须以http(s)://开头");
+      throw new ServiceException(action + "菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
     }
   }
 

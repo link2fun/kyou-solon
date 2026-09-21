@@ -24,11 +24,11 @@ public interface ISystemDictTypeService {
   /**
    * 根据条件分页查询字典类型
    *
-   * @param page      分页对象
-   * @param searchReq 查询条件
+   * @param pageRequest 分页对象
+   * @param searchReq   查询条件
    * @return 字典类型分页数据
    */
-  Page<SysDictType> pageSearch(Page<SysDictType> page, SysDictType searchReq);
+  Page<SysDictType> pageSearch(Page<SysDictType> pageRequest, SysDictType searchReq);
 
   /**
    * 根据所有字典类型

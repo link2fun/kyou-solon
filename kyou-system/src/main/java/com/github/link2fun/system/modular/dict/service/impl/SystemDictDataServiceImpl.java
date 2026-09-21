@@ -2,7 +2,7 @@ package com.github.link2fun.system.modular.dict.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.core.api.pagination.EasyPageResult;
+import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.constant.UserConstants;
@@ -17,6 +17,7 @@ import org.noear.solon.annotation.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,40 +35,35 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
    */
   @Override
   public List<SysDictData> selectDictDataList(final SysDictData searchReq) {
+    return buildQuery(searchReq).toList();
+  }
 
-    return entityQuery.queryable(SysDictData.class)
+  /** 构造字典数据列表查询 */
+  private EntityQueryable<SysDictDataProxy, SysDictData> buildQuery(final SysDictData searchReq) {
+    EntityQueryable<SysDictDataProxy, SysDictData> queryable = entityQuery.queryable(SysDictData.class);
+    if (Objects.isNull(searchReq)) {
+      return queryable;
+    }
+    return queryable
       .where(dictData -> dictData.dictType().eq(StrUtil.isNotBlank(searchReq.getDictType()), searchReq.getDictType())) // 字典类型
       .where(dictData -> dictData.dictLabel().like(StrUtil.isNotBlank(searchReq.getDictLabel()), searchReq.getDictLabel())) // 字典标签
       .where(dictData -> dictData.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus())) // 状态
-      .orderBy(dictData -> dictData.dictSort().asc()) // 字典排序
-      .toList();
+      .orderBy(dictData -> {
+        dictData.dictType().asc();
+        dictData.dictSort().asc();
+      });
   }
 
   /**
    * 根据条件查询字典数据并分页展示。
    *
-   * @param page     分页适配器
-   * @param dictData 字典数据对象
+   * @param pageRequest 分页适配器
+   * @param dictData    字典数据对象
    * @return 分页结果
    */
   @Override
-  public Page<SysDictData> pageSearch(final Page<SysDictData> page, final SysDictData dictData) {
-    if (java.util.Objects.isNull(dictData)) {
-      EasyPageResult<SysDictData> pageResult = entityQuery.queryable(SysDictData.class)
-        .toPageResult(page.getPageNum(), page.getPageSize());
-      return Page.of(pageResult);
-    }
-
-    EasyPageResult<SysDictData> pageResult = entityQuery.queryable(SysDictData.class)
-      .where(dictDataQuery -> dictDataQuery.dictType().eq(StrUtil.isNotBlank(dictData.getDictType()), dictData.getDictType())) // 字典类型
-      .where(dictDataQuery -> dictDataQuery.dictLabel().like(StrUtil.isNotBlank(dictData.getDictLabel()), dictData.getDictLabel())) // 字典标签
-      .where(dictDataQuery -> dictDataQuery.status().eq(StrUtil.isNotBlank(dictData.getStatus()), dictData.getStatus())) // 状态
-      .orderBy(dictDataQuery -> {
-        dictDataQuery.dictType().asc();
-        dictDataQuery.dictSort().asc();
-      }) // 字典排序
-      .toPageResult(page.getPageNum(), page.getPageSize(),page.getTotal());
-    return Page.of(pageResult);
+  public Page<SysDictData> pageSearch(final Page<SysDictData> pageRequest, final SysDictData dictData) {
+    return Page.of(pageRequest, buildQuery(dictData).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**

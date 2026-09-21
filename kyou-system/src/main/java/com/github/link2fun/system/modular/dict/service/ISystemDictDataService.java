@@ -23,11 +23,11 @@ public interface ISystemDictDataService {
   /**
    * 根据条件查询字典数据并分页展示。
    *
-   * @param page     分页适配器
-   * @param dictData 字典数据对象
+   * @param pageRequest 分页适配器
+   * @param dictData    字典数据对象
    * @return 分页结果
    */
-  Page<SysDictData> pageSearch(Page<SysDictData> page, SysDictData dictData);
+  Page<SysDictData> pageSearch(Page<SysDictData> pageRequest, SysDictData dictData);
 
   /**
    * 根据字典类型和字典键值查询字典数据信息

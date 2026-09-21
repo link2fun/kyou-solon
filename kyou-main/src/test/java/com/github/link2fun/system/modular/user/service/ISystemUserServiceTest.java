@@ -1,8 +1,9 @@
 package com.github.link2fun.system.modular.user.service;
-import com.github.link2fun.system.modular.user.model.req.SysUserReq;
 
 import com.github.link2fun.KyouApp;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
+import com.github.link2fun.support.exception.ServiceException;
+import com.github.link2fun.system.modular.user.model.req.SysUserReq;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.noear.solon.annotation.Import;
@@ -60,5 +61,21 @@ public class ISystemUserServiceTest {
     SysUserDTO userDTO = userService.selectUserById(userId);
     assertNotNull(userDTO);
     assertEquals(user.getUserName(), userDTO.getUserName());
+  }
+
+  /** 新增与已有用户同名的用户被唯一性检查拒绝 */
+  @Rollback
+  @Test
+  public void insertUserDuplicateUserNameRejected() {
+    SysUserReq.AddReq user = new SysUserReq.AddReq();
+    user.setDeptId(0L);
+    user.setUserName("admin");
+    user.setNickName("dup");
+    user.setPassword("password");
+    user.setRoleIds(new ArrayList<>());
+    user.setPostIds(new ArrayList<>());
+
+    final ServiceException e = assertThrows(ServiceException.class, () -> userService.insertUser(user));
+    assertEquals("新增用户'admin'失败，登录账号已存在", e.getMessage());
   }
 }
