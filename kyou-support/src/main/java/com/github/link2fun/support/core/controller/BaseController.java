@@ -2,11 +2,11 @@ package com.github.link2fun.support.core.controller;
 
 
 import com.github.link2fun.support.constant.HttpStatus;
+import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
-import com.github.link2fun.support.utils.SecurityUtils;
 import com.github.link2fun.support.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -85,6 +85,7 @@ public class BaseController {
   protected AjaxResult toAjax(int rows) {
     return rows != 0 ? AjaxResult.success() : AjaxResult.error();
   }
+
   protected AjaxResult toAjax(long rows) {
     return rows != 0 ? AjaxResult.success() : AjaxResult.error();
   }
@@ -106,25 +107,14 @@ public class BaseController {
     return StringUtils.format("redirect:{}", url);
   }
 
-  /**
-   * 获取用户缓存信息
-   */
+  /** 获取用户缓存信息, 未登录时回 401 */
   public SessionUser getCurrentUser() {
-    return SecurityUtils.currentUser();
+    return ActionContext.current().getCurrentUserNotNull();
   }
 
-  /**
-   * 获取登录用户id
-   */
+  /** 获取登录用户id */
   public Long getUserId() {
-    return getCurrentUser().getUserId();
-  }
-
-  /**
-   * 获取登录部门id
-   */
-  public Long getDeptId() {
-    return getCurrentUser().getDeptId();
+    return ActionContext.current().getUserId();
   }
 
   /**

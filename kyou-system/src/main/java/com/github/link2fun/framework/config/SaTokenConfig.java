@@ -7,19 +7,13 @@ import cn.dev33.satoken.dao.SaTokenDaoForRedisson;
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.solon.integration.SaTokenInterceptor;
-import cn.dev33.satoken.stp.StpUtil;
 import com.github.link2fun.framework.password.PasswordEncoder;
 import com.github.link2fun.framework.password.impl.BCryptPasswordEncoder;
 import com.github.link2fun.support.constant.HttpStatus;
-import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import org.noear.solon.annotation.Bean;
 import org.noear.solon.annotation.Configuration;
 import org.noear.solon.annotation.Inject;
-import org.noear.solon.core.handle.Context;
-import org.noear.solon.core.handle.Handler;
-import org.noear.solon.core.route.RouterInterceptor;
-import org.noear.solon.core.route.RouterInterceptorChain;
 import org.redisson.api.RedissonClient;
 
 /**
@@ -94,34 +88,6 @@ public class SaTokenConfig {
           .setHeader("X-Content-Type-Options", "nosniff");
       })
       ;
-  }
-
-
-  /** 再弄一个初始化操作上下文, 放在 SaTokenInterceptor 之后 */
-  public RouterInterceptor actionContextInitInterceptor() {
-    final RouterInterceptor routerInterceptor = new RouterInterceptor() {
-      /**
-       * 执行拦截
-       *
-       */
-      @Override
-      public void doIntercept(final Context ctx, final Handler mainHandler, final RouterInterceptorChain chain) throws Throwable {
-
-        if (StpUtil.isLogin()) {
-          // 如果是已经登录的状态
-          ActionContext actionContext = new ActionContext();
-          final long userId = StpUtil.getLoginIdAsLong();
-          actionContext.setUserId(userId);
-        }else{
-          ActionContext actionContext = new ActionContext();
-          actionContext.setUserId(0L);
-        }
-
-
-        chain.doIntercept(ctx, mainHandler);
-      }
-    };
-    return routerInterceptor;
   }
 
 

@@ -1,16 +1,16 @@
 package com.github.link2fun.web.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.dev33.satoken.stp.StpUtil;
 import com.github.link2fun.framework.web.service.SysLoginService;
 import com.github.link2fun.framework.web.service.SysPermissionService;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.context.action.ActionContext;
+import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.support.core.domain.model.LoginBody;
-import com.github.link2fun.support.utils.SecurityUtils;
+
 import com.github.link2fun.system.modular.menu.service.ISystemMenuService;
 import org.noear.solon.annotation.Body;
 import org.noear.solon.annotation.Controller;
@@ -57,7 +57,7 @@ public class SysLoginController {
 
   @Mapping(value = "/logout", method = MethodType.POST)
   public AjaxResult logout() {
-    StpUtil.logout();
+    SaSessionBizTool.logout();
     return AjaxResult.success();
   }
 
@@ -70,7 +70,7 @@ public class SysLoginController {
   @Mapping(value = "getInfo", method = MethodType.GET)
   public AjaxResult getInfo() {
     final ActionContext context = ActionContext.current();
-    final SysUserDTO userDTO = context.getSessionUser().getUser();
+    final SysUserDTO userDTO = context.getCurrentUserNotNull().getUser();
     final Long userId = context.getUserId();
     // 角色集合
     Set<String> roles = permissionService.getRolePermission(userId);
@@ -91,7 +91,7 @@ public class SysLoginController {
   @SaCheckLogin
   @Mapping(value = "getRouters", method = MethodType.GET)
   public AjaxResult getRouters() {
-    Long userId = SecurityUtils.getUserId();
+    Long userId = ActionContext.current().getUserId();
     List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
     return AjaxResult.successData(menuService.buildMenus(menus));
   }

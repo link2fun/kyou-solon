@@ -14,7 +14,7 @@ import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.support.utils.SecurityUtils;
+import com.github.link2fun.support.utils.PasswordUtils;
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
@@ -105,7 +105,7 @@ public class SystemUserController extends BaseController {
     AjaxResult ajax = AjaxResult.success();
     List<SysRole> roles = roleService.selectRoleAll(context);
     ajax.put("roles",
-      SysUser.isAdmin(userId) ? roles : roles.stream().filter(r -> !r.isAdmin()).collect(Collectors.toList()));
+      SysUser.isSuperAdmin(userId) ? roles : roles.stream().filter(r -> !r.isSuperAdminRole()).collect(Collectors.toList()));
     ajax.put("posts", postService.selectPostAll());
     if (StringUtils.isNotNull(userId)) {
       SysUserDTO sysUser = userService.selectUserById(userId);
@@ -160,7 +160,7 @@ public class SystemUserController extends BaseController {
   @Log(title = "用户管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/resetPwd", method = MethodType.PUT)
   public AjaxResult resetPwd(@Body SysUser user) {
-    user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
+    user.setPassword(PasswordUtils.encryptPassword(user.getPassword()));
     user.setUpdateBy(getUsername());
     return toAjax(userService.resetPwd(ActionContext.current(), user));
   }
@@ -187,7 +187,7 @@ public class SystemUserController extends BaseController {
     List<RoleDTO> roles = roleService.selectRolesByUserId(userId);
     ajax.put("user", user);
     ajax.put("roles",
-      SysUser.isAdmin(userId) ? roles : roles.stream().filter(r -> !r.isAdmin()).collect(Collectors.toList()));
+      SysUser.isSuperAdmin(userId) ? roles : roles.stream().filter(r -> !r.isSuperAdminRole()).collect(Collectors.toList()));
     return ajax;
   }
 

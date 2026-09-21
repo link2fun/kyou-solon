@@ -1,6 +1,5 @@
 package com.github.link2fun.support.core.domain.entity;
 
-import com.easy.query.core.annotation.Table;
 import com.easy.query.core.annotation.*;
 import com.easy.query.core.enums.RelationTypeEnum;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
@@ -8,8 +7,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.github.link2fun.support.core.domain.BaseEntity;
 import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.xss.Xss;
-
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
@@ -44,7 +41,7 @@ public class SysUser extends BaseEntity implements ProxyEntityAvailable<SysUser,
   private static final long serialVersionUID = 1L;
 
   /** 用户ID */
-  @Column(value = "user_id", primaryKey = true,generatedKey = true)
+  @Column(value = "user_id", primaryKey = true, generatedKey = true)
   private Long userId;
 
   /** 部门ID */
@@ -137,13 +134,13 @@ public class SysUser extends BaseEntity implements ProxyEntityAvailable<SysUser,
   }
 
 
-  /** 是否是超级管理员, 超级管理员用户 ID 为 1 */
-  public boolean isAdmin() {
-    return isAdmin(this.userId);
+  /** 是否是超管, 超管用户 ID 为 1 */
+  public boolean isSuperAdmin() {
+    return isSuperAdmin(this.userId);
   }
 
-  /** 是否是超级管理员, 超级管理员用户 ID 为 1 */
-  public static boolean isAdmin(final Long userId) {
+  /** 是否是超管, 超管用户 ID 为 1 */
+  public static boolean isSuperAdmin(final Long userId) {
     return Objects.nonNull(userId) && 1L == userId;
   }
 

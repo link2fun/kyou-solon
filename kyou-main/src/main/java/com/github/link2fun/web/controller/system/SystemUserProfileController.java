@@ -1,20 +1,19 @@
 package com.github.link2fun.web.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.dev33.satoken.stp.StpUtil;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.config.KyouProperties;
+import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.support.utils.SecurityUtils;
+import com.github.link2fun.support.utils.PasswordUtils;
 import com.github.link2fun.support.utils.file.FileUploadUtils;
 import com.github.link2fun.support.utils.file.MimeTypeUtils;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.MethodType;
 import org.noear.solon.core.handle.UploadedFile;
@@ -57,9 +56,9 @@ public class SystemUserProfileController extends BaseController {
   @Log(title = "个人信息", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult updateProfile(@Body SysUser updateUserRequest) {
-    final long userId = StpUtil.getLoginIdAsLong();
+    final Long userId = getUserId();
 
-    final SessionUser currentUser = SaSessionBizTool.getCurrentUser();
+    final SessionUser currentUser = getCurrentUser();
 
     final SysUser user = userService.getByIdNotNull(userId);
 
@@ -92,13 +91,13 @@ public class SystemUserProfileController extends BaseController {
     final Long userId = currentUser.getUserId();
     final SysUser user = userService.getByIdNotNull(userId);
     final String password = user.getPassword();
-    if (!SecurityUtils.matchesPassword(oldPassword, password)) {
+    if (!PasswordUtils.matchesPassword(oldPassword, password)) {
       return error("修改密码失败，旧密码错误");
     }
-    if (SecurityUtils.matchesPassword(newPassword, password)) {
+    if (PasswordUtils.matchesPassword(newPassword, password)) {
       return error("新密码不能与旧密码相同");
     }
-    newPassword = SecurityUtils.encryptPassword(newPassword);
+    newPassword = PasswordUtils.encryptPassword(newPassword);
     if (userService.resetUserPwd(userName, newPassword)) {
       return success();
     }

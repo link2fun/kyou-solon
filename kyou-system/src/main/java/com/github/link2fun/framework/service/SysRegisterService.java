@@ -6,14 +6,13 @@ import com.github.link2fun.framework.manager.factory.AsyncFactory;
 import com.github.link2fun.support.constant.CacheConstants;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
-import com.github.link2fun.support.core.domain.entity.SysUser;
-import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
-import com.github.link2fun.support.core.domain.model.RegisterBody;
 import com.github.link2fun.support.context.cache.service.RedisCache;
+import com.github.link2fun.support.core.domain.entity.SysUser;
+import com.github.link2fun.support.core.domain.model.RegisterBody;
 import com.github.link2fun.support.exception.user.CaptchaException;
 import com.github.link2fun.support.exception.user.CaptchaExpireException;
 import com.github.link2fun.support.utils.MessageUtils;
-import com.github.link2fun.support.utils.SecurityUtils;
+import com.github.link2fun.support.utils.PasswordUtils;
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import com.github.link2fun.system.tool.SystemConfigContext;
@@ -58,11 +57,11 @@ public class SysRegisterService {
     } else if (password.length() < UserConstants.PASSWORD_MIN_LENGTH
       || password.length() > UserConstants.PASSWORD_MAX_LENGTH) {
       msg = "密码长度必须在5到20个字符之间";
-    } else if (!userService.isColumnValueUnique(SysUserProxy.TABLE.userName(),sysUser.getUserName(), sysUser.getUserId() )) {
+    } else if (!userService.isUserNameAvailable(sysUser.getUserName())) {
       msg = "保存用户'" + username + "'失败，注册账号已存在";
     } else {
       sysUser.setNickName(username);
-      sysUser.setPassword(SecurityUtils.encryptPassword(password));
+      sysUser.setPassword(PasswordUtils.encryptPassword(password));
       boolean regFlag = userService.registerUser(sysUser);
       if (!regFlag) {
         msg = "注册失败,请联系系统管理人员";

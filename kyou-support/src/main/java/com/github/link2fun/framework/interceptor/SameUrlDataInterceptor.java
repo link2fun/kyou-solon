@@ -1,10 +1,10 @@
 package com.github.link2fun.framework.interceptor;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.github.link2fun.support.annotation.RepeatSubmit;
 import com.github.link2fun.support.constant.CacheConstants;
+import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.cache.service.RedisCache;
 import com.github.link2fun.support.core.text.Convert;
 import com.github.link2fun.support.utils.StringUtils;
@@ -55,7 +55,7 @@ public class SameUrlDataInterceptor extends RepeatSubmitInterceptor {
       String url = context.path();
 
       // 唯一值（没有消息头则使用请求地址）
-      String submitKey = StrUtil.emptyToDefault(Convert.toStr(StpUtil.getLoginIdDefaultNull()), "");
+      String submitKey = StrUtil.emptyToDefault(Convert.toStr(ActionContext.current().getUserId()), "");
 
       // 唯一标识（指定key + url + 消息头）
       String cacheRepeatKey = CacheConstants.REPEAT_SUBMIT_KEY + url + submitKey;

@@ -45,9 +45,10 @@ public class RoleDTO {
   @SuppressWarnings("EasyQueryFieldMissMatch")
   private List<String> permissions;
 
+  /** 是否是超级管理员角色, 该角色 ID 为 1 */
   @JsonIgnore
-  public Boolean isAdmin() {
-    return SysRole.isAdmin(this.roleId);
+  public Boolean isSuperAdminRole() {
+    return SysRole.isSuperAdminRole(this.roleId);
   }
 
 
