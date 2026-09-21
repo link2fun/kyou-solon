@@ -106,7 +106,7 @@ public class SystemRoleController extends BaseController {
     if (roleService.updateRole(modifyReq) > 0) {
       // 更新缓存用户权限
       SessionUser currentUser = getCurrentUser();
-      if (StringUtils.isNotNull(currentUser.getUser()) && !currentUser.getUser().isAdmin()) {
+      if (StringUtils.isNotNull(currentUser.getUser()) && !currentUser.getUser().isSuperAdmin()) {
         currentUser.setPermissions(permissionService.getMenuPermission(currentUser.getUser()));
         currentUser.setUser(userService.selectUserByUserName(currentUser.getUser().getUserName()));
         SaSessionBizTool.setCurrentUser(currentUser);
@@ -188,7 +188,8 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authUser/cancel", method = MethodType.PUT)
   public AjaxResult cancelAuthUser(@Body SysUserRole userRole) {
-    return toAjax(roleService.removeUserRoleMapping(userRole.getUserId(), userRole.getRoleId()));
+    roleService.unassignUser(userRole.getRoleId(), userRole.getUserId());
+    return AjaxResult.success();
   }
 
   /**
@@ -198,7 +199,8 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authUser/cancelAll", method = MethodType.PUT)
   public AjaxResult cancelAuthUserAll(Long roleId, List<Long> userIds) {
-    return toAjax(roleService.deleteAuthUsers(roleId, userIds));
+    roleService.unassignUsers(roleId, userIds);
+    return AjaxResult.success();
   }
 
   /**
@@ -208,7 +210,8 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authUser/selectAll", method = MethodType.PUT)
   public AjaxResult selectAuthUserAll(Long roleId, List<Long> userIds) {
-    return toAjax(roleService.insertAuthUsers(roleId, userIds));
+    roleService.assignUsers(roleId, userIds);
+    return AjaxResult.success();
   }
 
   /**

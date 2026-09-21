@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.roledept.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.domain.entity.SysRoleDept;
@@ -52,11 +53,14 @@ public class RoleDeptMapping implements MappingOps {
       .executeRows();
   }
 
-  /** 解除角色的全部部门关联 */
+  /** 解除这些角色的全部部门关联, 空集合时不执行任何操作 */
   @Override
-  public void unlinkAll(final Long roleId) {
+  public void unlinkAll(final Collection<Long> roleIds) {
+    if (CollectionUtil.isEmpty(roleIds)) {
+      return;
+    }
     entityQuery.deletable(SysRoleDept.class)
-      .where(roleDept -> roleDept.roleId().eq(roleId))
+      .where(roleDept -> roleDept.roleId().in(roleIds))
       .allowDeleteStatement(true)
       .executeRows();
   }

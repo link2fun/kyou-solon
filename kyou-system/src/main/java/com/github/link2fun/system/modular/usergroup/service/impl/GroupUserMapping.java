@@ -1,10 +1,11 @@
 package com.github.link2fun.system.modular.usergroup.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.support.easyquery.MappingOps;
 import com.github.link2fun.system.modular.usergroup.model.SysUserGroup;
 import com.github.link2fun.system.modular.usergroup.model.proxy.SysUserGroupProxy;
-import com.github.link2fun.support.easyquery.MappingOps;
 import org.noear.solon.annotation.Component;
 
 import java.util.Collection;
@@ -52,11 +53,14 @@ public class GroupUserMapping implements MappingOps {
       .executeRows();
   }
 
-  /** 解除群组的全部用户关联 */
+  /** 解除这些群组的全部用户关联, 空集合时不执行任何操作 */
   @Override
-  public void unlinkAll(final Long groupId) {
+  public void unlinkAll(final Collection<Long> groupIds) {
+    if (CollectionUtil.isEmpty(groupIds)) {
+      return;
+    }
     entityQuery.deletable(SysUserGroup.class)
-      .where(userGroup -> userGroup.groupId().eq(groupId))
+      .where(userGroup -> userGroup.groupId().in(groupIds))
       .allowDeleteStatement(true)
       .executeRows();
   }

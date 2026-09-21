@@ -37,7 +37,7 @@ public interface MappingOps {
   /**
    * 解除宿主的全部关联
    *
-   * @param ownerId 宿主 ID
+   * @param ownerIds 宿主 ID 集合, 空集合时不执行任何操作
    */
-  void unlinkAll(Long ownerId);
+  void unlinkAll(Collection<Long> ownerIds);
 }
