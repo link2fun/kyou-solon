@@ -21,12 +21,12 @@ public interface ISystemRoleService {
   /**
    * 根据条件分页查询角色数据
    *
-   * @param page        分页信息
+   * @param pageRequest 分页信息
    * @param searchReq   角色信息
    * @param resultClass
    * @return 角色数据集合信息
    */
-  <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> page, SysRole searchReq, Class<T> resultClass);
+  <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> pageRequest, SysRole searchReq, Class<T> resultClass);
 
   /**
    * 根据用户ID查询角色列表
@@ -117,26 +117,14 @@ public interface ISystemRoleService {
    */
   long deleteRoleByIds(List<Long> roleIds);
 
-  /** 取消授权用户角色 */
-  boolean removeUserRoleMapping(Long userId, Long roleId);
+  /** 取消单个用户的角色授权 */
+  void unassignUser(Long roleId, Long userId);
 
-  /**
-   * 批量取消授权用户角色
-   *
-   * @param roleId  角色ID
-   * @param userIds 需要取消授权的用户数据ID
-   * @return 结果
-   */
-  boolean deleteAuthUsers(Long roleId, List<Long> userIds);
+  /** 批量取消授权用户角色 */
+  void unassignUsers(Long roleId, List<Long> userIds);
 
-  /**
-   * 批量选择授权用户角色(内部已完成数据权限检查)
-   *
-   * @param roleId  角色ID
-   * @param userIds 需要删除的用户数据ID
-   * @return 结果
-   */
-  Boolean insertAuthUsers(Long roleId, List<Long> userIds);
+  /** 批量为角色授权用户(内部已完成数据权限检查) */
+  void assignUsers(Long roleId, List<Long> userIds);
 
   /**
    * 根据角色关键字查询角色信息

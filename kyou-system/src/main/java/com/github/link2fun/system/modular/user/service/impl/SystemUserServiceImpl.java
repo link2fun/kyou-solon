@@ -1,9 +1,7 @@
 package com.github.link2fun.system.modular.user.service.impl;
 
-import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.base.LongProxy;
@@ -12,28 +10,23 @@ import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.core.expression.lambda.SQLActionExpression2;
-
 import com.easy.query.core.proxy.columns.types.SQLStringTypeColumn;
 import com.easy.query.core.proxy.columns.types.impl.SQLStringTypeColumnImpl;
 import com.easy.query.solon.annotation.Db;
-import com.github.link2fun.support.annotation.DataScope;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
-import com.github.link2fun.support.core.domain.entity.SysDept;
-import com.github.link2fun.support.core.domain.entity.SysRole;
-import com.github.link2fun.support.core.domain.entity.SysUser;
+import com.github.link2fun.support.core.domain.entity.*;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
-import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.support.easyquery.DataScope;
+import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
-import com.github.link2fun.support.utils.SecurityUtils;
+import com.github.link2fun.support.utils.PasswordUtils;
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.bean.BeanValidators;
 import com.github.link2fun.support.utils.uuid.IdUtils;
-import com.github.link2fun.support.core.domain.entity.SysPost;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
@@ -41,9 +34,7 @@ import com.github.link2fun.system.modular.user.model.dto.proxy.AllocatedUserDTOP
 import com.github.link2fun.system.modular.user.model.req.SysUserReq;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import com.github.link2fun.system.modular.userpost.service.ISystemUserPostService;
-import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import com.github.link2fun.system.modular.userrole.service.ISystemUserRoleService;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.system.tool.SystemConfigContext;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
@@ -86,17 +77,18 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 根据条件分页查询用户列表
    *
-   * @param context   操作上下文, 含有当前用户信息
-   * @param page      分页信息
-   * @param searchReq 用户信息
+   * @param context     操作上下文, 含有当前用户信息
+   * @param pageRequest 分页信息
+   * @param searchReq   用户信息
    * @return 用户信息集合信息
    */
   @Override
-  @DataScope(deptAlias = SysDept.TABLE_ALIAS, userAlias = SysUser.TABLE_ALIAS)
-  public <T> Page<T> selectUserList(final ActionContext context, final Page<T> page, final SysUser searchReq, final Class<T> resultClass) {
+  public <T> Page<T> selectUserList(final ActionContext context, final Page<T> pageRequest, final SysUser searchReq, final Class<T> resultClass) {
+
+    final DataScope dataScope = DataScope.of(entityQuery, context);
 
     Query<T> query = entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)
-      .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId()))
+      .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId())).asAlias(SysDept.TABLE_ALIAS)
       .where((user, dept) -> {
         user.delFlag().eq(UserConstants.NORMAL);
         user.userId().eq(IdUtils.isIdValid(searchReq.getUserId()), searchReq.getUserId());
@@ -114,17 +106,15 @@ public class SystemUserServiceImpl implements ISystemUserService {
         });
         user.createTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime());
         user.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
-        if (StrUtil.isNotBlank(searchReq.getParams().getDataScope())) {
-          user.expression().sql(searchReq.getParams().getDataScope());
-        }
+        dataScope.applyTo(user, dept.deptId(), user.userId());
       })
       .include(SysUserProxy::dept)
 
       .selectAutoInclude(resultClass);
     EasyPageResult<T> pageResult = query
-      .toPageResult(page.getPageNum(), page.getPageSize());
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
 
-    return Page.of(pageResult);
+    return Page.of(pageRequest, pageResult);
   }
 
   /**
@@ -135,8 +125,9 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @return 用户信息集合信息
    */
   @Override
-  @DataScope(deptAlias = SysDept.TABLE_ALIAS, userAlias = SysUser.TABLE_ALIAS)
-  public Page<AllocatedUserDTO> selectAllocatedList(final ActionContext context, final Page<AllocatedUserDTO> page, final SysUser searchReq) {
+  public Page<AllocatedUserDTO> selectAllocatedList(final ActionContext context, final Page<AllocatedUserDTO> pageRequest, final SysUser searchReq) {
+    final DataScope dataScope = DataScope.of(entityQuery, context);
+
     EasyPageResult<AllocatedUserDTO> pageResult = entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)
       .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId())).asAlias(SysDept.TABLE_ALIAS)
       .leftJoin(SysUserRole.class, (user, dept, userRole) -> user.userId().eq(userRole.userId()))
@@ -147,9 +138,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
         role.roleId().eq(searchReq.getRoleId());
         user.userName().like(StrUtil.isNotBlank(searchReq.getUserName()), searchReq.getUserName());
         user.phonenumber().like(StrUtil.isNotBlank(searchReq.getPhonenumber()), searchReq.getPhonenumber());
-        if (StrUtil.isNotBlank(searchReq.getParams().getDataScope())) {
-          user.expression().sql(searchReq.getParams().getDataScope());
-        }
+        dataScope.applyTo(user, dept.deptId(), user.userId());
       })
       // FIXME 这里的分页查询有问题， count(distinct *) 会导致分页查询出现问题
       .select((user, dept, userRole, role) -> new AllocatedUserDTOProxy()
@@ -163,11 +152,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
         .status().set(user.status())
         .createTime().set(user.createTime()))
       .distinct()
-      .toPageResult(page.getPageNum(), page.getPageSize());
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
 
-    return Page.of(pageResult);
+    return Page.of(pageRequest, pageResult);
 
-//    return getBaseMapper().selectAllocatedList(page, searchReq);
+//    return getBaseMapper().selectAllocatedList(pageRequest, searchReq);
   }
 
   /**
@@ -178,9 +167,9 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @return 用户信息集合信息
    */
   @Override
-  @DataScope(deptAlias = SysDept.TABLE_ALIAS, userAlias = SysUser.TABLE_ALIAS)
-  public Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, final Page<AllocatedUserDTO> page, final SysUser searchReq) {
-//    return getBaseMapper().selectUnallocatedList(page, searchReq);
+  public Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, final Page<AllocatedUserDTO> pageRequest, final SysUser searchReq) {
+    final DataScope dataScope = DataScope.of(entityQuery, context);
+//    return getBaseMapper().selectUnallocatedList(pageRequest, searchReq);
     //select distinct user.user_id     as userId,
     //                      user.dept_id     as deptId,
     //                      user.user_name   as userName,
@@ -227,9 +216,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
         user.userName().like(StrUtil.isNotBlank(searchReq.getUserName()), searchReq.getUserName());
         user.phonenumber().like(StrUtil.isNotBlank(searchReq.getPhonenumber()), searchReq.getPhonenumber());
-        if (StrUtil.isNotBlank(searchReq.getParams().getDataScope())) {
-          user.expression().sql(searchReq.getParams().getDataScope());
-        }
+        dataScope.applyTo(user, dept.deptId(), user.userId());
       })
 
       .select((user, dept, userRole, role) -> new AllocatedUserDTOProxy()
@@ -243,8 +230,8 @@ public class SystemUserServiceImpl implements ISystemUserService {
         .status().set(user.status())
         .createTime().set(user.createTime()))
       .distinct()
-      .toPageResult(page.getPageNum(), page.getPageSize());
-    return Page.of(pageResult);
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
+    return Page.of(pageRequest, pageResult);
   }
 
   /**
@@ -272,42 +259,6 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .include(SysUserProxy::dept)
       .include(SysUserProxy::roles)
       .selectAutoInclude(SysUserDTO.class);
-  }
-
-  /**
-   * 根据用户 tokenInfo 查询登录用户信息
-   *
-   * @param tokenInfo token信息
-   */
-  @Override
-  public SessionUser selectCurrentUserByTokenInfo(final SaTokenInfo tokenInfo) {
-    final Object loginId = tokenInfo.getLoginId();
-    final Long userId = Convert.toLong(loginId);
-    final SessionUser currentUser = SaSessionBizTool.getCurrentUser();
-    final SysUser user = entityQuery.queryable(SysUser.class).whereById(userId).singleNotNull();
-    currentUser.setUserId(user.getUserId());
-    currentUser.setDeptId(user.getDeptId());
-    currentUser.setTokenInfo(tokenInfo);
-//    currentUser.setLoginTime();
-//    currentUser.setExpireTime();
-//    currentUser.setIpaddr();
-//    currentUser.setLoginLocation();
-//    currentUser.setBrowser();
-//    currentUser.setOs();
-
-    final SysUserDTO userDTO = BeanUtil.copyProperties(user, SysUserDTO.class);
-
-    final List<RoleDTO> roleList = SaSessionBizTool.getRole(loginId, tokenInfo.getLoginType());
-    userDTO.setRoles(roleList);
-
-    final List<String> permissionList = SaSessionBizTool.getPermissionList(loginId, tokenInfo.getLoginType());
-
-    currentUser.setPermissions(permissionList);
-    currentUser.setUser(userDTO);
-
-    SaSessionBizTool.setCurrentUser(currentUser);
-
-    return currentUser;
   }
 
   /**
@@ -371,33 +322,20 @@ public class SystemUserServiceImpl implements ISystemUserService {
   }
 
 
-
-  /** 判断某一列的值是否未被占用（唯一） */
-  @Override
-  public boolean isColumnValueUnique(SQLStringTypeColumn<SysUserProxy> column, final String columnValue, final Long userId) {
+  /** 探测某列值的占用行, 空值不参与判重, 已过滤软删行 */
+  private List<Long> findOccupantIds(final SQLStringTypeColumn<SysUserProxy> column, final String columnValue) {
     if (StrUtil.isBlank(columnValue)) {
-      // 当前要进行判断的值 是 空字符串, 默认情况下, 判重不进行空字符串的判重, 空字符串默认算是不重复的
-      return true;
+      // 空字符串默认算不重复, 不参与判重
+      return List.of();
     }
 
-
-    final List<Long> userIdList = entityQuery.queryable(SysUser.class)
+    return entityQuery.queryable(SysUser.class)
       .where(user -> {
         new SQLStringTypeColumnImpl<>(user.getEntitySQLContext(), user.getTable(), column.getValue()).eq(columnValue);
         user.delFlag().eq(UserConstants.NORMAL);
       })
       .selectColumn(SysUserProxy::userId)
       .toList();
-
-    if (CollectionUtil.isEmpty(userIdList)) {
-      return true;
-    }
-
-    if (CollectionUtil.size(userIdList) > 1) {
-      return false;
-    }
-
-    return Objects.equals(userIdList.get(0), userId);
   }
 
 
@@ -407,48 +345,52 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param userId 用户信息
    */
   private void checkUserAllowed(final Long userId) {
-    if (StringUtils.isNotNull(userId) && SysUser.isAdmin(userId)) {
+    if (StringUtils.isNotNull(userId) && SysUser.isSuperAdmin(userId)) {
       throw new ServiceException("不允许操作超级管理员用户");
     }
   }
 
   /**
    * 校验用户是否有数据权限
-   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成</p>
+   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成。
+   * 取目标用户的部门后按数据范围点查, 不再借道用户列表查询</p>
    *
    * @param context 操作上下文, 含有当前用户信息
    * @param userId  用户id
    */
   @Override
   public void checkUserDataScope(final ActionContext context, final Long userId) {
-    if (!SysUser.isAdmin(SecurityUtils.getUserId())) {
-      SysUser user = new SysUser();
-      user.setUserId(userId);
-      Page<SysUserDTO> users = self.selectUserList(context, Page.ofLimit(1L), user, SysUserDTO.class);
-      if (CollectionUtil.isEmpty(users.getRecords())) {
-        throw new ServiceException("没有权限访问用户数据！");
-      }
+    if (context.isSuperAdmin()) {
+      return;
+    }
+    final Long targetDeptId = entityQuery.queryable(SysUser.class)
+      .where(user -> {
+        user.delFlag().eq(UserConstants.NORMAL);
+        user.userId().eq(userId);
+      })
+      .selectColumn(SysUserProxy::deptId)
+      .firstOrNull();
+    if (!DataScope.of(entityQuery, context).containsUser(userId, targetDeptId)) {
+      throw new ServiceException("没有权限访问用户数据！");
     }
   }
 
-  /**
-   * 校验登录账号/手机号/邮箱在系统中是否唯一, 不唯一时抛出业务异常
-   *
-   * @param action 操作描述(如 "新增"/"修改"), 用于拼接错误文案
-   * @param userId 当前用户id(编辑时排除自身), 新增时为 null
-   */
+
+  /** 判断登录账号是否未被占用(空值视为可用), 供注册等外部流程探测 */
+  @Override
+  public boolean isUserNameAvailable(final String userName) {
+    return UniqueChecker.available(findOccupantIds(SysUserProxy.TABLE.userName(), userName), null);
+  }
+
   private void checkUserFieldUnique(final String action, final String userName, final String phonenumber,
                                     final String email, final Long userId) {
     final String prefix = action + "用户'" + userName + "'失败，";
-    if (!isColumnValueUnique(SysUserProxy.TABLE.userName(), userName, userId)) {
-      throw new ServiceException(prefix + "登录账号已存在");
-    }
-    if (!isColumnValueUnique(SysUserProxy.TABLE.phonenumber(), phonenumber, userId)) {
-      throw new ServiceException(prefix + "手机号码已存在");
-    }
-    if (!isColumnValueUnique(SysUserProxy.TABLE.email(), email, userId)) {
-      throw new ServiceException(prefix + "邮箱账号已存在");
-    }
+    UniqueChecker.checkOrThrow(findOccupantIds(SysUserProxy.TABLE.userName(), userName),
+      userId, prefix + "登录账号已存在");
+    UniqueChecker.checkOrThrow(findOccupantIds(SysUserProxy.TABLE.phonenumber(), phonenumber),
+      userId, prefix + "手机号码已存在");
+    UniqueChecker.checkOrThrow(findOccupantIds(SysUserProxy.TABLE.email(), email),
+      userId, prefix + "邮箱账号已存在");
   }
 
   /**
@@ -464,7 +406,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
     SysUser user = addReq.transferTo(SysUser.class);
 
-    user.setPassword(SecurityUtils.encryptPassword(addReq.getPassword())); //
+    user.setPassword(PasswordUtils.encryptPassword(addReq.getPassword())); //
     user.setStatus(UserConstants.NORMAL); // 状态为正常
     user.setDelFlag(UserConstants.NORMAL); // 删除状态为未删除
     user.setLoginIp("");
@@ -500,7 +442,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 修改用户信息
    *
-   * @param context  操作上下文, 含有当前用户信息
+   * @param context   操作上下文, 含有当前用户信息
    * @param updateReq 用户信息
    * @return 结果
    */
@@ -640,7 +582,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public boolean deleteUserByIds(final ActionContext context, final List<Long> userIds) {
 
-    if (CollectionUtil.contains(userIds, SecurityUtils.getUserId())) {
+    if (CollectionUtil.contains(userIds, context.getUserId())) {
       throw new ServiceException("当前用户不能删除");
     }
     for (final Long userId : userIds) {
@@ -687,7 +629,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
         SysUserDTO u = self.selectUserByUserName(user.getUserName());
         if (StringUtils.isNull(u)) {
           BeanValidators.validateWithException(user);
-          user.setPassword(SecurityUtils.encryptPassword(password));
+          user.setPassword(PasswordUtils.encryptPassword(password));
           user.setCreateBy(operName);
 //          getBaseMapper().insert(user);
           entityQuery.insertable(user).executeRows();
