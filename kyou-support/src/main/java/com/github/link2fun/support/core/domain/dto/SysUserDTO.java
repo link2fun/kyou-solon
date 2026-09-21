@@ -5,7 +5,6 @@ import com.easy.query.core.enums.RelationTypeEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.github.link2fun.framework.tool.DataScopeTool;
 import com.github.link2fun.support.annotation.Excel;
 import com.github.link2fun.support.annotation.Excels;
 import com.github.link2fun.support.core.domain.entity.SysRole;
@@ -41,8 +40,8 @@ public class SysUserDTO implements Serializable {
   @JsonSerialize(using = ToStringSerializer.class)
   private Long deptId;
 
-  public String getDeptName(){
-    if(dept==null){
+  public String getDeptName() {
+    if (dept == null) {
       return null;
     }
     return dept.getDeptName();
@@ -102,7 +101,7 @@ public class SysUserDTO implements Serializable {
     @Excel(name = "部门名称", targetAttr = "deptName", type = Excel.Type.EXPORT),
     @Excel(name = "部门负责人", targetAttr = "leader", type = Excel.Type.EXPORT)
   })
-  @Navigate(value= RelationTypeEnum.OneToOne)
+  @Navigate(value = RelationTypeEnum.OneToOne)
   private DeptDTO dept;
 
   /** 角色对象 */
@@ -122,9 +121,9 @@ public class SysUserDTO implements Serializable {
     return user;
   }
 
-  /** 是否是超级管理员, 超级管理员用户 ID 为 1 */
-  public boolean isAdmin() {
-    return DataScopeTool.isAdmin(this.userId);
+  /** 是否是超管, 超管用户 ID 为 1 */
+  public boolean isSuperAdmin() {
+    return SysUser.isSuperAdmin(this.userId);
   }
 
 }

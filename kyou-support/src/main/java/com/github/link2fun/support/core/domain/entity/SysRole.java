@@ -1,7 +1,6 @@
 package com.github.link2fun.support.core.domain.entity;
 
 import com.easy.query.core.annotation.*;
-import com.easy.query.core.annotation.Table;
 import com.easy.query.core.enums.RelationTypeEnum;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -11,7 +10,6 @@ import com.github.link2fun.support.core.domain.BaseEntity;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
 import com.github.link2fun.support.utils.uuid.IdUtils;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
@@ -88,7 +86,7 @@ public class SysRole extends BaseEntity implements ProxyEntityAvailable<SysRole,
   private String remark;
 
   /** 角色和菜单关联关系 */
-  @Navigate(value = RelationTypeEnum.ManyToMany,selfProperty = Fields.roleId, targetProperty = SysRoleMenu.Fields.roleId)
+  @Navigate(value = RelationTypeEnum.ManyToMany, selfProperty = Fields.roleId, targetProperty = SysRoleMenu.Fields.roleId)
   private List<SysRoleMenu> roleMenuList;
 
   /** 角色关联的菜单 */
@@ -101,7 +99,7 @@ public class SysRole extends BaseEntity implements ProxyEntityAvailable<SysRole,
 
 
   /** 角色和部门关联关系 */
-  @Navigate(value = RelationTypeEnum.ManyToMany,selfProperty = Fields.roleId, targetProperty = SysRoleDept.Fields.roleId)
+  @Navigate(value = RelationTypeEnum.ManyToMany, selfProperty = Fields.roleId, targetProperty = SysRoleDept.Fields.roleId)
   private List<SysRoleDept> roleDeptList;
 
   /** 角色关联的部门 */
@@ -113,30 +111,30 @@ public class SysRole extends BaseEntity implements ProxyEntityAvailable<SysRole,
   private List<SysDept> deptList;
 
 
-
   public static SysRole ofRoleId(final Long roleId) {
     final SysRole role = new SysRole();
     role.setRoleId(roleId);
     return role;
   }
 
-  public boolean isAdmin() {
-    return isAdmin(this.roleId);
+  /** 是否是超级管理员角色, 该角色 ID 为 1 */
+  public boolean isSuperAdminRole() {
+    return isSuperAdminRole(this.roleId);
   }
 
   /**
-   * 判断是否为管理员角色
-   * 
+   * 判断是否为超级管理员角色
+   *
    * @param roleId 角色ID
-   * @return 如果是管理员角色返回true,否则返回false
+   * @return 如果是超级管理员角色返回true,否则返回false
    */
-  public static boolean isAdmin(Long roleId) {
+  public static boolean isSuperAdminRole(Long roleId) {
     return IdUtils.isIdValid(roleId) && 1L == roleId;
   }
 
   /**
    * 将当前角色实体转换为数据传输对象
-   * 
+   *
    * @return RoleDTO 角色数据传输对象
    */
   public RoleDTO toRoleDTO() {

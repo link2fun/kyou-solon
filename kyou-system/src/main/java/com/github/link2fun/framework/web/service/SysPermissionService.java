@@ -36,8 +36,8 @@ public class SysPermissionService {
    */
   public Set<String> getRolePermission(Long userId) {
     Set<String> roles = new HashSet<>();
-    // 管理员拥有所有权限
-    if (SysUser.isAdmin(userId)) {
+    // 超管拥有所有权限
+    if (SysUser.isSuperAdmin(userId)) {
       roles.add("admin");
     } else {
       roles.addAll(roleService.selectRolePermissionByUserId(userId));
@@ -53,8 +53,8 @@ public class SysPermissionService {
    */
   public List<String> getMenuPermission(SysUserDTO user) {
     List<String> perms = Lists.newArrayList();
-    // 管理员拥有所有权限
-    if (user.isAdmin()) {
+    // 超管拥有所有权限
+    if (user.isSuperAdmin()) {
       perms.add("*:*:*");
     } else {
       List<RoleDTO> roles = user.getRoles();

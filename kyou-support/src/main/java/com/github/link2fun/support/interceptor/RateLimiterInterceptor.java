@@ -1,14 +1,17 @@
 package com.github.link2fun.support.interceptor;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.github.link2fun.support.annotation.RateLimiter;
+import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.ip.IpUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.Solon;
 import org.noear.solon.core.aspect.Interceptor;
 import org.noear.solon.core.aspect.Invocation;
-import org.redisson.api.*;
+import org.redisson.api.RRateLimiter;
+import org.redisson.api.RateLimiterConfig;
+import org.redisson.api.RateType;
+import org.redisson.api.RedissonClient;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -74,11 +77,8 @@ public class RateLimiterInterceptor implements Interceptor {
         keyBuilder.append("IP:").append(IpUtils.getIpAddr()).append(":");
         break;
       case USER:
-        if (StpUtil.isLogin()) {
-          keyBuilder.append("USER:").append(StpUtil.getLoginIdAsString()).append(":");
-        } else {
-          keyBuilder.append("USER:").append("anonymous").append(":");
-        }
+        final Long userId = ActionContext.current().getUserId();
+        keyBuilder.append("USER:").append(userId == null ? "anonymous" : userId).append(":");
         break;
       case GLOBAL:
         keyBuilder.append("GLOBAL:");

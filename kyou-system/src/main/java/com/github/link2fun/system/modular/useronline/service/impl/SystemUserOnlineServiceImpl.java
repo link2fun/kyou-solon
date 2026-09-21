@@ -7,8 +7,6 @@ import com.github.link2fun.system.modular.useronline.service.ISystemUserOnlineSe
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 
-import java.util.Optional;
-
 @Slf4j
 @Component
 public class SystemUserOnlineServiceImpl implements ISystemUserOnlineService {
@@ -71,7 +69,7 @@ public class SystemUserOnlineServiceImpl implements ISystemUserOnlineService {
       return null;
     }
     SysUserOnline sysUserOnline = new SysUserOnline();
-    sysUserOnline.setTokenId(Optional.ofNullable(user.getToken()).orElseGet(()->user.getTokenSession().getToken()));
+    sysUserOnline.setTokenId(user.getToken());
     sysUserOnline.setUserName(user.getUsername());
     sysUserOnline.setIpaddr(user.getIpaddr());
     sysUserOnline.setLoginLocation(user.getLoginLocation());

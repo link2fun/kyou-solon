@@ -1,13 +1,9 @@
 package com.github.link2fun.framework.aop;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.thread.threadlocal.NamedThreadLocal;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
-import com.easy.query.core.exception.EasyQueryException;
-import com.easy.query.core.exception.EasyQuerySQLCommandException;
-import com.easy.query.core.exception.EasyQuerySQLStatementException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -18,13 +14,13 @@ import com.github.link2fun.framework.manager.AsyncManager;
 import com.github.link2fun.framework.manager.factory.AsyncFactory;
 import com.github.link2fun.framework.tool.LogTool;
 import com.github.link2fun.support.annotation.Log;
+import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.R;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.enums.BusinessStatus;
 import com.github.link2fun.support.enums.HttpMethod;
-import com.github.link2fun.support.utils.SecurityUtils;
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.ip.IpUtils;
 import com.github.link2fun.system.modular.operlog.model.SysOperLog;
@@ -127,7 +123,7 @@ public class LogInterceptor implements Interceptor {
       logMsg.append("COST TIME\t: ").append(System.currentTimeMillis() - TIME_THREADLOCAL.get()).append("ms").append(System.lineSeparator());
 
       return invokeResult;
-    }  catch (Exception throwable) {
+    } catch (Exception throwable) {
       // 到这里是异常结束的
       handleLog(inv, apiLog, throwable, null);
       throw throwable;
@@ -148,7 +144,7 @@ public class LogInterceptor implements Interceptor {
       final Context context = Context.current();
       final Method method = invocation.method().getMethod();
       // 获取当前的用户
-      SessionUser currentUser = SecurityUtils.currentUser();
+      SessionUser currentUser = ActionContext.current().getSessionUser();
 
       // *========数据库日志=========*//
       SysOperLog operLog = new SysOperLog();

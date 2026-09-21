@@ -1,29 +1,25 @@
 package com.github.link2fun.framework.web.service;
 
 
-import cn.dev33.satoken.stp.SaTokenInfo;
-import cn.dev33.satoken.stp.StpUtil;
 import com.github.link2fun.framework.manager.AsyncManager;
 import com.github.link2fun.framework.manager.factory.AsyncFactory;
 import com.github.link2fun.support.constant.CacheConstants;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
+import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
+import com.github.link2fun.support.context.cache.service.RedisCache;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.model.SessionUser;
-import com.github.link2fun.support.context.cache.service.RedisCache;
 import com.github.link2fun.support.exception.user.*;
 import com.github.link2fun.support.utils.DateUtils;
 import com.github.link2fun.support.utils.MessageUtils;
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.ip.IpUtils;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.system.tool.SystemConfigContext;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
-
-import java.util.List;
 
 /**
  * 登录校验方法
@@ -69,33 +65,13 @@ public class SysLoginService {
 //      throw new UserPasswordNotMatchException();
 //    }
 
-    StpUtil.login(sysUser.getUserId());
+    // 建立会话并缓存登录用户
+    final SessionUser sessionUser = SaSessionBizTool.login(sysUser);
+
     AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.getMessage("user.login.success")));
-    final SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
-
-//    final SaSession tokenSession = StpUtil.getTokenSession();
-
-
-    SessionUser sessionUser = new SessionUser();
-    sessionUser.loadTokenInfoAndTokenSession();
-
-    sessionUser.setUserId(sysUser.getUserId());
-    sessionUser.setDeptId(sysUser.getDeptId());
-    sessionUser.setTokenInfo(tokenInfo);
-
-    SaSessionBizTool.setUserAgent(sessionUser);
-
-    final List<String> permissionList = StpUtil.getPermissionList();
-    sessionUser.setPermissions(permissionList);
-
-    sessionUser.setUser(sysUser);
-
-    SaSessionBizTool.setCurrentUser(sessionUser);
-
-
     recordLoginInfo(sessionUser.getUserId());
     // 生成token
-    return tokenInfo.getTokenValue();
+    return sessionUser.getToken();
   }
 
   /**
