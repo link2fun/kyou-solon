@@ -293,14 +293,9 @@ public class SysJobServiceImpl implements ISysJobService {
   @Override
   @Transaction
   public long updateJob(SysJob job) {
-//    SysJob properties = getBaseMapper().selectById(job.getJobId());
-    SysJob properties = entityQuery.queryable(SysJob.class)
-      .where(s -> s.jobId().eq(job.getJobId()))
-      .singleNotNull();
-//    int rows = getBaseMapper().updateById(job);
     long rows = entityQuery.updatable(job).executeRows();
     if (rows > 0) {
-      updateSchedulerJob(job, properties.getJobGroup());
+      updateSchedulerJob(job);
     }
     return rows;
   }
@@ -308,11 +303,9 @@ public class SysJobServiceImpl implements ISysJobService {
   /**
    * 更新任务
    *
-   * @param job      任务对象
-   * @param jobGroup 任务组名
+   * @param job 任务对象
    */
-  public void updateSchedulerJob(SysJob job, String jobGroup) {
-    Long jobId = job.getJobId();
+  public void updateSchedulerJob(SysJob job) {
     // 判断是否存在
     if (jobManager.jobExists(job.getJobName())) {
       // 防止创建时存在数据问题 先移除，然后在执行创建操作

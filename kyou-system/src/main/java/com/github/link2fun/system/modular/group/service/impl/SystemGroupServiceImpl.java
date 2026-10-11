@@ -5,14 +5,18 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
+import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.UniqueChecker;
+import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.group.model.SysGroup;
-import com.github.link2fun.system.modular.group.model.proxy.SysGroupProxy;
 import com.github.link2fun.system.modular.group.service.ISystemGroupService;
+import com.github.link2fun.system.modular.usergroup.service.ISystemUserGroupService;
 
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
+import org.noear.solon.annotation.Inject;
 import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
@@ -21,6 +25,12 @@ import java.util.List;
 @Slf4j
 @Component
 public class SystemGroupServiceImpl implements ISystemGroupService {
+
+  @Inject
+  private ISystemUserGroupService userGroupService;
+
+  @Inject
+  private AggregateDeleter aggregateDeleter;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -45,12 +55,12 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
    * @param group  群组信息
    */
   private void checkGroupNameUnique(final String action, final SysGroup group) {
-    final List<Long> sameNameIds = entityQuery.queryable(SysGroup.class)
-      .where(_group -> _group.groupName().eq(group.getGroupName()))
-      .select(SysGroupProxy::groupId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameNameIds, group.getGroupId(),
-      action + "群组'" + group.getGroupName() + "'失败，群组名称已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysGroup.class)
+        .where(_group -> {
+          _group.groupName().eq(group.getGroupName());
+          _group.groupId().ne(IdUtils.isIdValid(group.getGroupId()), group.getGroupId());
+        }).any(),
+      () -> action + "群组'" + group.getGroupName() + "'失败，群组名称已存在");
   }
 
   /**
@@ -75,14 +85,17 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
   }
 
   /**
-   * 批量删除群组
+   * 批量删除群组（静默解绑: 顺带清除群组的用户关联）
    */
   @Transaction
   @Override
   public long deleteGroupByIds(final List<Long> groupIds) {
-    return entityQuery.deletable(SysGroup.class)
-      .allowDeleteStatement(true)
-      .where(group -> group.groupId().in(groupIds)).executeRows();
+    return aggregateDeleter.delete(AggregateDeletePlan.of(groupIds)
+      // 删除群组与用户关联
+      .unlink(userGroupService::removeByGroupIds)
+      .delete(ids -> entityQuery.deletable(SysGroup.class)
+        .allowDeleteStatement(true)
+        .where(group -> group.groupId().in(ids)).executeRows()));
   }
 
   /**

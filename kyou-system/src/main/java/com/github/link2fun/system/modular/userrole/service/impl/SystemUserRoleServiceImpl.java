@@ -52,9 +52,9 @@ public class SystemUserRoleServiceImpl implements ISystemUserRoleService {
     mappingSync.add(roleUserMapping, roleId, userIds);
   }
 
-  /** 通过用户ID查询角色ID */
+  /** 通过用户ID查询角色ID集合 */
   @Override
-  public List<Long> findRoleIdListByUserId(final Long userId) {
+  public List<Long> findRoleIdsByUserId(final Long userId) {
     return userRoleMapping.findTargetIds(userId);
   }
 
@@ -69,10 +69,10 @@ public class SystemUserRoleServiceImpl implements ISystemUserRoleService {
     mappingSync.sync(userRoleMapping, userId, roleIds);
   }
 
-  /** 批量删除用户角色关联信息 */
+  /** 按用户 ID 批量解除用户-角色关联（用户消亡时静默解绑） */
   @Override
   @Transaction
-  public void deleteUserRole(final List<Long> userIds) {
+  public void removeByUserIds(final List<Long> userIds) {
     userRoleMapping.unlinkAll(userIds);
   }
 }

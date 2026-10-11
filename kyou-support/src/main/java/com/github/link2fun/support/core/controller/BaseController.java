@@ -18,10 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BaseController {
 
-  protected <T> Page<T> getPage() {
-    return Page.ofCurrentContext();
-  }
-
   /**
    * 响应请求分页数据
    */

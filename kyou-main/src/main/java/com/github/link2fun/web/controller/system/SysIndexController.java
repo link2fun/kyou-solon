@@ -1,11 +1,9 @@
 package com.github.link2fun.web.controller.system;
 
 import com.github.link2fun.context.buildinfo.BuildInfoContext;
-import com.github.link2fun.support.config.KyouProperties;
 import com.github.link2fun.support.utils.StringUtils;
 import org.noear.solon.Solon;
 import org.noear.solon.annotation.Controller;
-import org.noear.solon.annotation.Inject;
 import org.noear.solon.annotation.Mapping;
 
 
@@ -16,9 +14,6 @@ import org.noear.solon.annotation.Mapping;
  */
 @Controller
 public class SysIndexController {
-  /** 系统基础配置 */
-  @Inject
-  private KyouProperties kyouProperties;
 
   /**
    * 访问首页，提示语

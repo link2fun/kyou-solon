@@ -37,7 +37,7 @@ public class SystemDictDataController extends BaseController {
   @SaCheckPermission("system:dict:list")
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysDictData dictData) {
-    Page<SysDictData> page = dictDataService.pageSearch(getPage(), dictData);
+    Page<SysDictData> page = dictDataService.pageSearch(Page.ofCurrentContext(), dictData);
     return getDataTable(page);
   }
 

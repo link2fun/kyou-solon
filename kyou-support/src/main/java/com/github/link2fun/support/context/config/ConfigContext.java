@@ -38,7 +38,7 @@ public class ConfigContext {
   }
 
   public static String getString(String configKey, String defaultValue) {
-    return Convert.toStr(configKey, defaultValue);
+    return Convert.toStr(get(configKey), defaultValue);
   }
 
   @SuppressWarnings("unused")

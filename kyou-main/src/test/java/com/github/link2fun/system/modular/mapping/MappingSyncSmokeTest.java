@@ -63,19 +63,19 @@ public class MappingSyncSmokeTest {
   @DisplayName("用户-角色：建立、收敛、清空、批量清空走通")
   public void userRoleMappingRoundTrip() {
     userRoleService.reassignRoles(OWNER_A, List.of(1L, 2L));
-    assertEquals(Set.of(1L, 2L), new HashSet<>(userRoleService.findRoleIdListByUserId(OWNER_A)));
+    assertEquals(Set.of(1L, 2L), new HashSet<>(userRoleService.findRoleIdsByUserId(OWNER_A)));
 
     // 收敛到目标集合: 1 被移除, 3 被新增
     userRoleService.reassignRoles(OWNER_A, List.of(2L, 3L));
-    assertEquals(Set.of(2L, 3L), new HashSet<>(userRoleService.findRoleIdListByUserId(OWNER_A)));
+    assertEquals(Set.of(2L, 3L), new HashSet<>(userRoleService.findRoleIdsByUserId(OWNER_A)));
 
     // null 视同清空
     userRoleService.reassignRoles(OWNER_A, null);
-    assertTrue(userRoleService.findRoleIdListByUserId(OWNER_A).isEmpty());
+    assertTrue(userRoleService.findRoleIdsByUserId(OWNER_A).isEmpty());
 
     userRoleService.reassignRoles(OWNER_A, List.of(5L));
-    userRoleService.deleteUserRole(List.of(OWNER_A));
-    assertTrue(userRoleService.findRoleIdListByUserId(OWNER_A).isEmpty());
+    userRoleService.removeByUserIds(List.of(OWNER_A));
+    assertTrue(userRoleService.findRoleIdsByUserId(OWNER_A).isEmpty());
   }
 
   @Rollback
@@ -83,17 +83,17 @@ public class MappingSyncSmokeTest {
   @DisplayName("用户-岗位：建立、收敛、清空、批量清空走通")
   public void userPostMappingRoundTrip() {
     userPostService.reassignPosts(OWNER_A, List.of(1L, 2L));
-    assertEquals(Set.of(1L, 2L), new HashSet<>(userPostService.findPostIdListByUserId(OWNER_A)));
+    assertEquals(Set.of(1L, 2L), new HashSet<>(userPostService.findPostIdsByUserId(OWNER_A)));
 
     userPostService.reassignPosts(OWNER_A, List.of(2L, 3L));
-    assertEquals(Set.of(2L, 3L), new HashSet<>(userPostService.findPostIdListByUserId(OWNER_A)));
+    assertEquals(Set.of(2L, 3L), new HashSet<>(userPostService.findPostIdsByUserId(OWNER_A)));
 
     userPostService.reassignPosts(OWNER_A, List.of());
-    assertTrue(userPostService.findPostIdListByUserId(OWNER_A).isEmpty());
+    assertTrue(userPostService.findPostIdsByUserId(OWNER_A).isEmpty());
 
     userPostService.reassignPosts(OWNER_A, List.of(5L));
-    userPostService.deleteUserPost(List.of(OWNER_A));
-    assertTrue(userPostService.findPostIdListByUserId(OWNER_A).isEmpty());
+    userPostService.removeByUserIds(List.of(OWNER_A));
+    assertTrue(userPostService.findPostIdsByUserId(OWNER_A).isEmpty());
   }
 
   @Rollback

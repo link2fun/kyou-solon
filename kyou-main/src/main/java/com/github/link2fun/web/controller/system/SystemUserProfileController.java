@@ -58,8 +58,6 @@ public class SystemUserProfileController extends BaseController {
   public AjaxResult updateProfile(@Body SysUser updateUserRequest) {
     final Long userId = getUserId();
 
-    final SessionUser currentUser = getCurrentUser();
-
     final SysUser user = userService.getByIdNotNull(userId);
 
 
@@ -69,11 +67,8 @@ public class SystemUserProfileController extends BaseController {
     user.setSex(updateUserRequest.getSex());
 
     if (userService.updateUserProfile(user) > 0) {
-      // 更新缓存用户信息
-      final SysUserDTO sysUserDTO = userService.selectUserByUserName(user.getUserName());
-      currentUser.setUser(sysUserDTO);
-      SaSessionBizTool.setCurrentUser(currentUser);
-
+      // 个人资料变更后刷新当前会话
+      SaSessionBizTool.refreshCurrentSession();
       return success();
     }
     return error("修改个人信息异常，请联系管理员");
@@ -117,10 +112,8 @@ public class SystemUserProfileController extends BaseController {
       if (userService.updateUserAvatar(currentUser.getUsername(), avatar)) {
         AjaxResult ajax = AjaxResult.success();
         ajax.put("imgUrl", avatar);
-        // 更新缓存用户头像
-        currentUser.getUser().setAvatar(avatar);
-
-        SaSessionBizTool.setCurrentUser(currentUser);
+        // 头像落库后刷新当前会话
+        SaSessionBizTool.refreshCurrentSession();
         return ajax;
       }
     }

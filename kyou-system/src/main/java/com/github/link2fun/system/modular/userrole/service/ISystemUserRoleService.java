@@ -15,8 +15,8 @@ public interface ISystemUserRoleService {
   /** 批量为角色授权用户 */
   void assignUsers(Long roleId, List<Long> userIds);
 
-  /** 通过用户ID查询角色ID */
-  List<Long> findRoleIdListByUserId(Long userId);
+  /** 通过用户ID查询角色ID集合 */
+  List<Long> findRoleIdsByUserId(Long userId);
 
   /**
    * 重新分配用户的角色, 用户最终持有的角色与 roleIds 完全一致
@@ -26,6 +26,6 @@ public interface ISystemUserRoleService {
    */
   void reassignRoles(Long userId, List<Long> roleIds);
 
-  /** 批量删除用户角色关联信息 */
-  void deleteUserRole(List<Long> userIds);
+  /** 按用户 ID 批量解除用户-角色关联（用户消亡时静默解绑） */
+  void removeByUserIds(List<Long> userIds);
 }

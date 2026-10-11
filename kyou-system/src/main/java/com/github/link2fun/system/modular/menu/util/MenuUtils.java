@@ -3,48 +3,12 @@ package com.github.link2fun.system.modular.menu.util;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
+import com.github.link2fun.support.core.tree.TreeBuilder;
 import com.github.link2fun.support.utils.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MenuUtils {
-  /**
-   * 递归列表
-   *
-   * @param list 分类表
-   * @param t    子节点
-   */
-  public static void recursionFn(List<SysMenu> list, SysMenu t) {
-    // 得到子节点列表
-    List<SysMenu> childList = getChildList(list, t);
-    t.setChildren(childList);
-    for (SysMenu tChild : childList) {
-      if (hasChild(list, tChild)) {
-        recursionFn(list, tChild);
-      }
-    }
-  }
-
-  /**
-   * 得到子节点列表
-   */
-  public static List<SysMenu> getChildList(List<SysMenu> list, SysMenu t) {
-    List<SysMenu> tlist = new ArrayList<>();
-    for (final SysMenu n : list) {
-      if (n.getParentId().longValue() == t.getMenuId().longValue()) {
-        tlist.add(n);
-      }
-    }
-    return tlist;
-  }
-
-  /**
-   * 判断是否有子节点
-   */
-  public static boolean hasChild(List<SysMenu> list, SysMenu t) {
-    return !getChildList(list, t).isEmpty();
-  }
 
   /**
    * 获取路由名称
@@ -111,22 +75,15 @@ public class MenuUtils {
   }
 
   /**
-   * 根据父节点的ID获取所有子节点
+   * 构建路由树
    *
-   * @param list     分类表
-   * @param parentId 传入的父节点ID
-   * @return String
+   * @param list     菜单列表
+   * @param parentId 顶级节点的父ID
+   * @return 路由树
    */
-  public static List<SysMenu> getChildPerms(List<SysMenu> list, int parentId) {
-    List<SysMenu> returnList = new ArrayList<>();
-    for (SysMenu t : list) {
-      // 一、根据传入的某个父节点ID,遍历该父节点的所有子节点
-      if (t.getParentId() == parentId) {
-        recursionFn(list, t);
-        returnList.add(t);
-      }
-    }
-    return returnList;
+  public static List<SysMenu> getChildPerms(List<SysMenu> list, Long parentId) {
+    return TreeBuilder.buildByRootParent(list, parentId,
+      SysMenu::getMenuId, SysMenu::getParentId, SysMenu::setChildren);
   }
 
   /**

@@ -13,6 +13,8 @@ import com.easy.query.core.expression.lambda.SQLActionExpression2;
 import com.easy.query.core.proxy.columns.types.SQLStringTypeColumn;
 import com.easy.query.core.proxy.columns.types.impl.SQLStringTypeColumnImpl;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
+import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
@@ -33,6 +35,7 @@ import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
 import com.github.link2fun.system.modular.user.model.dto.proxy.AllocatedUserDTOProxy;
 import com.github.link2fun.system.modular.user.model.req.SysUserReq;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
+import com.github.link2fun.system.modular.usergroup.service.ISystemUserGroupService;
 import com.github.link2fun.system.modular.userpost.service.ISystemUserPostService;
 import com.github.link2fun.system.modular.userrole.service.ISystemUserRoleService;
 import com.github.link2fun.system.tool.SystemConfigContext;
@@ -70,6 +73,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Inject
   private ISystemUserPostService userPostService;
 
+  @Inject
+  private ISystemUserGroupService userGroupService;
+
+  @Inject
+  private AggregateDeleter aggregateDeleter;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -296,7 +304,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
         .singleOrNull())
       .orElse(-1L);
 
-    List<Long> roleIdList = userRoleService.findRoleIdListByUserId(userId);
+    List<Long> roleIdList = userRoleService.findRoleIdsByUserId(userId);
 
     if (CollectionUtil.isEmpty(roleIdList)) {
       return StrUtil.EMPTY;
@@ -314,7 +322,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public String selectUserPostGroup(final String userName) {
     final Long userId = self.findUserIdByUserName(userName);
-    final List<Long> postIdList = userPostService.findPostIdListByUserId(userId);
+    final List<Long> postIdList = userPostService.findPostIdsByUserId(userId);
     if (CollectionUtil.isEmpty(postIdList)) {
       return StrUtil.EMPTY;
     }
@@ -582,23 +590,27 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public boolean deleteUserByIds(final ActionContext context, final List<Long> userIds) {
 
-    if (CollectionUtil.contains(userIds, context.getUserId())) {
-      throw new ServiceException("当前用户不能删除");
-    }
-    for (final Long userId : userIds) {
-      checkUserAllowed(userId);
-      checkUserDataScope(context, userId);
-    }
-
-    // 删除用户与角色关联
-    userRoleService.deleteUserRole(userIds);
-    // 删除用户与岗位关联
-    userPostService.deleteUserPost(userIds);
-
-    return entityQuery.updatable(SysUser.class)
-      .setColumns(user -> user.delFlag().set(UserConstants.DELETED))
-      .where(user -> user.userId().in(userIds))
-      .executeRows() > 0;
+    return aggregateDeleter.delete(AggregateDeletePlan.of(userIds)
+      .guard(ids -> {
+        if (CollectionUtil.contains(ids, context.getUserId())) {
+          throw new ServiceException("当前用户不能删除");
+        }
+      })
+      .guardPerId(userId -> {
+        checkUserAllowed(userId);
+        checkUserDataScope(context, userId);
+      })
+      // 删除用户与角色关联
+      .unlink(userRoleService::removeByUserIds)
+      // 删除用户与岗位关联
+      .unlink(userPostService::removeByUserIds)
+      // 删除用户与群组关联
+      .unlink(userGroupService::removeByUserIds)
+      // 软删: 置删除标记
+      .delete(ids -> entityQuery.updatable(SysUser.class)
+        .setColumns(user -> user.delFlag().set(UserConstants.DELETED))
+        .where(user -> user.userId().in(ids))
+        .executeRows())) > 0;
   }
 
   /**

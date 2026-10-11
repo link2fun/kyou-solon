@@ -17,14 +17,17 @@ public class SystemUserPostServiceImpl implements ISystemUserPostService {
   @Inject
   private UserPostMapping userPostMapping;
 
+  @Inject
+  private PostUserMapping postUserMapping;
+
   /**
-   * 根据用户ID查询岗位IDList
+   * 根据用户ID查询岗位ID集合
    *
    * @param userId 用户ID
-   * @return 岗位IDList
+   * @return 岗位ID集合
    */
   @Override
-  public List<Long> findPostIdListByUserId(final Long userId) {
+  public List<Long> findPostIdsByUserId(final Long userId) {
     return userPostMapping.findTargetIds(userId);
   }
 
@@ -39,10 +42,17 @@ public class SystemUserPostServiceImpl implements ISystemUserPostService {
     mappingSync.sync(userPostMapping, userId, postIds);
   }
 
-  /** 批量删除用户岗位关联信息 */
+  /** 按用户 ID 批量解除用户-岗位关联（用户消亡时静默解绑） */
   @Override
   @Transaction
-  public void deleteUserPost(final List<Long> userIds) {
+  public void removeByUserIds(final List<Long> userIds) {
     userPostMapping.unlinkAll(userIds);
+  }
+
+  /** 批量删除岗位的用户关联信息（岗位方向, 岗位消亡时静默解绑） */
+  @Override
+  @Transaction
+  public void removeByPostIds(final List<Long> postIds) {
+    postUserMapping.unlinkAll(postIds);
   }
 }

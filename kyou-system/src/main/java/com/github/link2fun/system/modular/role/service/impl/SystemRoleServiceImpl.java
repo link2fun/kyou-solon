@@ -6,6 +6,8 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
+import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
@@ -18,7 +20,6 @@ import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
-
 import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.role.model.req.SysRoleAddReq;
@@ -54,6 +55,9 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
   @Inject
   private ISystemRoleDeptService roleDeptService;
+
+  @Inject
+  private AggregateDeleter aggregateDeleter;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -121,7 +125,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       .selectAutoInclude(RoleDTO.class)
       .toList();
 
-    final List<Long> userRoleIdList = userRoleService.findRoleIdListByUserId(userId);
+    final List<Long> userRoleIdList = userRoleService.findRoleIdsByUserId(userId);
     roleList.forEach(r -> {
       if (userRoleIdList.contains(r.getRoleId())) {
         r.setFlag(true);
@@ -202,17 +206,20 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param roleId 当前角色id(编辑时排除自身), 新增时为 null
    */
   private void checkRoleFieldUnique(final String action, final String roleName, final String roleKey, final Long roleId) {
-    final String prefix = action + "角色'" + roleName + "'失败，";
-    final List<Long> sameNameIds = entityQuery.queryable(SysRole.class)
-      .where((_role) -> _role.roleName().eq(roleName))
-      .select(SysRoleProxy::roleId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameNameIds, roleId, prefix + "角色名称已存在");
-    final List<Long> sameKeyIds = entityQuery.queryable(SysRole.class)
-      .where((_role) -> _role.roleKey().eq(roleKey))
-      .select(SysRoleProxy::roleId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameKeyIds, roleId, prefix + "角色权限已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysRole.class)
+        .where(_role -> {
+          _role.roleName().eq(roleName);
+          _role.delFlag().eq(UserConstants.NORMAL);
+          _role.roleId().ne(IdUtils.isIdValid(roleId), roleId);
+        }).any(),
+      () -> action + "角色'" + roleName + "'失败，角色名称已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysRole.class)
+        .where(_role -> {
+          _role.roleKey().eq(roleKey);
+          _role.delFlag().eq(UserConstants.NORMAL);
+          _role.roleId().ne(IdUtils.isIdValid(roleId), roleId);
+        }).any(),
+      () -> action + "角色'" + roleName + "'失败，角色权限已存在");
   }
 
   /**
@@ -342,25 +349,30 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   @Transaction
   @Override
   public long deleteRoleByIds(final List<Long> roleIds) {
-    for (Long roleId : roleIds) {
-      checkRoleAllowed(roleId);
-      checkRoleDataScope(roleId);
+    return aggregateDeleter.delete(AggregateDeletePlan.of(roleIds)
+      .guardPerId(id -> {
+        checkRoleAllowed(id);
+        checkRoleDataScope(id);
+      })
+      .guardPerId(this::assertRoleUnused)
+      // 删除角色与菜单关联
+      .unlink(roleMenuService::removeByRoleIds)
+      // 删除角色与部门关联
+      .unlink(roleDeptService::removeByRoleIds)
+      .delete(ids -> entityQuery.deletable(SysRole.class)
+        .allowDeleteStatement(true)
+        .whereByIds(ids)
+        .executeRows()));
+  }
 
-      if (self.countUserRoleByRoleId(roleId) > 0) {
-        SysRole role = entityQuery.queryable(SysRole.class)
-          .whereById(roleId)
-          .singleNotNull();
-        throw new ServiceException(String.format("%s 已分配,不能删除", role.getRoleName()));
-      }
+  /** 角色已分配用户时阻止删除 */
+  private void assertRoleUnused(final Long roleId) {
+    if (self.countUserRoleByRoleId(roleId) > 0) {
+      SysRole role = entityQuery.queryable(SysRole.class)
+        .whereById(roleId)
+        .singleNotNull();
+      throw new ServiceException(String.format("%s 已分配,不能删除", role.getRoleName()));
     }
-    // 删除角色与菜单关联
-    roleMenuService.removeByRoleIds(roleIds);
-    // 删除角色与部门关联
-    roleDeptService.removeByRoleIds(roleIds);
-    return entityQuery.deletable(SysRole.class)
-      .allowDeleteStatement(true)
-      .whereByIds(roleIds)
-      .executeRows();
   }
 
   /** 取消单个用户的角色授权 */

@@ -36,7 +36,7 @@ public class SystemConfigController extends BaseController {
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysConfig searchReq) {
     ActionContext context = ActionContext.current(); // 加载上下文
-    Page<SysConfigPageVO> page = configService.pageSearchConfig(context, Page.ofCurrentRequest(), searchReq, SysConfigPageVO.class);
+    Page<SysConfigPageVO> page = configService.pageSearchConfig(context, Page.ofCurrentContext(), searchReq, SysConfigPageVO.class);
     return getDataTable(page);
   }
 
@@ -44,7 +44,7 @@ public class SystemConfigController extends BaseController {
   @SaCheckPermission("system:config:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context context, SysConfig config) {
-    List<SysConfigDetailVO> list = configService.selectConfigList(config,SysConfigDetailVO.class);
+    List<SysConfigDetailVO> list = configService.selectConfigList(config, SysConfigDetailVO.class);
     ExcelUtil<SysConfigDetailVO> util = new ExcelUtil<>(SysConfigDetailVO.class);
     util.exportExcel(context, list, "参数数据");
   }

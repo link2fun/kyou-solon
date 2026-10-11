@@ -4,14 +4,19 @@ import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
+import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.core.domain.entity.SysPost;
 import com.github.link2fun.support.core.domain.entity.SysUserPost;
 import com.github.link2fun.support.core.domain.entity.proxy.SysPostProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.UniqueChecker;
+import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
+import com.github.link2fun.system.modular.userpost.service.ISystemUserPostService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
+import org.noear.solon.annotation.Inject;
 import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
@@ -22,6 +27,11 @@ import java.util.Objects;
 @Component
 public class SystemPostServiceImpl implements ISystemPostService {
 
+  @Inject
+  private ISystemUserPostService userPostService;
+
+  @Inject
+  private AggregateDeleter aggregateDeleter;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -106,32 +116,38 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @param post   岗位信息
    */
   private void checkPostFieldUnique(final String action, final SysPost post) {
-    final String prefix = action + "岗位'" + post.getPostName() + "'失败，";
-    final List<Long> sameNameIds = entityQuery.queryable(SysPost.class)
-      .where(_post -> _post.postName().eq(post.getPostName()))
-      .select(SysPostProxy::postId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameNameIds, post.getPostId(), prefix + "岗位名称已存在");
-    final List<Long> sameCodeIds = entityQuery.queryable(SysPost.class)
-      .where(_post -> _post.postCode().eq(post.getPostCode()))
-      .select(SysPostProxy::postId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameCodeIds, post.getPostId(), prefix + "岗位编码已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysPost.class)
+        .where(_post -> {
+          _post.postName().eq(post.getPostName());
+          _post.postId().ne(IdUtils.isIdValid(post.getPostId()), post.getPostId());
+        }).any(),
+      () -> action + "岗位'" + post.getPostName() + "'失败，岗位名称已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysPost.class)
+        .where(_post -> {
+          _post.postCode().eq(post.getPostCode());
+          _post.postId().ne(IdUtils.isIdValid(post.getPostId()), post.getPostId());
+        }).any(),
+      () -> action + "岗位'" + post.getPostName() + "'失败，岗位编码已存在");
   }
 
 
   /**
-   * 批量删除岗位信息
+   * 批量删除岗位信息（静默解绑: 顺带清除岗位的用户关联）
    *
    * @param postIds 需要删除的岗位ID
    * @return 结果
    */
   @Override
+  @Transaction
   public long deletePostByIds(final List<Long> postIds) {
-    return entityQuery.deletable(SysPost.class)
-      .where(post -> post.postId().in(postIds))
-      .allowDeleteStatement(true)
-      .executeRows();
+    return aggregateDeleter.delete(AggregateDeletePlan.of(postIds)
+      // 删除岗位与用户关联
+      .unlink(userPostService::removeByPostIds)
+      .delete(ids -> entityQuery.deletable(SysPost.class)
+        .where(post -> post.postId().in(ids))
+        .allowDeleteStatement(true)
+        .executeRows())
+    );
   }
 
   /**

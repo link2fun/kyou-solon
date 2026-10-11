@@ -6,14 +6,16 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
+import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.SysRoleDept;
-import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import com.github.link2fun.support.core.text.Convert;
+import com.github.link2fun.support.core.tree.TreeBuilder;
 import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
@@ -27,7 +29,7 @@ import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
 import org.noear.solon.data.annotation.Transaction;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -48,6 +50,9 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
 
   @Inject
   private ISystemUserService userService;
+
+  @Inject
+  private AggregateDeleter aggregateDeleter;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -107,20 +112,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    */
   @Override
   public List<SysDept> buildDeptTree(final List<SysDept> depts) {
-
-    List<SysDept> returnList = new ArrayList<>();
-    List<Long> tempList = depts.stream().map(SysDept::getDeptId).toList();
-    for (SysDept dept : depts) {
-      // 如果是顶级节点, 遍历该父节点的所有子节点
-      if (!tempList.contains(dept.getParentId())) {
-        recursionFn(depts, dept);
-        returnList.add(dept);
-      }
-    }
-    if (returnList.isEmpty()) {
-      returnList = depts;
-    }
-    return returnList;
+    return TreeBuilder.build(depts, SysDept::getDeptId, SysDept::getParentId, SysDept::setChildren);
   }
 
   /**
@@ -145,7 +137,6 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   public List<Long> selectDeptListByRoleId(final Long roleId) {
     final SysRole role = roleService.selectRoleById(roleId, SysRole.class);
 
-    // FIXME 这里需要着重检查下
     return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
       .leftJoin(SysRoleDept.class, (dept, roleDept) -> dept.deptId().eq(roleDept.deptId()))
       .where((dept, roleDept) -> roleDept.roleId().eq(roleId))
@@ -155,8 +146,8 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
           //    //          inner join sys_role_dept rd on dept.dept_id = role_dept.dept_id and role_dept.role_id = #{roleId}
           EntityQueryable<LongProxy, Long> subQuery = entityQuery.queryable(SysDept.class).asAlias("d")
             .innerJoin(SysRoleDept.class, (_dept, _roleDept) -> {
-              dept.deptId().eq(roleDept.deptId());
-              roleDept.roleId().eq(roleId);
+              _dept.deptId().eq(_roleDept.deptId());
+              _roleDept.roleId().eq(roleId);
             })
             .select((_dept, _roleDept) -> new LongProxy(_dept.deptId()));
 
@@ -228,14 +219,14 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param dept   部门信息
    */
   private void checkDeptNameUnique(final String action, final SysDept dept) {
-    final List<Long> sameNameIds = entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
-      .where(_dept -> _dept.deptName().eq(dept.getDeptName()))
-      .where(_dept -> _dept.parentId().eq(dept.getParentId()))
-      .where(_dept -> _dept.delFlag().eq(UserConstants.NORMAL))
-      .select(SysDeptProxy::deptId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameNameIds, dept.getDeptId(),
-      action + "部门'" + dept.getDeptName() + "'失败，部门名称已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysDept.class)
+        .where(_dept -> {
+          _dept.deptName().eq(dept.getDeptName());
+          _dept.parentId().eq(dept.getParentId());
+          _dept.delFlag().eq(UserConstants.NORMAL);
+          _dept.deptId().ne(IdUtils.isIdValid(dept.getDeptId()), dept.getDeptId());
+        }).any(),
+      () -> action + "部门'" + dept.getDeptName() + "'失败，部门名称已存在");
   }
 
   /**
@@ -351,18 +342,21 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   @Override
   public boolean deleteDeptById(final ActionContext context, final Long deptId) {
 
-    if (hasChildByDeptId(deptId)) {
-      throw new ServiceException("存在下级部门,不允许删除");
-    }
-    if (checkDeptExistUser(deptId)) {
-      throw new ServiceException("部门存在用户,不允许删除");
-    }
-    checkDeptDataScope(context, deptId);
-
-    return entityQuery.updatable(SysDept.class)
-      .setColumns(dept -> dept.delFlag().set(UserConstants.DEPT_DELETED))
-      .where(dept -> dept.deptId().eq(deptId))
-      .executeRows() > 0;
+    return aggregateDeleter.delete(AggregateDeletePlan.of(Collections.singletonList(deptId))
+      .guardPerId(id -> {
+        if (hasChildByDeptId(id)) {
+          throw new ServiceException("存在下级部门,不允许删除");
+        }
+        if (checkDeptExistUser(id)) {
+          throw new ServiceException("部门存在用户,不允许删除");
+        }
+        checkDeptDataScope(context, id);
+      })
+      // 软删: 置删除标记
+      .delete(ids -> entityQuery.updatable(SysDept.class)
+        .setColumns(dept -> dept.delFlag().set(UserConstants.DEPT_DELETED))
+        .where(dept -> dept.deptId().in(ids))
+        .executeRows())) > 0;
   }
 
   /**
@@ -391,39 +385,5 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
     return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
       .where(_dept -> _dept.expression().sql("find_in_set({0}, ancestors)", c -> c.value(deptId)))
       .toList();
-  }
-
-  /**
-   * 递归列表
-   */
-  private void recursionFn(List<SysDept> list, SysDept t) {
-    // 得到子节点列表
-    List<SysDept> childList = getChildList(list, t);
-    t.setChildren(childList);
-    for (SysDept tChild : childList) {
-      if (hasChild(list, tChild)) {
-        recursionFn(list, tChild);
-      }
-    }
-  }
-
-  /**
-   * 得到子节点列表
-   */
-  private List<SysDept> getChildList(List<SysDept> list, SysDept t) {
-    List<SysDept> tlist = new ArrayList<>();
-    for (final SysDept n : list) {
-      if (StringUtils.isNotNull(n.getParentId()) && n.getParentId().longValue() == t.getDeptId().longValue()) {
-        tlist.add(n);
-      }
-    }
-    return tlist;
-  }
-
-  /**
-   * 判断是否有子节点
-   */
-  private boolean hasChild(List<SysDept> list, SysDept t) {
-    return !getChildList(list, t).isEmpty();
   }
 }

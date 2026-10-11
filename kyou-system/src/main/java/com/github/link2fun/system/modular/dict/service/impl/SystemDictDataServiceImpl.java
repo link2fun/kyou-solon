@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.dict.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -121,19 +121,15 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
       .whereByIds(dictCodeList)
       .executeRows();
 
-    // 然后重新加载字典缓存
-    final List<SysDictData> dictDataListForCache = entityQuery.queryable(SysDictData.class)
-      .where(dictData -> dictData.dictType().in(dictTypeList))
-      .toList();
-
-
-    // 按照类型进行分组
-    final Map<String, List<SysDictData>> dictDataMap = dictDataListForCache.stream()
-      .collect(Collectors.groupingBy(SysDictData::getDictType));
-    // 先移除缓存
-    dictTypeList.forEach(DictUtils::removeDictCache);
-    // 依次放入到缓存中
-    dictDataMap.forEach(DictUtils::setDictCache);
+    // 逐类型按读路径口径(仅正常状态)回填缓存, 无剩余数据时只失效不回填
+    for (final String dictType : dictTypeList) {
+      final List<SysDictData> dataList = selectDictDataByType(dictType);
+      if (CollectionUtil.isNotEmpty(dataList)) {
+        DictUtils.setDictCache(dictType, dataList);
+      } else {
+        DictUtils.removeDictCache(dictType);
+      }
+    }
 
   }
 
@@ -147,10 +143,8 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
   public long insertDictData(final SysDictData dictData) {
     final long row = entityQuery.insertable(dictData).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
     if (row > 0) {
-      final List<SysDictData> dataList = entityQuery.queryable(SysDictData.class)
-        .where(dictDataQuery -> dictDataQuery.dictType().eq(dictData.getDictType()))
-        .toList();
-      DictUtils.setDictCache(dictData.getDictType(), dataList);
+      // 回查按读路径口径(仅正常状态), 与缓存回填一致
+      DictUtils.setDictCache(dictData.getDictType(), selectDictDataByType(dictData.getDictType()));
     }
     return row;
   }
@@ -163,14 +157,10 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
    */
   @Override
   public long updateDictData(final SysDictData dictData) {
-//    final int row = getBaseMapper().updateById(dictData);
     final long row = entityQuery.updatable(dictData).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
     if (row > 0) {
-//      final List<SysDictData> dataList = lambdaQuery().eq(SysDictData::getDictType, dictData.getDictType()).list();
-      final List<SysDictData> dataList = entityQuery.queryable(SysDictData.class)
-        .where(dictDataQuery -> dictDataQuery.dictType().eq(dictData.getDictType()))
-        .toList();
-      DictUtils.setDictCache(dictData.getDictType(), dataList);
+      // 回查按读路径口径(仅正常状态), 与缓存回填一致
+      DictUtils.setDictCache(dictData.getDictType(), selectDictDataByType(dictData.getDictType()));
     }
     return row;
   }

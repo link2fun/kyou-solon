@@ -61,7 +61,7 @@ public class MonitorOnlineController extends BaseController {
     Collections.reverse(userOnlineList);
 
     userOnlineList.removeIf(Objects::isNull);
-    return getDataTable(onlineUserPage.convertToPage(userOnlineList));
+    return getDataTable(onlineUserPage.convert(userOnlineList));
   }
 
   /**

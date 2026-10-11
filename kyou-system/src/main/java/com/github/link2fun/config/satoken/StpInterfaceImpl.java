@@ -1,24 +1,15 @@
 package com.github.link2fun.config.satoken;
 
 import cn.dev33.satoken.stp.StpInterface;
-import com.github.link2fun.system.modular.menu.service.ISystemMenuService;
-import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
-import org.noear.solon.annotation.Inject;
 
 import java.util.List;
 
 @Slf4j
 @Component
 public class StpInterfaceImpl implements StpInterface {
-
-  @Inject
-  private ISystemMenuService menuService;
-
-  @Inject
-  private ISystemRoleService roleService;
 
   /**
    * 返回指定账号id所拥有的权限码集合

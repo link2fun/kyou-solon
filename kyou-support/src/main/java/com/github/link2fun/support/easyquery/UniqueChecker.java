@@ -5,14 +5,26 @@ import com.github.link2fun.support.exception.ServiceException;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
- * 唯一性判定: 探测到 0 行 = 可用, 多行 = 脏数据判不可用, 单行 = 须是自身(编辑排除自身)。
- * 探测查询由各业务自行构造并以 toList 取列表, 判定统一在此, 脏数据下不抛 ORM 异常。
+ * 唯一性探测与判定
  */
 public class UniqueChecker {
 
   private UniqueChecker() {
+  }
+
+  /**
+   * 占用探测判定: 探测到占用即抛出业务异常。
+   *
+   * @param occupied 占用探测结果, true 表示已被其他行占用
+   * @param message  不可用时抛出的业务异常文案(惰性)
+   */
+  public static void checkOccupied(final boolean occupied, final Supplier<String> message) {
+    if (occupied) {
+      throw new ServiceException(message.get());
+    }
   }
 
   /** 判定探测结果是否可用, 可用表示该值未被其他行占用 */

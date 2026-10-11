@@ -14,6 +14,7 @@ import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.DictUtils;
+import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.dict.service.ISystemDictDataService;
 import com.github.link2fun.system.modular.dict.service.ISystemDictTypeService;
 import com.google.common.collect.Lists;
@@ -216,12 +217,8 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
   @Override
   public long insertDictType(final SysDictType dictType) {
     checkDictTypeUnique("新增", dictType);
-//    final int row = getBaseMapper().insert(dictType);
-    long row = entityQuery.insertable(dictType).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
-    if (row > 0) {
-      DictUtils.setDictCache(dictType.getDictName(), null);
-    }
-    return row;
+    // 新类型无数据, 不预写缓存, 首次读取自然回源
+    return entityQuery.insertable(dictType).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
   }
 
   /**
@@ -242,6 +239,8 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
     if (!StrUtil.equals(dictTypeOld.getDictType(), dictTypeNew.getDictType())) {
 
       dictDataService.updateDictDataType(dictTypeOld.getDictType(), dictTypeNew.getDictType());
+      // 旧类型的缓存键失效
+      DictUtils.removeDictCache(dictTypeOld.getDictType());
     }
 
 //    final int row = getBaseMapper().updateById(dictTypeNew);
@@ -261,11 +260,11 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @param dictType 字典类型
    */
   private void checkDictTypeUnique(final String action, final SysDictType dictType) {
-    final List<Long> sameTypeIds = entityQuery.queryable(SysDictType.class)
-      .where(_dictType -> _dictType.dictType().eq(dictType.getDictType()))
-      .select(SysDictTypeProxy::dictId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameTypeIds, dictType.getDictId(),
-      action + "字典'" + dictType.getDictName() + "'失败，字典类型已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysDictType.class)
+        .where(_dictType -> {
+          _dictType.dictType().eq(dictType.getDictType());
+          _dictType.dictId().ne(IdUtils.isIdValid(dictType.getDictId()), dictType.getDictId());
+        }).any(),
+      () -> action + "字典'" + dictType.getDictName() + "'失败，字典类型已存在");
   }
 }

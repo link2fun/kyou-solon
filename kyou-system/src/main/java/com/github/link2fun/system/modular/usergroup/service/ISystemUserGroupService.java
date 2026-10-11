@@ -14,35 +14,49 @@ public interface ISystemUserGroupService {
   void reassignGroups(Long userId, List<Long> groupIds);
 
   /**
-   * 向群组中添加多个用户
+   * 批量为群组分配用户, 已有关系保持不变
    *
    * @param groupId 群组ID
    * @param userIds 用户ID List
    */
-  void addUsers(Long groupId, List<Long> userIds);
+  void assignUsers(Long groupId, List<Long> userIds);
 
   /**
-   * 从群组中移除多个用户
+   * 批量取消群组的用户授权
    *
    * @param groupId 群组ID
    * @param userIds 用户ID List
    */
-  void removeUsers(Long groupId, List<Long> userIds);
+  void unassignUsers(Long groupId, List<Long> userIds);
 
   /**
-   * 根据用户ID查询群组ID列表
+   * 根据用户ID查询群组ID集合
    *
    * @param userId 用户ID
-   * @return 群组ID列表
+   * @return 群组ID集合
    */
-  List<Long> queryGroupIdsByUserId(Long userId);
+  List<Long> findGroupIdsByUserId(Long userId);
 
   /**
-   * 根据群组ID查询用户ID列表
+   * 根据群组ID查询用户ID集合
    *
    * @param groupId 群组ID
-   * @return 用户ID列表
+   * @return 用户ID集合
    */
-  List<Long> queryUserIdsByGroupId(Long groupId);
+  List<Long> findUserIdsByGroupId(Long groupId);
+
+  /**
+   * 按用户 ID 批量解除用户-群组关联（用户消亡时静默解绑）
+   *
+   * @param userIds 用户ID集合
+   */
+  void removeByUserIds(List<Long> userIds);
+
+  /**
+   * 批量删除群组的用户关联信息（群组消亡时静默解绑）
+   *
+   * @param groupIds 群组ID集合
+   */
+  void removeByGroupIds(List<Long> groupIds);
 
 }

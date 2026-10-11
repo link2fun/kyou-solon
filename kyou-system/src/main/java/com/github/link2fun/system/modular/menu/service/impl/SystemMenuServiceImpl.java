@@ -1,14 +1,18 @@
 package com.github.link2fun.system.modular.menu.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.easy.query.api.proxy.base.LongProxy;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
+import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
+import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.*;
-import com.github.link2fun.support.core.domain.entity.proxy.SysMenuProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
+import com.github.link2fun.support.core.tree.TreeBuilder;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.StringUtils;
@@ -25,10 +29,7 @@ import org.noear.solon.annotation.Inject;
 import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.data.tran.TranPolicy;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -44,6 +45,9 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
 
   @Inject
   private ISystemRoleService roleService;
+
+  @Inject
+  private AggregateDeleter aggregateDeleter;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -188,7 +192,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
       menuList = self.selectMenuList(userId);
     }
 
-    return MenuUtils.getChildPerms(menuList, 0);
+    return MenuUtils.getChildPerms(menuList, 0L);
   }
 
   /**
@@ -269,19 +273,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    */
   @Override
   public List<SysMenu> buildMenuTree(final List<SysMenu> menus) {
-    List<SysMenu> returnList = new ArrayList<>();
-    List<Long> tempList = menus.stream().map(SysMenu::getMenuId).toList();
-    for (SysMenu menu : menus) {
-      // 如果是顶级节点, 遍历该父节点的所有子节点
-      if (!tempList.contains(menu.getParentId())) {
-        MenuUtils.recursionFn(menus, menu);
-        returnList.add(menu);
-      }
-    }
-    if (returnList.isEmpty()) {
-      returnList = menus;
-    }
-    return returnList;
+    return TreeBuilder.build(menus, SysMenu::getMenuId, SysMenu::getParentId, SysMenu::setChildren);
   }
 
   /**
@@ -336,15 +328,13 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @param menu   菜单信息
    */
   private void checkMenuFieldUnique(final String action, final SysMenu menu) {
-    final List<Long> sameNameIds = entityQuery.queryable(SysMenu.class)
-      .where(menu1 -> {
-        menu1.parentId().eq(menu.getParentId());
-        menu1.menuName().eq(menu.getMenuName());
-      })
-      .select(SysMenuProxy::menuId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameNameIds, menu.getMenuId(),
-      action + "菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysMenu.class)
+        .where(_menu -> {
+          _menu.parentId().eq(menu.getParentId());
+          _menu.menuName().eq(menu.getMenuName());
+          _menu.menuId().ne(IdUtils.isIdValid(menu.getMenuId()), menu.getMenuId());
+        }).any(),
+      () -> action + "菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
     checkMenuPathFormat(action, menu);
   }
 
@@ -397,16 +387,19 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   @Transaction
   @Override
   public long deleteMenuById(final Long menuId) {
-    if (hasChildByMenuId(menuId)) {
-      throw new ServiceException("存在子菜单,不允许删除");
-    }
-    if (checkMenuExistRole(menuId)) {
-      throw new ServiceException("菜单已分配,不允许删除");
-    }
-    return entityQuery.deletable(SysMenu.class)
-      .allowDeleteStatement(true)
-      .where(menu -> menu.menuId().eq(menuId))
-      .executeRows();
+    return aggregateDeleter.delete(AggregateDeletePlan.of(Collections.singletonList(menuId))
+      .guardPerId(id -> {
+        if (hasChildByMenuId(id)) {
+          throw new ServiceException("存在子菜单,不允许删除");
+        }
+        if (checkMenuExistRole(id)) {
+          throw new ServiceException("菜单已分配,不允许删除");
+        }
+      })
+      .delete(ids -> entityQuery.deletable(SysMenu.class)
+        .allowDeleteStatement(true)
+        .where(menu -> menu.menuId().in(ids))
+        .executeRows()));
   }
 
   @Transaction(policy = TranPolicy.supports)
@@ -426,26 +419,19 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
 
   @Override
   public List<Long> selectMenuListByRoleId(Long roleId, boolean menuCheckStrictly) {
-//    return List.of();
-    //	select m.menu_id
-    //		from sys_menu m
-    //            left join sys_role_menu rm on m.menu_id = rm.menu_id
-    //        where rm.role_id = #{roleId}
-    //            <if test="menuCheckStrictly">
-    //              and m.menu_id not in (select m.parent_id from sys_menu m inner join sys_role_menu rm on m.menu_id = rm.menu_id and rm.role_id = #{roleId})
-    //            </if>
-    //		order by m.parent_id, m.order_num
     return entityQuery.queryable(SysMenu.class)
       .leftJoin(SysRoleMenu.class, (menu, roleMenu) -> menu.menuId().eq(roleMenu.menuId()))
       .where((menu, roleMenu) -> roleMenu.roleId().eq(roleId))
       .where((menu, roleMenu) -> {
         if (menuCheckStrictly) {
-          entityQuery.queryable(SysMenu.class)
-            .leftJoin(SysRoleMenu.class, (m, rm) -> m.menuId().eq(rm.menuId()))
-            .where((m, rm) -> rm.roleId().eq(roleId))
-            .selectColumn(SysMenuProxy::parentId)
-            .distinct()
-            .toList();
+          // 严格勾选: 排除已勾选菜单的父节点, 只回显该角色勾选的叶子
+          EntityQueryable<LongProxy, Long> checkedParentIds = entityQuery.queryable(SysMenu.class)
+            .innerJoin(SysRoleMenu.class, (_menu, _roleMenu) -> {
+              _menu.menuId().eq(_roleMenu.menuId());
+              _roleMenu.roleId().eq(roleId);
+            })
+            .select((_menu, _roleMenu) -> new LongProxy(_menu.parentId()));
+          menu.menuId().notIn(checkedParentIds);
         }
       })
       .selectColumn((menu, roleMenu) -> menu.menuId())

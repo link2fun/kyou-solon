@@ -77,11 +77,6 @@ public class Page<T> implements EasyPageResult<T>, Model {
   }
 
   public static <T> Page<T> ofCurrentContext() {
-    return ofCurrentRequest();
-  }
-
-
-  public static <T> Page<T> ofCurrentRequest() {
     int pageSize = 10;
     int pageNum = 1;
 
@@ -306,10 +301,6 @@ public class Page<T> implements EasyPageResult<T>, Model {
     pageAdapter.setTotal(getTotal());
     pageAdapter.setRecords(records);
     return pageAdapter;
-  }
-
-  public <R> Page<R> convertToPage(List<R> records) {
-    return convert(records);
   }
 
   @JsonIgnore

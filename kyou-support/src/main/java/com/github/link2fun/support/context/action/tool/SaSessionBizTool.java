@@ -39,6 +39,13 @@ public class SaSessionBizTool {
   private static final String BROWSER = "browser";
   private static final String OS = "os";
 
+  /** 用户会话里的角色标识列表缓存键 */
+  private static final String ROLE_LIST_KEY = "roleList";
+  /** 角色会话里的权限码列表缓存键 */
+  private static final String PERMISSION_LIST_KEY = "permissionList";
+  /** 角色会话的 id 前缀 */
+  private static final String ROLE_SESSION_PREFIX = "roleKey:";
+
 
   /** 会话相关的业务数据加载器, 延迟取用避免容器就绪前的空引用 */
   private static ActionContextService contextService() {
@@ -177,6 +184,32 @@ public class SaSessionBizTool {
     StpUtil.getSession().set(Constants.SESSION_USER, currentUser);
   }
 
+  /**
+   * 变更后刷新当前会话: 先失效用户级(角色列表)与角色级(权限码列表)的会话缓存,
+   * 再重取用户与权限写回, 保证会话与库一致。
+   *
+   * <p>适用于角色/权限/个人资料变更后由当前操作者所在的请求调用;
+   * 其他在线用户的会话不在刷新范围。
+   *
+   * @return 刷新后的会话用户
+   */
+  public static SessionUser refreshCurrentSession() {
+    final Long loginId = currentLoginId();
+    final String loginType = currentLoginType();
+
+    // 先失效两级会话缓存, 否则下面的重取仍会命中旧值刷了个寂寞
+    StpUtil.getSessionByLoginId(loginId).delete(ROLE_LIST_KEY);
+    for (final String roleKey : getRoleList(loginId, loginType)) {
+      SaSessionCustomUtil.getSessionById(ROLE_SESSION_PREFIX + roleKey).delete(PERMISSION_LIST_KEY);
+    }
+
+    final SessionUser current = currentUser();
+    current.setUser(userByUserId(loginId));
+    current.setPermissions(getPermissionList(loginId, loginType));
+    setCurrentUser(current);
+    return current;
+  }
+
 
   /**
    * 返回指定账号id所拥有的权限码集合
@@ -196,8 +229,8 @@ public class SaSessionBizTool {
     return roleKeyList.stream()
       .distinct()
       .flatMap(roleKey -> {
-        final SaSession roleSession = SaSessionCustomUtil.getSessionById("roleKey:" + roleKey);
-        List<String> list = roleSession.get("permissionList", () -> contextService().menuPermissionListByRoleKey(roleKey));
+        final SaSession roleSession = SaSessionCustomUtil.getSessionById(ROLE_SESSION_PREFIX + roleKey);
+        List<String> list = roleSession.get(PERMISSION_LIST_KEY, () -> contextService().menuPermissionListByRoleKey(roleKey));
         return list.stream();
       }).distinct().collect(Collectors.toList());
 
@@ -214,7 +247,7 @@ public class SaSessionBizTool {
   public static List<String> getRoleList(final Object loginId, final String loginType) {
 
     SaSession session = StpUtil.getSessionByLoginId(loginId);
-    return session.get("roleList",
+    return session.get(ROLE_LIST_KEY,
       () -> contextService().roleListByUserId(Convert.toLong(loginId)).
         stream()
         .map(RoleDTO::getRoleKey)

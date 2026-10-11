@@ -1,7 +1,6 @@
 package com.github.link2fun.system.modular.role.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.github.link2fun.framework.web.service.SysPermissionService;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
@@ -11,11 +10,9 @@ import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.SysUserRole;
-import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 import com.github.link2fun.system.modular.role.model.dto.SysRoleDetailDTO;
@@ -47,9 +44,6 @@ public class SystemRoleController extends BaseController {
   private ISystemRoleService roleService;
 
   @Inject
-  private SysPermissionService permissionService;
-
-  @Inject
   private ISystemUserService userService;
 
   @Inject
@@ -60,7 +54,7 @@ public class SystemRoleController extends BaseController {
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysRole searchReq) {
     ActionContext context = ActionContext.current();
-    Page<SysRolePageDTO> page = roleService.selectRoleList(context, Page.ofCurrentRequest(), searchReq, SysRolePageDTO.class);
+    Page<SysRolePageDTO> page = roleService.selectRoleList(context, Page.ofCurrentContext(), searchReq, SysRolePageDTO.class);
     return getDataTable(page);
   }
 
@@ -104,14 +98,8 @@ public class SystemRoleController extends BaseController {
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysRoleModifyReq modifyReq) {
     if (roleService.updateRole(modifyReq) > 0) {
-      // 更新缓存用户权限
-      SessionUser currentUser = getCurrentUser();
-      if (StringUtils.isNotNull(currentUser.getUser()) && !currentUser.getUser().isSuperAdmin()) {
-        currentUser.setPermissions(permissionService.getMenuPermission(currentUser.getUser()));
-        currentUser.setUser(userService.selectUserByUserName(currentUser.getUser().getUserName()));
-        SaSessionBizTool.setCurrentUser(currentUser);
-
-      }
+      // 角色/权限变更后刷新当前会话
+      SaSessionBizTool.refreshCurrentSession();
       return success();
     }
     return error("修改角色'" + modifyReq.getRoleName() + "'失败，请联系管理员");

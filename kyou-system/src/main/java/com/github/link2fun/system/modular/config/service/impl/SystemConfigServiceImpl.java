@@ -142,16 +142,14 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
   @Override
   public long updateConfig(final SysConfig config) {
     checkConfigKeyUnique("修改", config);
-    // final SysConfig temp = getById(config.getConfigId());
     final SysConfig temp = entityQuery.queryable(SysConfig.class)
       .whereById(config.getConfigId()).singleOrNull();
-    if (StringUtils.isNotNull(temp)) {
-      ConfigContext.remove(temp.getConfigKey());
-
-    }
-    // final int row = getBaseMapper().updateById(config);
     final long row = entityQuery.updatable(config).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
     if (row > 0) {
+      // 库成功后再动缓存: 改键名时先失效旧键
+      if (StringUtils.isNotNull(temp)) {
+        ConfigContext.remove(temp.getConfigKey());
+      }
       ConfigContext.put(config.getConfigKey(), config.getConfigValue());
     }
     return row;
@@ -165,16 +163,18 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
   @Override
   public void deleteConfigByIds(final List<Long> configIds) {
 
-    entityQuery.queryable(SysConfig.class)
+    final List<String> configKeys = entityQuery.queryable(SysConfig.class)
       .whereByIds(configIds)
       .selectColumn(SysConfigProxy::configKey)
-      .toList()
-      .forEach(ConfigContext::remove);
+      .toList();
 
     entityQuery.deletable(SysConfig.class)
       .whereByIds(configIds)
       .allowDeleteStatement(true)
       .executeRows();
+
+    // 库删除后再失效缓存
+    configKeys.forEach(ConfigContext::remove);
   }
 
   /**
@@ -193,12 +193,12 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * @param config 参数信息
    */
   private void checkConfigKeyUnique(final String action, final SysConfig config) {
-    final List<Long> sameKeyIds = entityQuery.queryable(SysConfig.class)
-      .where(_config -> _config.configKey().eq(config.getConfigKey()))
-      .select(SysConfigProxy::configId)
-      .toList();
-    UniqueChecker.checkOrThrow(sameKeyIds, config.getConfigId(),
-      action + "参数'" + config.getConfigName() + "'失败，参数键名已存在");
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysConfig.class)
+        .where(_config -> {
+          _config.configKey().eq(config.getConfigKey());
+          _config.configId().ne(Objects.nonNull(config.getConfigId()), config.getConfigId());
+        }).any(),
+      () -> action + "参数'" + config.getConfigName() + "'失败，参数键名已存在");
   }
 
   @Override
