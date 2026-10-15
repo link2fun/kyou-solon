@@ -3,6 +3,7 @@ package com.github.link2fun.generator.service;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -24,7 +25,6 @@ import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.text.CharsetKit;
 import com.github.link2fun.support.exception.ServiceException;
-import com.github.link2fun.support.utils.StringUtils;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.anyline.proxy.ServiceProxy;
@@ -338,7 +338,7 @@ public class GenTableServiceImpl implements IGenTableService {
     // 获取模板列表
     List<String> templates = VelocityUtils.getTemplateList(table.getTplCategory(), table.getTplWebType());
     for (String template : templates) {
-      if (!StringUtils.containsAny(template, "sql.vm", "api.js.vm", "index.vue.vm", "index-tree.vue.vm")) {
+      if (!StrUtil.containsAny(template, "sql.vm", "api.js.vm", "index.vue.vm", "index-tree.vue.vm")) {
         // 渲染模板
         StringWriter sw = new StringWriter();
         Template tpl = Velocity.getTemplate(template, Constants.UTF8);
@@ -372,7 +372,7 @@ public class GenTableServiceImpl implements IGenTableService {
     // 从DB进行同步
     dbTableColumns = genTableColumnService.selectDbTableColumnsByName(tableName);
 
-    if (StringUtils.isEmpty(dbTableColumns)) {
+    if (CollectionUtil.isEmpty(dbTableColumns)) {
       throw new ServiceException("同步数据失败，原表结构不存在");
     }
     List<String> dbTableColumnNames = dbTableColumns.stream().map(GenTableColumn::getColumnName).toList();
@@ -390,7 +390,7 @@ public class GenTableServiceImpl implements IGenTableService {
           column.setDictType(prevColumn.getDictType());
           column.setQueryType(prevColumn.getQueryType());
         }
-        if (StringUtils.isNotEmpty(prevColumn.getIsRequired()) && !column.isPk()
+        if (StrUtil.isNotBlank(prevColumn.getIsRequired()) && !column.isPk()
           && (column.isInsert() || column.isEdit())
           && ((column.isUsableColumn()) || (!column.isSuperColumn()))) {
           // 如果是(新增/修改&非主键/非忽略及父属性)，继续保留必填/显示类型选项
@@ -412,7 +412,7 @@ public class GenTableServiceImpl implements IGenTableService {
     }
 
     List<GenTableColumn> delColumns = tableColumns.stream().filter(column -> !dbTableColumnNames.contains(column.getColumnName())).collect(Collectors.toList());
-    if (StringUtils.isNotEmpty(delColumns)) {
+    if (CollectionUtil.isNotEmpty(delColumns)) {
       genTableColumnService.deleteGenTableColumns(delColumns);
     }
   }
@@ -483,16 +483,16 @@ public class GenTableServiceImpl implements IGenTableService {
     if (GenConstants.TPL_TREE.equals(genTable.getTplCategory())) {
       String options = objectMapper.writeValueAsString(genTable.getParams());
       JSONObject paramsObj = JSONUtil.parseObj(options);
-      if (StringUtils.isEmpty(paramsObj.getStr(GenConstants.TREE_CODE))) {
+      if (StrUtil.isBlank(paramsObj.getStr(GenConstants.TREE_CODE))) {
         throw new ServiceException("树编码字段不能为空");
-      } else if (StringUtils.isEmpty(paramsObj.getStr(GenConstants.TREE_PARENT_CODE))) {
+      } else if (StrUtil.isBlank(paramsObj.getStr(GenConstants.TREE_PARENT_CODE))) {
         throw new ServiceException("树父编码字段不能为空");
-      } else if (StringUtils.isEmpty(paramsObj.getStr(GenConstants.TREE_NAME))) {
+      } else if (StrUtil.isBlank(paramsObj.getStr(GenConstants.TREE_NAME))) {
         throw new ServiceException("树名称字段不能为空");
       } else if (GenConstants.TPL_SUB.equals(genTable.getTplCategory())) {
-        if (StringUtils.isEmpty(genTable.getSubTableName())) {
+        if (StrUtil.isBlank(genTable.getSubTableName())) {
           throw new ServiceException("关联子表的表名不能为空");
-        } else if (StringUtils.isEmpty(genTable.getSubTableFkName())) {
+        } else if (StrUtil.isBlank(genTable.getSubTableFkName())) {
           throw new ServiceException("子表关联的外键名不能为空");
         }
       }
@@ -519,7 +519,7 @@ public class GenTableServiceImpl implements IGenTableService {
         break;
       }
     }
-    if (StringUtils.isNull(table.getPkColumn())) {
+    if (ObjectUtil.isNull(table.getPkColumn())) {
       table.setPkColumn(table.getColumns().get(0));
     }
     if (GenConstants.TPL_SUB.equals(table.getTplCategory())) {
@@ -529,7 +529,7 @@ public class GenTableServiceImpl implements IGenTableService {
           break;
         }
       }
-      if (StringUtils.isNull(table.getSubTable().getPkColumn())) {
+      if (ObjectUtil.isNull(table.getSubTable().getPkColumn())) {
         table.getSubTable().setPkColumn(table.getSubTable().getColumns().get(0));
       }
     }
@@ -542,7 +542,7 @@ public class GenTableServiceImpl implements IGenTableService {
    */
   public void setSubTable(GenTable table) {
     String subTableName = table.getSubTableName();
-    if (StringUtils.isNotEmpty(subTableName)) {
+    if (StrUtil.isNotBlank(subTableName)) {
       table.setSubTable(self.selectGenTableByName(subTableName));
     }
   }
@@ -576,7 +576,7 @@ public class GenTableServiceImpl implements IGenTableService {
    */
   public static String getGenPath(GenTable table, String template) {
     String genPath = table.getGenPath();
-    if (StringUtils.equals(genPath, "/")) {
+    if (StrUtil.equals(genPath, "/")) {
       return System.getProperty("user.dir") + File.separator + "src" + File.separator + VelocityUtils.getFileName(template, table);
     }
     return genPath + File.separator + VelocityUtils.getFileName(template, table);

@@ -53,7 +53,7 @@ public interface ISystemUserService {
    * 通过用户名查询用户
    *
    * @param userName 用户名
-   * @return 用户对象信息
+   * @return 用户对象信息; 查无此人时返回 {@code null}
    */
   SysUserDTO selectUserByUserName(String userName);
 
@@ -150,6 +150,15 @@ public interface ISystemUserService {
   long updateUserProfile(SysUser user);
 
   /**
+   * 修改本人资料(昵称/邮箱/手机号/性别), 成功后失效本人会话缓存
+   *
+   * @param userId       本人用户ID
+   * @param profilePatch 资料补丁(只取昵称/邮箱/手机号/性别)
+   * @return 结果
+   */
+  long updateMyProfile(Long userId, SysUser profilePatch);
+
+  /**
    * 修改用户头像
    *
    * @param userName 用户名
@@ -157,6 +166,16 @@ public interface ISystemUserService {
    * @return 结果
    */
   boolean updateUserAvatar(String userName, String avatar);
+
+  /**
+   * 修改本人头像, 成功后失效本人会话缓存
+   *
+   * @param userId   本人用户ID
+   * @param userName 用户名
+   * @param avatar   头像地址
+   * @return 结果
+   */
+  boolean updateMyAvatar(Long userId, String userName, String avatar);
 
   /**
    * 重置用户密码(内部已完成操作权限/数据权限检查)
@@ -208,7 +227,7 @@ public interface ISystemUserService {
    * 根据用户名称查询用户ID
    *
    * @param userName 用户名称
-   * @return 用户ID
+   * @return 用户ID; 查无此人时返回 -1, 同名多行视为数据错误直接抛出
    */
   Long findUserIdByUserName(String userName);
 

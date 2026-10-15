@@ -1,12 +1,12 @@
 package com.github.link2fun.generator.util;
 
+import cn.hutool.core.text.NamingCase;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.generator.config.GenConfig;
 import com.github.link2fun.generator.domain.GenTable;
 import com.github.link2fun.generator.domain.GenTableColumn;
 import com.github.link2fun.support.constant.GenConstants;
-import com.github.link2fun.support.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.Solon;
@@ -52,7 +52,7 @@ public class GenUtils {
     column.setTableId(table.getTableId());
     column.setCreateBy(table.getCreateBy());
     // 设置java字段名
-    column.setJavaField(StringUtils.toCamelCase(columnName));
+    column.setJavaField(StrUtil.toCamelCase(columnName));
     // 设置默认类型
     if (StrUtil.isBlank(column.getJavaType())) {
       column.setJavaType(GenConstants.TYPE_STRING);
@@ -71,7 +71,7 @@ public class GenUtils {
       column.setHtmlType(GenConstants.HTML_INPUT);
 
       // 如果是浮点型 统一用BigDecimal
-      List<String> str = StringUtils.split(org.apache.commons.lang3.StringUtils.substringBetween(column.getColumnType(), "(", ")"), ",");
+      List<String> str = StrUtil.split(org.apache.commons.lang3.StringUtils.substringBetween(column.getColumnType(), "(", ")"), ",");
       if (str != null && str.size() == 2 && Integer.parseInt(str.get(1)) > 0) {
         column.setJavaType(GenConstants.TYPE_BIGDECIMAL);
       }
@@ -148,7 +148,7 @@ public class GenUtils {
   public static String getModuleName(String packageName) {
     int lastIndex = packageName.lastIndexOf(".");
     int nameLength = packageName.length();
-    return StringUtils.substring(packageName, lastIndex + 1, nameLength);
+    return StrUtil.sub(packageName, lastIndex + 1, nameLength);
   }
 
   /**
@@ -160,7 +160,7 @@ public class GenUtils {
   public static String getBusinessName(String tableName) {
     int lastIndex = tableName.lastIndexOf("_");
     int nameLength = tableName.length();
-    return StringUtils.substring(tableName, lastIndex + 1, nameLength);
+    return StrUtil.sub(tableName, lastIndex + 1, nameLength);
   }
 
   /**
@@ -172,11 +172,11 @@ public class GenUtils {
   public static String convertClassName(String tableName) {
     boolean autoRemovePre = genConfig.getAutoRemovePre();
     String tablePrefix = genConfig.getTablePrefix();
-    if (autoRemovePre && StringUtils.isNotEmpty(tablePrefix)) {
-      List<String> searchList = StringUtils.split(tablePrefix, ",");
+    if (autoRemovePre && StrUtil.isNotBlank(tablePrefix)) {
+      List<String> searchList = StrUtil.split(tablePrefix, ",");
       tableName = replaceFirst(tableName, searchList);
     }
-    return StringUtils.convertToCamelCase(tableName);
+    return NamingCase.toPascalCase(tableName);
   }
 
   /**
@@ -213,7 +213,7 @@ public class GenUtils {
    * @return 截取后的列类型
    */
   public static String getDbType(String columnType) {
-    if (StringUtils.indexOf(columnType, '(') > 0) {
+    if (StrUtil.indexOf(columnType, '(') > 0) {
       return org.apache.commons.lang3.StringUtils.substringBefore(columnType, "(");
     } else {
       return columnType;
@@ -227,7 +227,7 @@ public class GenUtils {
    * @return 截取后的列类型
    */
   public static Integer getColumnLength(String columnType) {
-    if (StringUtils.indexOf(columnType, '(') > 0) {
+    if (StrUtil.indexOf(columnType, '(') > 0) {
       String length = org.apache.commons.lang3.StringUtils.substringBetween(columnType, "(", ")");
       return Integer.valueOf(length);
     } else {

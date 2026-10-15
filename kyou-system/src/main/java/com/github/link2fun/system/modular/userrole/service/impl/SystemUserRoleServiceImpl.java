@@ -58,6 +58,12 @@ public class SystemUserRoleServiceImpl implements ISystemUserRoleService {
     return userRoleMapping.findTargetIds(userId);
   }
 
+  /** 通过角色ID查询持有该角色的用户ID集合 */
+  @Override
+  public List<Long> findUserIdsByRoleId(final Long roleId) {
+    return roleUserMapping.findTargetIds(roleId);
+  }
+
   /**
    * 重新分配用户的角色, 用户最终持有的角色与 roleIds 完全一致
    *

@@ -1,6 +1,7 @@
 package com.github.link2fun.system.modular.dict.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.hutool.core.util.ObjectUtil;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
@@ -8,7 +9,6 @@ import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
 import com.github.link2fun.system.modular.dict.service.ISystemDictDataService;
 import com.github.link2fun.system.modular.dict.service.ISystemDictTypeService;
@@ -65,7 +65,7 @@ public class SystemDictDataController extends BaseController {
   @Mapping(value = "/type/{dictType}", method = MethodType.GET)
   public AjaxResult dictType(@Path String dictType) {
     List<SysDictData> data = dictTypeService.selectDictDataByType(dictType);
-    if (StringUtils.isNull(data)) {
+    if (ObjectUtil.isNull(data)) {
       data = new ArrayList<>();
     }
     return successData(data);

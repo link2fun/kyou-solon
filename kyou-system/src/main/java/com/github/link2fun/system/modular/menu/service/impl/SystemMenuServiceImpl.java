@@ -1,5 +1,7 @@
 package com.github.link2fun.system.modular.menu.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.text.NamingCase;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.base.LongProxy;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
@@ -8,6 +10,7 @@ import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
+import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.*;
@@ -15,7 +18,6 @@ import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
 import com.github.link2fun.support.core.tree.TreeBuilder;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.domain.vo.MetaVo;
 import com.github.link2fun.system.domain.vo.RouterVo;
@@ -230,9 +232,9 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
 
       router.setComponent(MenuUtils.getComponent(menu));
       router.setQuery(menu.getQuery());
-      router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath()));
+      router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StrUtil.equals("1", menu.getIsCache()), menu.getPath()));
       List<SysMenu> cMenus = menu.getChildren();
-      if (StringUtils.isNotEmpty(cMenus) && UserConstants.TYPE_DIR.equals(menu.getMenuType())) {
+      if (CollectionUtil.isNotEmpty(cMenus) && UserConstants.TYPE_DIR.equals(menu.getMenuType())) {
         router.setAlwaysShow(true);
         router.setRedirect("noRedirect");
         router.setChildren(buildMenus(cMenus));
@@ -242,8 +244,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
         RouterVo children = new RouterVo();
         children.setPath(menu.getPath());
         children.setComponent(menu.getComponent());
-        children.setName(StringUtils.capitalize(menu.getPath()));
-        children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath()));
+        children.setName(NamingCase.toPascalCase(menu.getPath()));
+        children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StrUtil.equals("1", menu.getIsCache()), menu.getPath()));
         children.setQuery(menu.getQuery());
         childrenList.add(children);
         router.setChildren(childrenList);
@@ -255,7 +257,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
         String routerPath = MenuUtils.innerLinkReplaceEach(menu.getPath());
         children.setPath(routerPath);
         children.setComponent(UserConstants.INNER_LINK);
-        children.setName(StringUtils.capitalize(routerPath));
+        children.setName(NamingCase.toPascalCase(routerPath));
         children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), menu.getPath()));
         childrenList.add(children);
         router.setChildren(childrenList);
@@ -340,7 +342,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
 
   /** 校验外链菜单的地址必须以 http(s):// 开头 */
   private void checkMenuPathFormat(final String action, final SysMenu menu) {
-    if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StringUtils.ishttp(menu.getPath())) {
+    if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StrUtil.startWithAny(menu.getPath(), Constants.HTTP, Constants.HTTPS)) {
       throw new ServiceException(action + "菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
     }
   }

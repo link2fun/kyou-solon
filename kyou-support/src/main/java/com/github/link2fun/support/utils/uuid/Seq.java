@@ -1,7 +1,7 @@
 package com.github.link2fun.support.utils.uuid;
 
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.utils.DateUtils;
-import com.github.link2fun.support.utils.StringUtils;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -75,6 +75,6 @@ public class Seq {
       atomicInt.set(1);
     }
     // 转字符串，用0左补齐
-    return StringUtils.padl(value, length);
+    return StrUtil.padPre(String.valueOf(value), length, '0');
   }
 }

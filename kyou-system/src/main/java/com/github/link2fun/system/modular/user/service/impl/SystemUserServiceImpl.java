@@ -3,6 +3,7 @@ package com.github.link2fun.system.modular.user.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.base.LongProxy;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
@@ -17,6 +18,7 @@ import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
+import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.*;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
@@ -26,7 +28,6 @@ import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.PasswordUtils;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.bean.BeanValidators;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
@@ -42,15 +43,12 @@ import com.github.link2fun.system.tool.SystemConfigContext;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
-import org.noear.solon.core.handle.Result;
-import org.noear.solon.core.util.DataThrowable;
 import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.data.tran.TranPolicy;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -246,7 +244,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * 通过用户名查询用户
    *
    * @param userName 用户名
-   * @return 用户对象信息
+   * @return 用户对象信息; 查无此人时返回 {@code null}
    */
   @Override
   public SysUserDTO selectUserByUserName(final String userName) {
@@ -254,7 +252,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
     return self.getSysUserDTOQuery((user, dept) -> {
       user.userName().eq(userName);
       user.delFlag().eq(UserConstants.NORMAL);
-    }).singleNotNull(() -> new DataThrowable("用户信息不存在").data(Result.failure("用户信息不存在")));
+    }).singleOrNull();
   }
 
 
@@ -298,11 +296,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 //      .eq(SysUser::getUserName, userName)
 //      .oneOpt()
 //      .map(SysUser::getUserId).orElse(-1L);
-    Long userId = Optional.ofNullable(entityQuery.queryable(SysUser.class)
-        .where(user -> user.userName().eq(userName))
-        .select(user -> new LongProxy(user.userId()))
-        .singleOrNull())
-      .orElse(-1L);
+    final Long userId = self.findUserIdByUserName(userName);
 
     List<Long> roleIdList = userRoleService.findRoleIdsByUserId(userId);
 
@@ -353,7 +347,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param userId 用户信息
    */
   private void checkUserAllowed(final Long userId) {
-    if (StringUtils.isNotNull(userId) && SysUser.isSuperAdmin(userId)) {
+    if (ObjectUtil.isNotNull(userId) && SysUser.isSuperAdmin(userId)) {
       throw new ServiceException("不允许操作超级管理员用户");
     }
   }
@@ -476,9 +470,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
     BeanUtil.copyProperties(updateReq, sysUser);
 
 //    return getBaseMapper().updateById(sysUser);
-    return entityQuery.updatable(sysUser)
+    final long rows = entityQuery.updatable(sysUser)
       .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
       .executeRows();
+    SaSessionBizTool.invalidateUser(userId);
+    return rows;
   }
 
   /**
@@ -493,6 +489,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   public void insertUserAuth(final ActionContext context, final Long userId, final List<Long> roleIds) {
     checkUserDataScope(context, userId);
     userRoleService.reassignRoles(userId, roleIds);
+    SaSessionBizTool.invalidateUser(userId);
   }
 
   /**
@@ -508,9 +505,13 @@ public class SystemUserServiceImpl implements ISystemUserService {
     checkUserAllowed(user.getUserId());
     checkUserDataScope(context, user.getUserId());
 //    return getBaseMapper().updateById(user);
-    return entityQuery.updatable(user)
+    final long rows = entityQuery.updatable(user)
       .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
       .executeRows();
+    if (rows > 0 && UserConstants.USER_DISABLE.equals(user.getStatus())) {
+      SaSessionBizTool.logoutByLoginId(user.getUserId());
+    }
+    return rows;
   }
 
   /**
@@ -530,6 +531,24 @@ public class SystemUserServiceImpl implements ISystemUserService {
   }
 
   /**
+   * 修改本人资料(个人中心), 成功后失效本人会话缓存
+   */
+  @Transaction
+  @Override
+  public long updateMyProfile(final Long userId, final SysUser profilePatch) {
+    final SysUser user = getByIdNotNull(userId);
+    user.setNickName(profilePatch.getNickName());
+    user.setEmail(profilePatch.getEmail());
+    user.setPhonenumber(profilePatch.getPhonenumber());
+    user.setSex(profilePatch.getSex());
+    final long rows = updateUserProfile(user);
+    if (rows > 0) {
+      SaSessionBizTool.invalidateUser(userId);
+    }
+    return rows;
+  }
+
+  /**
    * 修改用户头像
    *
    * @param userName 用户名
@@ -546,6 +565,18 @@ public class SystemUserServiceImpl implements ISystemUserService {
   }
 
   /**
+   * 修改本人头像, 成功后失效本人会话缓存
+   */
+  @Override
+  public boolean updateMyAvatar(final Long userId, final String userName, final String avatar) {
+    final boolean updated = updateUserAvatar(userName, avatar);
+    if (updated) {
+      SaSessionBizTool.invalidateUser(userId);
+    }
+    return updated;
+  }
+
+  /**
    * 重置用户密码
    *
    * @param context 操作上下文, 含有当前用户信息
@@ -557,11 +588,15 @@ public class SystemUserServiceImpl implements ISystemUserService {
   public long resetPwd(final ActionContext context, final SysUser user) {
     checkUserAllowed(user.getUserId());
     checkUserDataScope(context, user.getUserId());
-    return entityQuery.updatable(SysUser.class)
+    final long rows = entityQuery.updatable(SysUser.class)
       .where(userProxy -> userProxy.userId().eq(user.getUserId()))
       .setColumns(userProxy -> userProxy.password().set(user.getPassword()))
       // TODO 用户管理应该加上乐观锁
       .executeRows();
+    if (rows > 0) {
+      SaSessionBizTool.logoutByLoginId(user.getUserId());
+    }
+    return rows;
   }
 
   /**
@@ -573,10 +608,14 @@ public class SystemUserServiceImpl implements ISystemUserService {
    */
   @Override
   public boolean resetUserPwd(final String userName, final String password) {
-    return entityQuery.updatable(SysUser.class)
+    final boolean updated = entityQuery.updatable(SysUser.class)
       .setColumns(user -> user.password().set(password))
       .where(user -> user.userName().eq(userName))
       .executeRows() > 0;
+    if (updated) {
+      SaSessionBizTool.logoutByLoginId(findUserIdByUserName(userName));
+    }
+    return updated;
   }
 
   /**
@@ -590,7 +629,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public boolean deleteUserByIds(final ActionContext context, final List<Long> userIds) {
 
-    return aggregateDeleter.delete(AggregateDeletePlan.of(userIds)
+    final long rows = aggregateDeleter.delete(AggregateDeletePlan.of(userIds)
       .guard(ids -> {
         if (CollectionUtil.contains(ids, context.getUserId())) {
           throw new ServiceException("当前用户不能删除");
@@ -610,7 +649,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .delete(ids -> entityQuery.updatable(SysUser.class)
         .setColumns(user -> user.delFlag().set(UserConstants.DELETED))
         .where(user -> user.userId().in(ids))
-        .executeRows())) > 0;
+        .executeRows()));
+    if (rows > 0) {
+      userIds.forEach(SaSessionBizTool::logoutByLoginId);
+    }
+    return rows > 0;
   }
 
   /**
@@ -624,7 +667,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    */
   @Override
   public String importUser(final ActionContext context, final List<SysUserDTO> userDTOList, final Boolean isUpdateSupport, final String operName) {
-    if (StringUtils.isNull(userDTOList) || userDTOList.isEmpty()) {
+    if (ObjectUtil.isNull(userDTOList) || userDTOList.isEmpty()) {
       throw new ServiceException("导入用户数据不能为空！");
     }
 
@@ -639,7 +682,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
       try {
         // 验证是否存在这个用户
         SysUserDTO u = self.selectUserByUserName(user.getUserName());
-        if (StringUtils.isNull(u)) {
+        if (ObjectUtil.isNull(u)) {
           BeanValidators.validateWithException(user);
           user.setPassword(PasswordUtils.encryptPassword(password));
           user.setCreateBy(operName);
@@ -706,7 +749,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * 根据用户名称查询用户ID
    *
    * @param userName 用户名称
-   * @return 用户ID
+   * @return 用户ID; 查无此人时返回 -1, 同名多行视为数据错误直接抛出
    */
   @Override
   public Long findUserIdByUserName(final String userName) {

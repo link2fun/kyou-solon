@@ -1,14 +1,21 @@
 package com.github.link2fun.system.modular.menu.util;
 
+import cn.hutool.core.text.NamingCase;
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.support.core.tree.TreeBuilder;
-import com.github.link2fun.support.utils.StringUtils;
 
 import java.util.List;
 
 public class MenuUtils {
+
+  /** 内链域名中的特殊字符, 与 {@link #INNER_LINK_REPLACEMENT} 一一对应 */
+  private static final String[] INNER_LINK_SEARCH = {Constants.HTTP, Constants.HTTPS, Constants.WWW, ".", ":"};
+
+  /** 内链特殊字符的替换值, 与 {@link #INNER_LINK_SEARCH} 一一对应 */
+  private static final String[] INNER_LINK_REPLACEMENT = {"", "", "", "/", "/"};
 
   /**
    * 获取路由名称
@@ -17,10 +24,10 @@ public class MenuUtils {
    * @return 路由名称
    */
   public static String getRouteName(SysMenu menu) {
-    String routerName = StringUtils.capitalize(menu.getPath());
+    String routerName = NamingCase.toPascalCase(menu.getPath());
     // 非外链并且是一级目录（类型为目录）
     if (isMenuFrame(menu)) {
-      routerName = StringUtils.EMPTY;
+      routerName = StrUtil.EMPTY;
     }
     return routerName;
   }
@@ -33,11 +40,11 @@ public class MenuUtils {
    */
   public static String getComponent(SysMenu menu) {
     String component = UserConstants.LAYOUT;
-    if (StringUtils.isNotEmpty(menu.getComponent()) && !isMenuFrame(menu)) {
+    if (StrUtil.isNotBlank(menu.getComponent()) && !isMenuFrame(menu)) {
       component = menu.getComponent();
-    } else if (StringUtils.isEmpty(menu.getComponent()) && menu.getParentId().intValue() != 0 && isInnerLink(menu)) {
+    } else if (StrUtil.isBlank(menu.getComponent()) && menu.getParentId().intValue() != 0 && isInnerLink(menu)) {
       component = UserConstants.INNER_LINK;
-    } else if (StringUtils.isEmpty(menu.getComponent()) && isParentView(menu)) {
+    } else if (StrUtil.isBlank(menu.getComponent()) && isParentView(menu)) {
       component = UserConstants.PARENT_VIEW;
     }
     return component;
@@ -61,7 +68,7 @@ public class MenuUtils {
    * @return 结果
    */
   public static boolean isInnerLink(SysMenu menu) {
-    return menu.getIsFrame().equals(UserConstants.NO_FRAME) && StringUtils.ishttp(menu.getPath());
+    return menu.getIsFrame().equals(UserConstants.NO_FRAME) && StrUtil.startWithAny(menu.getPath(), Constants.HTTP, Constants.HTTPS);
   }
 
   /**
@@ -92,8 +99,11 @@ public class MenuUtils {
    * @return 替换后的内链域名
    */
   public static String innerLinkReplaceEach(String path) {
-    return StringUtils.replaceEach(path, new String[]{Constants.HTTP, Constants.HTTPS, Constants.WWW, ".", ":"},
-      new String[]{"", "", "", "/", "/"});
+    String result = path;
+    for (int i = 0; i < INNER_LINK_SEARCH.length; i++) {
+      result = StrUtil.replace(result, INNER_LINK_SEARCH[i], INNER_LINK_REPLACEMENT[i]);
+    }
+    return result;
   }
 
   /**

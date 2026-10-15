@@ -1,7 +1,8 @@
 package com.github.link2fun.system.domain.vo;
 
 
-import com.github.link2fun.support.utils.StringUtils;
+import cn.hutool.core.util.StrUtil;
+import com.github.link2fun.support.constant.Constants;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -59,7 +60,7 @@ public class MetaVo implements Serializable {
     this.title = title;
     this.icon = icon;
     this.noCache = noCache;
-    if (StringUtils.ishttp(link)) {
+    if (StrUtil.startWithAny(link, Constants.HTTP, Constants.HTTPS)) {
       this.link = link;
     }
   }

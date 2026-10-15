@@ -4,14 +4,13 @@ import cn.hutool.captcha.*;
 import cn.hutool.captcha.generator.MathGenerator;
 import cn.hutool.core.math.Calculator;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.framework.config.CaptchaConfig;
 import com.github.link2fun.framework.dto.CaptchaDTO;
 import com.github.link2fun.framework.enums.CaptchaInvadeType;
 import com.github.link2fun.framework.enums.CaptchaType;
 import com.github.link2fun.support.constant.CacheConstants;
 import com.github.link2fun.support.context.cache.service.RedisCache;
-import com.github.link2fun.support.web.api.ApiExceptions;
+import com.github.link2fun.system.tool.SystemConfigContext;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
 
@@ -40,7 +39,7 @@ public class CaptchaService {
   /** 获取验证码 */
   public CaptchaDTO getCaptcha() {
     CaptchaDTO captchaDTO = new CaptchaDTO();
-    boolean captchaOnOff = captchaConfig.getEnabled();
+    boolean captchaOnOff = SystemConfigContext.accountCaptchaEnabled();
     captchaDTO.setCaptchaEnabled(captchaOnOff);
 
     if (!captchaOnOff) {
@@ -64,29 +63,6 @@ public class CaptchaService {
       createCaptcha(lineCaptcha, captchaDTO);
     }
     return captchaDTO;
-  }
-
-  /**
-   * 校验验证码
-   */
-  public void checkCaptcha(String code, String uuid) {
-    // 如果开启了验证码
-    if (captchaConfig.getEnabled()) {
-      if (!StrUtil.isAllNotEmpty(code, uuid)) {
-        throw ApiExceptions.CODE_400("验证码必填");
-      }
-      String codeKey = CacheConstants.CAPTCHA_CODE_KEY + uuid;
-      // 校验
-
-      String cacheCode = redisCache.get(codeKey);
-      if (StrUtil.isEmpty(cacheCode)) {
-        throw ApiExceptions.CODE_400("验证码已失效");
-      }
-      redisCache.del(codeKey);
-      if (!StrUtil.equalsIgnoreCase(code, cacheCode)) {
-        throw ApiExceptions.CODE_400("验证码错误");
-      }
-    }
   }
 
   /**

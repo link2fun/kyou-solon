@@ -1,8 +1,10 @@
 package com.github.link2fun.framework.aop;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.threadlocal.NamedThreadLocal;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
@@ -10,8 +12,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.github.link2fun.framework.manager.AsyncManager;
-import com.github.link2fun.framework.manager.factory.AsyncFactory;
+import com.github.link2fun.framework.auth.AuditSink;
 import com.github.link2fun.framework.tool.LogTool;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
@@ -21,7 +22,6 @@ import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.enums.BusinessStatus;
 import com.github.link2fun.support.enums.HttpMethod;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.ip.IpUtils;
 import com.github.link2fun.system.modular.operlog.model.SysOperLog;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +51,13 @@ public class LogInterceptor implements Interceptor {
    * 计算操作消耗时间
    */
   private static final ThreadLocal<Long> TIME_THREADLOCAL = new NamedThreadLocal<>("Cost Time");
+
+  private AuditSink auditSink;
+
+  /** 由 KyouApp 在 AuditSink bean 注册后注入 */
+  public void setAuditSink(AuditSink auditSink) {
+    this.auditSink = auditSink;
+  }
 
 
   /** 定义jackson对象 */
@@ -152,18 +159,18 @@ public class LogInterceptor implements Interceptor {
       // 请求的地址
       String ip = IpUtils.getIpAddr();
       operLog.setOperIp(ip);
-      operLog.setOperUrl(StringUtils.substring(context.path(), 0, 255));
+      operLog.setOperUrl(StrUtil.sub(context.path(), 0, 255));
       if (currentUser != null) {
         operLog.setOperName(currentUser.getUsername());
         SysUserDTO userDTO = currentUser.getUser();
-        if (StringUtils.isNotNull(userDTO) && StringUtils.isNotNull(userDTO.getDept())) {
+        if (ObjectUtil.isNotNull(userDTO) && ObjectUtil.isNotNull(userDTO.getDept())) {
           operLog.setDeptName(userDTO.getDept().getDeptName());
         }
       }
 
       if (e != null) {
         operLog.setStatus(BusinessStatus.FAIL.ordinal());
-        operLog.setErrorMsg(StringUtils.substring(e.getMessage(), 0, 2000));
+        operLog.setErrorMsg(StrUtil.sub(e.getMessage(), 0, 2000));
       }
       // 设置方法名称
       String className = method.getDeclaringClass().getName();
@@ -177,7 +184,9 @@ public class LogInterceptor implements Interceptor {
       // 设置消耗时间
       operLog.setCostTime(System.currentTimeMillis() - TIME_THREADLOCAL.get());
       // 保存数据库
-      AsyncManager.me().execute(AsyncFactory.recordOper(operLog));
+      if (auditSink != null) {
+        auditSink.operEvent(operLog);
+      }
     } catch (Exception exp) {
       // 记录本地异常日志
       log.error("异常信息:{}", exp.getMessage(), e);
@@ -203,8 +212,8 @@ public class LogInterceptor implements Interceptor {
       setRequestValue(joinPoint, operLog, log.excludeParamNames());
     }
     // 是否需要保存response，参数和值
-    if (log.isSaveResponseData() && StringUtils.isNotNull(jsonResult)) {
-      operLog.setJsonResult(StringUtils.substring(toJsonStr(jsonResult), 0, 2000));
+    if (log.isSaveResponseData() && ObjectUtil.isNotNull(jsonResult)) {
+      operLog.setJsonResult(StrUtil.sub(toJsonStr(jsonResult), 0, 2000));
     }
   }
 
@@ -216,12 +225,12 @@ public class LogInterceptor implements Interceptor {
   private void setRequestValue(Invocation inv, SysOperLog operLog, String[] excludeParamNames) {
     Map<?, ?> paramsMap = Context.current().paramMap().toValuesMap();
     String requestMethod = operLog.getRequestMethod();
-    if (StringUtils.isEmpty(paramsMap)
+    if (MapUtil.isEmpty(paramsMap)
       && (HttpMethod.PUT.name().equals(requestMethod) || HttpMethod.POST.name().equals(requestMethod))) {
       String params = argsArrayToString(inv.args(), excludeParamNames);
-      operLog.setOperParam(StringUtils.substring(params, 0, 2000));
+      operLog.setOperParam(StrUtil.sub(params, 0, 2000));
     } else {
-      operLog.setOperParam(StringUtils.substring(toJsonStr(paramsMap), 0, 2000));
+      operLog.setOperParam(StrUtil.sub(toJsonStr(paramsMap), 0, 2000));
     }
   }
 
@@ -236,7 +245,7 @@ public class LogInterceptor implements Interceptor {
     StringBuilder params = new StringBuilder();
     for (Object o : paramsArray) {
 
-      if (!StringUtils.isNotNull(o) || isFilterObject(o)) {
+      if (!ObjectUtil.isNotNull(o) || isFilterObject(o)) {
         continue;
       }
 

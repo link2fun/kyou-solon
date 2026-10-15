@@ -9,7 +9,6 @@ import com.github.link2fun.support.exception.file.FileNameLengthLimitExceededExc
 import com.github.link2fun.support.exception.file.FileSizeLimitExceededException;
 import com.github.link2fun.support.exception.file.InvalidExtensionException;
 import com.github.link2fun.support.utils.DateUtils;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.Seq;
 import lombok.Getter;
 import org.apache.commons.io.FilenameUtils;
@@ -111,7 +110,7 @@ public class FileUploadUtils {
    * 编码文件名
    */
   public static String extractFilename(UploadedFile file) {
-    return StringUtils.format("{}/{}_{}.{}", DateUtils.datePath(),
+    return StrUtil.format("{}/{}_{}.{}", DateUtils.datePath(),
       FilenameUtils.getBaseName(file.getName()), Seq.getId(Seq.uploadSeqType), getExtension(file));
   }
 
@@ -128,7 +127,7 @@ public class FileUploadUtils {
 
   public static String getPathFileName(String uploadDir, String fileName) {
     int dirLastIndex = KyouConfig.profile().length() + 1;
-    String currentDir = StringUtils.substring(uploadDir, dirLastIndex);
+    String currentDir = StrUtil.subSuf(uploadDir, dirLastIndex);
     return Constants.RESOURCE_PREFIX + "/" + currentDir + "/" + fileName;
   }
 
@@ -186,7 +185,7 @@ public class FileUploadUtils {
    */
   public static String getExtension(UploadedFile file) {
     String extension = FilenameUtils.getExtension(file.getName());
-    if (StringUtils.isEmpty(extension)) {
+    if (StrUtil.isBlank(extension)) {
       extension = MimeTypeUtils.getExtension(Objects.requireNonNull(file.getContentType()));
     }
     return extension;

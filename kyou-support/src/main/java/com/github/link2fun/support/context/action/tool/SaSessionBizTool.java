@@ -9,6 +9,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
+import com.easy.query.core.exception.EasyQuerySingleNotNullException;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.context.action.service.ActionContextService;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
@@ -26,7 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Sa-Token 会话适配器: 登录态、会话用户读写、登录/注销、在线会话枚举的唯一落点,
+ * Sa-Token 会话适配器: 登录态、会话用户读写、登录/注销、在线会话枚举,
  * 业务侧一律经 {@link com.github.link2fun.support.context.action.ActionContext} 取当前用户。
  */
 @Slf4j
@@ -94,15 +95,7 @@ public class SaSessionBizTool {
       return attachToken(cached);
     }
 
-    final SessionUser sessionUser = new SessionUser();
-    sessionUser.setUserId(loginId);
-
-    final SysUserDTO sysUserDTO = userByUserId(loginId);
-    sessionUser.setDeptId(sysUserDTO.getDeptId());
-    sessionUser.setPermissions(getPermissionList(loginId, currentLoginType()));
-    sessionUser.setUser(sysUserDTO);
-
-    return attachToken(sessionUser);
+    return attachToken(rebuildSessionUser(loginId));
   }
 
 
@@ -131,6 +124,19 @@ public class SaSessionBizTool {
   /** 注销当前会话 */
   public static void logout() {
     StpUtil.logout();
+  }
+
+
+  /**
+   * 强退指定账号的全部在线会话(注销其所有 token)
+   *
+   * @param loginId 账号id
+   */
+  public static void logoutByLoginId(final Object loginId) {
+    if (loginId == null) {
+      return;
+    }
+    StpUtil.logout(loginId);
   }
 
 
@@ -167,11 +173,14 @@ public class SaSessionBizTool {
       }
 
       final SaSession session = StpUtil.getSessionByLoginId(loginId);
-      final SessionUser sessionUser = session.getModel(Constants.SESSION_USER, SessionUser.class);
-      // 会话里没有登录用户, 无法展示为在线用户
+      SessionUser sessionUser = session.getModel(Constants.SESSION_USER, SessionUser.class);
       if (sessionUser == null) {
-        log.warn("tokenValue: {} 的会话没有登录用户, 跳过", tokenValue);
-        continue;
+        try {
+          sessionUser = rebuildSessionUser(Convert.toLong(loginId));
+        } catch (EasyQuerySingleNotNullException e) {
+          log.warn("tokenValue: {} 的登录用户已不存在, 跳过", tokenValue);
+          continue;
+        }
       }
       sessionUserList.add(toOnlineView(sessionUser, tokenValue));
     }
@@ -185,29 +194,26 @@ public class SaSessionBizTool {
   }
 
   /**
-   * 变更后刷新当前会话: 先失效用户级(角色列表)与角色级(权限码列表)的会话缓存,
-   * 再重取用户与权限写回, 保证会话与库一致。
+   * 失效指定角色的共享权限缓存, 下次鉴权时重取
    *
-   * <p>适用于角色/权限/个人资料变更后由当前操作者所在的请求调用;
-   * 其他在线用户的会话不在刷新范围。
-   *
-   * @return 刷新后的会话用户
+   * @param roleKey 角色标识
    */
-  public static SessionUser refreshCurrentSession() {
-    final Long loginId = currentLoginId();
-    final String loginType = currentLoginType();
+  public static void invalidateRole(final String roleKey) {
+    SaSessionCustomUtil.deleteSessionById(ROLE_SESSION_PREFIX + roleKey);
+  }
 
-    // 先失效两级会话缓存, 否则下面的重取仍会命中旧值刷了个寂寞
-    StpUtil.getSessionByLoginId(loginId).delete(ROLE_LIST_KEY);
-    for (final String roleKey : getRoleList(loginId, loginType)) {
-      SaSessionCustomUtil.getSessionById(ROLE_SESSION_PREFIX + roleKey).delete(PERMISSION_LIST_KEY);
+  /**
+   * 失效指定用户的会话缓存(角色列表与会话用户), 下次请求从库重建
+   *
+   * @param loginId 账号id
+   */
+  public static void invalidateUser(final Object loginId) {
+    final SaSession session = StpUtil.getSessionByLoginId(loginId, false);
+    if (session == null) {
+      return;
     }
-
-    final SessionUser current = currentUser();
-    current.setUser(userByUserId(loginId));
-    current.setPermissions(getPermissionList(loginId, loginType));
-    setCurrentUser(current);
-    return current;
+    session.delete(ROLE_LIST_KEY);
+    session.delete(Constants.SESSION_USER);
   }
 
 
@@ -292,6 +298,20 @@ public class SaSessionBizTool {
   private static SessionUser attachToken(final SessionUser sessionUser) {
     sessionUser.setToken(StpUtil.getTokenValue());
     sessionUser.setLoginTime(StpUtil.getTokenSession().getCreateTime());
+    return sessionUser;
+  }
+
+
+  /** 按登录ID从库重建会话用户(不含 token 与登录时间), 不依赖请求上下文 */
+  private static SessionUser rebuildSessionUser(final Long loginId) {
+    final SessionUser sessionUser = new SessionUser();
+    sessionUser.setUserId(loginId);
+
+    final SysUserDTO sysUserDTO = userByUserId(loginId);
+    sessionUser.setDeptId(sysUserDTO.getDeptId());
+    sessionUser.setPermissions(getPermissionList(loginId, currentLoginType()));
+    sessionUser.setUser(sysUserDTO);
+
     return sessionUser;
   }
 

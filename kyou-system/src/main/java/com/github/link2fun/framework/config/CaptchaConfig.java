@@ -17,9 +17,6 @@ import org.noear.solon.annotation.Inject;
 @Inject(value = "${kyou.captcha}")
 public class CaptchaConfig {
 
-  /** 验证码开关 */
-  private Boolean enabled;
-
   /** 干扰类型: line 线段干扰、circle 圆圈干扰、shear 扭曲干扰 */
   private CaptchaInvadeType invadeType;
 

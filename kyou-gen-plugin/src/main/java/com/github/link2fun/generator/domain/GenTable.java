@@ -1,13 +1,13 @@
 package com.github.link2fun.generator.domain;
 
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
 import com.easy.query.core.annotation.*;
 import com.easy.query.core.enums.RelationTypeEnum;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
 import com.github.link2fun.generator.domain.proxy.GenTableProxy;
 import com.github.link2fun.support.constant.GenConstants;
 import com.github.link2fun.support.core.domain.BaseEntity;
-import com.github.link2fun.support.utils.StringUtils;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -146,7 +146,7 @@ public class GenTable extends BaseEntity implements ProxyEntityAvailable<GenTabl
   }
 
   public static boolean isSub(String tplCategory) {
-    return tplCategory != null && StringUtils.equals(GenConstants.TPL_SUB, tplCategory);
+    return tplCategory != null && StrUtil.equals(GenConstants.TPL_SUB, tplCategory);
   }
 
   public boolean isTree() {
@@ -154,7 +154,7 @@ public class GenTable extends BaseEntity implements ProxyEntityAvailable<GenTabl
   }
 
   public static boolean isTree(String tplCategory) {
-    return tplCategory != null && StringUtils.equals(GenConstants.TPL_TREE, tplCategory);
+    return tplCategory != null && StrUtil.equals(GenConstants.TPL_TREE, tplCategory);
   }
 
   public boolean isCrud() {
@@ -162,7 +162,7 @@ public class GenTable extends BaseEntity implements ProxyEntityAvailable<GenTabl
   }
 
   public static boolean isCrud(String tplCategory) {
-    return tplCategory != null && StringUtils.equals(GenConstants.TPL_CRUD, tplCategory);
+    return tplCategory != null && StrUtil.equals(GenConstants.TPL_CRUD, tplCategory);
   }
 
   public boolean isSuperColumn(String javaField) {
@@ -171,9 +171,9 @@ public class GenTable extends BaseEntity implements ProxyEntityAvailable<GenTabl
 
   public static boolean isSuperColumn(String tplCategory, String javaField) {
     if (isTree(tplCategory)) {
-      return StringUtils.equalsAnyIgnoreCase(javaField,
+      return StrUtil.equalsAnyIgnoreCase(javaField,
           ArrayUtil.addAll(GenConstants.TREE_ENTITY, GenConstants.BASE_ENTITY));
     }
-    return StringUtils.equalsAnyIgnoreCase(javaField, GenConstants.BASE_ENTITY);
+    return StrUtil.equalsAnyIgnoreCase(javaField, GenConstants.BASE_ENTITY);
   }
 }

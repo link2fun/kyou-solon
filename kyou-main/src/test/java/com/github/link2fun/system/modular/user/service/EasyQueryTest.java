@@ -7,8 +7,8 @@ import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.SysUser;
-import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.core.domain.entity.SysUserRole;
+import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysUserRoleProxy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +17,8 @@ import org.noear.solon.test.SolonJUnit5Extension;
 import org.noear.solon.test.SolonTest;
 
 import java.util.List;
-@Import(profiles = "classpath:app-dev.yml", scanPackages = "com.github.link2fun")
+
+@Import(profiles = "classpath:app-test.yml", scanPackages = "com.github.link2fun")
 @SolonTest(value = KyouApp.class)
 @ExtendWith(SolonJUnit5Extension.class)
 public class EasyQueryTest {
@@ -27,7 +28,7 @@ public class EasyQueryTest {
 
   @Test
   public void test() {
-    
+
 
     // 根据ID 查询第一条数据
     SysUser firstUser = entityQuery.queryable(SysUser.class)
@@ -94,8 +95,6 @@ public class EasyQueryTest {
   }
 
 
-
-
   @Test
   public void testDelete() {
     try {
@@ -105,7 +104,7 @@ public class EasyQueryTest {
         .executeRows();
       System.out.println("delete with allowDeleteStatement=false success");
     } catch (Exception e) {
-      System.out.println("delete with allowDeleteStatement=false err "+e.getMessage());
+      System.out.println("delete with allowDeleteStatement=false err " + e.getMessage());
     }
 
 
@@ -116,7 +115,7 @@ public class EasyQueryTest {
         .executeRows();
       System.out.println("delete with allowDeleteStatement=true success");
     } catch (Exception e) {
-      System.out.println("delete with allowDeleteStatement=true err "+e.getMessage());
+      System.out.println("delete with allowDeleteStatement=true err " + e.getMessage());
     }
   }
 }

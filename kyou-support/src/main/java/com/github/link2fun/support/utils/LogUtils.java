@@ -6,7 +6,9 @@ package com.github.link2fun.support.utils;
  * @author ruoyi
  */
 public class LogUtils {
-  public static String getBlock(Object msg) {
+
+  /** 把值套上方括号, null 视为空串 */
+  public static String bracket(Object msg) {
     if (msg == null) {
       msg = "";
     }

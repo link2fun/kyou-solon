@@ -1,13 +1,13 @@
 package com.github.link2fun.support.core.controller;
 
 
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.constant.HttpStatus;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
-import com.github.link2fun.support.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -100,7 +100,7 @@ public class BaseController {
    * 页面跳转
    */
   public String redirect(String url) {
-    return StringUtils.format("redirect:{}", url);
+    return StrUtil.format("redirect:{}", url);
   }
 
   /** 获取用户缓存信息, 未登录时回 401 */

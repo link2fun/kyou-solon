@@ -7,7 +7,6 @@ import com.github.link2fun.support.constant.CacheConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.cache.service.RedisCache;
 import com.github.link2fun.support.core.text.Convert;
-import com.github.link2fun.support.utils.StringUtils;
 import org.noear.solon.core.handle.Context;
 
 import java.io.IOException;
@@ -44,7 +43,7 @@ public class SameUrlDataInterceptor extends RepeatSubmitInterceptor {
       String nowParams = context.body();
 
       // body参数为空，获取Parameter的数据
-      if (StringUtils.isEmpty(nowParams)) {
+      if (StrUtil.isBlank(nowParams)) {
         nowParams = JSONUtil.toJsonStr(context.paramMap().toValuesMap());
       }
       Map<String, Object> nowDataMap = new HashMap<>();

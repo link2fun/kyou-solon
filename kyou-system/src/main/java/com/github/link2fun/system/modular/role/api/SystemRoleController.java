@@ -3,7 +3,6 @@ package com.github.link2fun.system.modular.role.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.entity.SysDept;
@@ -97,12 +96,7 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysRoleModifyReq modifyReq) {
-    if (roleService.updateRole(modifyReq) > 0) {
-      // 角色/权限变更后刷新当前会话
-      SaSessionBizTool.refreshCurrentSession();
-      return success();
-    }
-    return error("修改角色'" + modifyReq.getRoleName() + "'失败，请联系管理员");
+    return toAjax(roleService.updateRole(modifyReq));
   }
 
   /**

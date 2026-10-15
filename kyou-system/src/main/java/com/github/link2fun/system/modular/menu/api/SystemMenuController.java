@@ -7,7 +7,6 @@ import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.system.modular.menu.service.ISystemMenuService;
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.MethodType;

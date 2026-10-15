@@ -13,10 +13,8 @@ kyou:
     demoEnabled: false
     addressEnabled: true
 
-    # 验证码配置
+    # 验证码配置(开关走 DB sys.account.captchaEnabled)
     captcha:
-        # 验证码开关
-        enabled: true
         # 干扰类型: line 线段干扰、circle 圆圈干扰、shear 扭曲干扰
         invadeType: line
         # 验证码类型: math 四则运算、char 字符

@@ -1,6 +1,7 @@
 package com.github.link2fun.support.utils;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.StrUtil;
 import org.noear.solon.core.handle.Context;
 import org.noear.solon.core.handle.SessionState;
 
@@ -125,12 +126,12 @@ public class ServletUtils {
     }
 
     String uri = context.url();
-    if (StringUtils.inStringIgnoreCase(uri, ".json", ".xml")) {
+    if (StrUtil.equalsAnyIgnoreCase(uri, ".json", ".xml")) {
       return true;
     }
 
     String ajax = context.param("__ajax");
-    return StringUtils.inStringIgnoreCase(ajax, "json", "xml");
+    return StrUtil.equalsAnyIgnoreCase(ajax, "json", "xml");
   }
 
   /**

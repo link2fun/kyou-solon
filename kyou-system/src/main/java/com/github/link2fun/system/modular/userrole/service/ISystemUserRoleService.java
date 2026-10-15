@@ -18,6 +18,9 @@ public interface ISystemUserRoleService {
   /** 通过用户ID查询角色ID集合 */
   List<Long> findRoleIdsByUserId(Long userId);
 
+  /** 通过角色ID查询持有该角色的用户ID集合 */
+  List<Long> findUserIdsByRoleId(Long roleId);
+
   /**
    * 重新分配用户的角色, 用户最终持有的角色与 roleIds 完全一致
    *

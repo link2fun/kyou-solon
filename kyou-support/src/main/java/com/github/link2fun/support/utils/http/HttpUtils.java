@@ -2,7 +2,6 @@ package com.github.link2fun.support.utils.http;
 
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.constant.Constants;
-import com.github.link2fun.support.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.*;
@@ -55,7 +54,7 @@ public class HttpUtils {
     StringBuilder result = new StringBuilder();
     BufferedReader in = null;
     try {
-      String urlNameString = StringUtils.isNotBlank(param) ? url + "?" + param : url;
+      String urlNameString = StrUtil.isNotBlank(param) ? url + "?" + param : url;
       log.info("sendGet - {}", urlNameString);
       URL realUrl = new URL(urlNameString);
       URLConnection connection = realUrl.openConnection();

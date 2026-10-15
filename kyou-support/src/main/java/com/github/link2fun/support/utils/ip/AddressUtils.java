@@ -1,22 +1,21 @@
 package com.github.link2fun.support.utils.ip;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.github.link2fun.support.config.KyouConfig;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.context.cache.tool.CacheTool;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.http.HttpUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 获取地址类
  *
  * @author ruoyi
  */
+@Slf4j
 public class AddressUtils {
-  private static final Logger log = LoggerFactory.getLogger(AddressUtils.class);
 
   // IP地址查询
   public static final String IP_URL = "http://whois.pconline.com.cn/ipJson.jsp";
@@ -27,7 +26,7 @@ public class AddressUtils {
 
   /** 获取地址(带缓存) */
   public static String getRealAddressByIP(String ip) {
-    return CacheTool.cacheGet("ip2address:", ip, ()-> _getRealAddressByIP(ip));
+    return CacheTool.cacheGet("ip2address:", ip, () -> _getRealAddressByIP(ip));
   }
 
   private static String _getRealAddressByIP(String ip) {
@@ -38,7 +37,7 @@ public class AddressUtils {
     if (KyouConfig.addressEnabled()) {
       try {
         String rspStr = HttpUtils.sendGet(IP_URL, "ip=" + ip + "&json=true", Constants.GBK);
-        if (StringUtils.isEmpty(rspStr)) {
+        if (StrUtil.isBlank(rspStr)) {
           log.error("获取地理位置失败 {}", ip);
           return UNKNOWN;
         }

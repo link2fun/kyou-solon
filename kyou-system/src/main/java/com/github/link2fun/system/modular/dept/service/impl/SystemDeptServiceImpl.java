@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.dept.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.base.LongProxy;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
@@ -19,7 +20,6 @@ import com.github.link2fun.support.core.tree.TreeBuilder;
 import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
@@ -282,21 +282,21 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
     if (dept.getParentId().equals(deptId)) {
       throw new ServiceException("修改部门'" + dept.getDeptName() + "'失败，上级部门不能是自己");
     }
-    if (StringUtils.equals(UserConstants.DEPT_DISABLE, dept.getStatus()) && selectNormalChildrenDeptById(deptId) > 0) {
+    if (StrUtil.equals(UserConstants.DEPT_DISABLE, dept.getStatus()) && selectNormalChildrenDeptById(deptId) > 0) {
       throw new ServiceException("该部门包含未停用的子部门！");
     }
 
     SysDept newParentDept = self.selectDeptById(dept.getParentId());
     SysDept oldDept = self.selectDeptById(dept.getDeptId());
-    if (StringUtils.isNotNull(newParentDept) && StringUtils.isNotNull(oldDept)) {
+    if (ObjectUtil.isNotNull(newParentDept) && ObjectUtil.isNotNull(oldDept)) {
       String newAncestors = newParentDept.getAncestors() + "," + newParentDept.getDeptId();
       String oldAncestors = oldDept.getAncestors();
       dept.setAncestors(newAncestors);
       updateDeptChildren(dept.getDeptId(), newAncestors, oldAncestors);
     }
     long result = entityQuery.updatable(dept).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
-    if (UserConstants.DEPT_NORMAL.equals(dept.getStatus()) && StringUtils.isNotEmpty(dept.getAncestors())
-      && !StringUtils.equals("0", dept.getAncestors())) {
+    if (UserConstants.DEPT_NORMAL.equals(dept.getStatus()) && StrUtil.isNotBlank(dept.getAncestors())
+      && !StrUtil.equals("0", dept.getAncestors())) {
       // 如果该部门是启用状态，则启用该部门的所有上级部门
       updateParentDeptStatusNormal(dept);
     }

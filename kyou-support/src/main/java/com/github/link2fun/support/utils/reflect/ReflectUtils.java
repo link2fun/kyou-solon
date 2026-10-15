@@ -2,10 +2,10 @@ package com.github.link2fun.support.utils.reflect;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.text.NamingCase;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.utils.DateUtils;
-import com.github.link2fun.support.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.DateUtil;
 
@@ -35,8 +35,8 @@ public class ReflectUtils {
   @SuppressWarnings("unchecked")
   public static <E> E invokeGetter(Object obj, String propertyName) {
     Object object = obj;
-    for (String name : StringUtils.split(propertyName, ".")) {
-      String getterMethodName = GETTER_PREFIX + StrUtil.upperFirst(StringUtils.toCamelCase(name));
+    for (String name : StrUtil.split(propertyName, ".")) {
+      String getterMethodName = GETTER_PREFIX + StrUtil.upperFirst(StrUtil.toCamelCase(name));
       object = invokeMethod(object, getterMethodName, new Class[]{}, new Object[]{});
     }
     return (E) object;
@@ -48,13 +48,13 @@ public class ReflectUtils {
    */
   public static <E> void invokeSetter(Object obj, String propertyName, E value) {
     Object object = obj;
-    List<String> names = StringUtils.split(propertyName, ".");
+    List<String> names = StrUtil.split(propertyName, ".");
     for (int i = 0; i < names.size(); i++) {
       if (i < names.size() - 1) {
-        String getterMethodName = GETTER_PREFIX + StringUtils.capitalize(names.get(i));
+        String getterMethodName = GETTER_PREFIX + NamingCase.toPascalCase(names.get(i));
         object = invokeMethod(object, getterMethodName, new Class[]{}, new Object[]{});
       } else {
-        String setterMethodName = SETTER_PREFIX + StringUtils.capitalize(names.get(i));
+        String setterMethodName = SETTER_PREFIX + NamingCase.toPascalCase(names.get(i));
         invokeMethodByName(object, setterMethodName, new Object[]{value});
       }
     }
@@ -140,8 +140,8 @@ public class ReflectUtils {
         if (args[i] != null && !args[i].getClass().equals(cs[i])) {
           if (cs[i] == String.class) {
             args[i] = Convert.toStr(args[i]);
-            if (StringUtils.endWith((String) args[i], ".0")) {
-              args[i] = StringUtils.subBefore((String) args[i], ".0", false);
+            if (StrUtil.endWith((String) args[i], ".0")) {
+              args[i] = StrUtil.subBefore((String) args[i], ".0", false);
             }
           } else if (cs[i] == Integer.class) {
             args[i] = Convert.toInt(args[i]);

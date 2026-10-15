@@ -5,8 +5,8 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.page.Page;
-import com.github.link2fun.system.modular.logininfo.model.SysLogininfor;
-import com.github.link2fun.system.modular.logininfo.service.ISystemLogininforService;
+import com.github.link2fun.system.modular.logininfo.model.SysLoginInfo;
+import com.github.link2fun.system.modular.logininfo.service.ISystemLoginInfoService;
 
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
@@ -16,7 +16,7 @@ import java.util.Objects;
 
 @Slf4j
 @Component
-public class SystemLogininforServiceImpl implements ISystemLogininforService {
+public class SystemLoginInfoServiceImpl implements ISystemLoginInfoService {
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -24,11 +24,11 @@ public class SystemLogininforServiceImpl implements ISystemLogininforService {
   /**
    * 新增系统登录日志
    *
-   * @param logininfor 访问日志对象
+   * @param loginInfo 访问日志对象
    */
   @Override
-  public void insertLogininfor(final SysLogininfor logininfor) {
-    entityQuery.insertable(logininfor).executeRows();
+  public void insertLoginInfo(final SysLoginInfo loginInfo) {
+    entityQuery.insertable(loginInfo).executeRows();
   }
 
   /**
@@ -39,9 +39,9 @@ public class SystemLogininforServiceImpl implements ISystemLogininforService {
    * @return 登录记录集合
    */
   @Override
-  public Page<SysLogininfor> selectLogininforList(final Page<SysLogininfor> pageRequest, final SysLogininfor searchReq) {
+  public Page<SysLoginInfo> selectLoginInfoList(final Page<SysLoginInfo> pageRequest, final SysLoginInfo searchReq) {
 
-    EasyPageResult<SysLogininfor> pageResult = entityQuery.queryable(SysLogininfor.class)
+    EasyPageResult<SysLoginInfo> pageResult = entityQuery.queryable(SysLoginInfo.class)
       .where(s -> {
         s.ipaddr().like(StrUtil.isNotBlank(searchReq.getIpaddr()), searchReq.getIpaddr());
         s.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus());
@@ -62,8 +62,8 @@ public class SystemLogininforServiceImpl implements ISystemLogininforService {
    * @return 结果
    */
   @Override
-  public boolean deleteLogininforByIds(final List<Long> infoIds) {
-    return entityQuery.deletable(SysLogininfor.class)
+  public boolean deleteLoginInfoByIds(final List<Long> infoIds) {
+    return entityQuery.deletable(SysLoginInfo.class)
       .allowDeleteStatement(true)
       .where(s -> s.infoId().in(infoIds))
       .executeRows() > 0;
@@ -73,7 +73,7 @@ public class SystemLogininforServiceImpl implements ISystemLogininforService {
    * 清空系统登录日志
    */
   @Override
-  public void cleanLogininfor() {
+  public void cleanLoginInfo() {
 
     entityQuery.sqlExecute("truncate table sys_logininfor");
   }

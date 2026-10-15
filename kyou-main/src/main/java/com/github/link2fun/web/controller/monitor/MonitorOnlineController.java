@@ -1,6 +1,8 @@
 package com.github.link2fun.web.controller.monitor;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.annotation.RepeatSubmit;
 import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
@@ -10,7 +12,6 @@ import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.system.domain.SysUserOnline;
 import com.github.link2fun.system.modular.useronline.service.ISystemUserOnlineService;
 import org.noear.solon.annotation.Controller;
@@ -48,11 +49,11 @@ public class MonitorOnlineController extends BaseController {
 
     List<SysUserOnline> userOnlineList = new ArrayList<>();
     for (SessionUser selectedUser : onlineUserPage.getRecords()) {
-      if (StringUtils.isNotEmpty(ipaddr) && StringUtils.isNotEmpty(userName)) {
+      if (StrUtil.isNotBlank(ipaddr) && StrUtil.isNotBlank(userName)) {
         userOnlineList.add(userOnlineService.selectOnlineByInfo(ipaddr, userName, selectedUser));
-      } else if (StringUtils.isNotEmpty(ipaddr)) {
+      } else if (StrUtil.isNotBlank(ipaddr)) {
         userOnlineList.add(userOnlineService.selectOnlineByIpaddr(ipaddr, selectedUser));
-      } else if (StringUtils.isNotEmpty(userName) && StringUtils.isNotNull(selectedUser.getUser())) {
+      } else if (StrUtil.isNotBlank(userName) && ObjectUtil.isNotNull(selectedUser.getUser())) {
         userOnlineList.add(userOnlineService.selectOnlineByUserName(userName, selectedUser));
       } else {
         userOnlineList.add(userOnlineService.loginUserToUserOnline(selectedUser));

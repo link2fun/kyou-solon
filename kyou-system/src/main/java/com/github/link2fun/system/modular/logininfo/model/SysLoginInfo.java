@@ -9,7 +9,7 @@ import com.github.link2fun.support.annotation.Excel;
 import com.github.link2fun.support.core.domain.QueryEntity;
 
 
-import com.github.link2fun.system.modular.logininfo.model.proxy.SysLogininforProxy;
+import com.github.link2fun.system.modular.logininfo.model.proxy.SysLoginInfoProxy;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -25,13 +25,13 @@ import java.time.LocalDateTime;
 @Data
 @EntityProxy
 @Table("sys_logininfor")
-public class SysLogininfor extends QueryEntity implements ProxyEntityAvailable<SysLogininfor, SysLogininforProxy> {
+public class SysLoginInfo extends QueryEntity implements ProxyEntityAvailable<SysLoginInfo, SysLoginInfoProxy> {
   @Serial
   private static final long serialVersionUID = 1L;
 
   /** ID */
   @Excel(name = "序号", cellType = Excel.ColumnType.NUMERIC)
-  @Column(value = "info_id",primaryKey = true,generatedKey = true)
+  @Column(value = "info_id", primaryKey = true, generatedKey = true)
   private Long infoId;
 
   /** 用户账号 */

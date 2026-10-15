@@ -3,7 +3,7 @@ package com.github.link2fun;
 import com.alibaba.ttl.TransmittableThreadLocal;
 import com.github.link2fun.context.buildinfo.BuildInfoContext;
 import com.github.link2fun.framework.aop.LogInterceptor;
-import com.github.link2fun.framework.manager.AsyncManager;
+import com.github.link2fun.framework.auth.AuditSink;
 import com.github.link2fun.support.config.KyouProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.Solon;
@@ -16,6 +16,8 @@ import org.noear.solon.serialization.jackson.JacksonStringSerializer;
 import org.noear.solon.web.staticfiles.StaticMappings;
 import org.noear.solon.web.staticfiles.repository.FileStaticRepository;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 @Slf4j
 @EnableScheduling
 @SolonMain
@@ -25,8 +27,13 @@ public class KyouApp {
     long start = System.currentTimeMillis();
 
     Solon.start(KyouApp.class, args, app -> {
-      // 添加拦截器
-      app.context().beanInterceptorAdd(Mapping.class, new LogInterceptor());
+      final LogInterceptor logInterceptor = new LogInterceptor();
+      app.context().beanInterceptorAdd(Mapping.class, logInterceptor);
+      final AtomicReference<AuditSink> auditSinkRef = new AtomicReference<>();
+      app.context().getBeanAsync(AuditSink.class, sink -> {
+        auditSinkRef.set(sink);
+        logInterceptor.setAuditSink(sink);
+      });
 
       app.context().lifecycle(0, new Lifecycle() {
         @Override
@@ -35,8 +42,10 @@ public class KyouApp {
 
         @Override
         public void preStop() {
-          // 关闭异步任务， 等待任务执行完成
-          AsyncManager.me().shutdown();
+          final AuditSink auditSink = auditSinkRef.get();
+          if (auditSink != null) {
+            auditSink.shutdown();
+          }
         }
       });
 
@@ -56,7 +65,7 @@ public class KyouApp {
 
       // 1.添加本地绝对目录（例：/img/logo.jpg 映射地址为：/data/sss/app/img/logo.jpg）
       app.context().getBeanAsync(KyouProperties.class,
-          cfg -> StaticMappings.add("/profile/", new FileStaticRepository(cfg.getProfile())));
+        cfg -> StaticMappings.add("/profile/", new FileStaticRepository(cfg.getProfile())));
 
       // 添加一个ThreadLocal工厂，使用TransmittableThreadLocal, 来支持跨线程传递
       // noinspection rawtypes

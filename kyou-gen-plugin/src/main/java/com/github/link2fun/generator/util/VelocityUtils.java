@@ -1,6 +1,9 @@
 package com.github.link2fun.generator.util;
 
 
+import cn.hutool.core.text.NamingCase;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.github.link2fun.generator.domain.GenTable;
@@ -99,7 +102,7 @@ public class VelocityUtils {
     String subTableName = genTable.getSubTableName();
     String subTableFkName = genTable.getSubTableFkName();
     String subClassName = genTable.getSubTable().getClassName();
-    String subTableFkClassName = com.github.link2fun.support.utils.StringUtils.convertToCamelCase(subTableFkName);
+    String subTableFkClassName = NamingCase.toPascalCase(subTableFkName);
 
     context.put("subTable", subTable);
     context.put("subTableName", subTableName);
@@ -171,28 +174,28 @@ public class VelocityUtils {
     String vuePath = "vue";
 
     if (template.contains("domain.java.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/domain/{}.java", javaPath, className);
+      fileName = StrUtil.format("{}/domain/{}.java", javaPath, className);
     }
     if (template.contains("sub-domain.java.vm") && StringUtils.equals(GenConstants.TPL_SUB, genTable.getTplCategory())) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/domain/{}.java", javaPath, genTable.getSubTable().getClassName());
+      fileName = StrUtil.format("{}/domain/{}.java", javaPath, genTable.getSubTable().getClassName());
     } else if (template.contains("mapper.java.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/mapper/{}Mapper.java", javaPath, className);
+      fileName = StrUtil.format("{}/mapper/{}Mapper.java", javaPath, className);
     } else if (template.contains("service.java.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/service/I{}Service.java", javaPath, className);
+      fileName = StrUtil.format("{}/service/I{}Service.java", javaPath, className);
     } else if (template.contains("serviceImpl.java.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/service/impl/{}ServiceImpl.java", javaPath, className);
+      fileName = StrUtil.format("{}/service/impl/{}ServiceImpl.java", javaPath, className);
     } else if (template.contains("controller.java.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/controller/{}Controller.java", javaPath, className);
+      fileName = StrUtil.format("{}/controller/{}Controller.java", javaPath, className);
     } else if (template.contains("mapper.xml.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/{}Mapper.xml", mybatisPath, className);
+      fileName = StrUtil.format("{}/{}Mapper.xml", mybatisPath, className);
     } else if (template.contains("sql.vm")) {
       fileName = businessName + "Menu.sql";
     } else if (template.contains("api.js.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/api/{}/{}.js", vuePath, moduleName, businessName);
+      fileName = StrUtil.format("{}/api/{}/{}.js", vuePath, moduleName, businessName);
     } else if (template.contains("index.vue.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
+      fileName = StrUtil.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
     } else if (template.contains("index-tree.vue.vm")) {
-      fileName = com.github.link2fun.support.utils.StringUtils.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
+      fileName = StrUtil.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
     }
     return fileName;
   }
@@ -218,7 +221,7 @@ public class VelocityUtils {
     List<GenTableColumn> columns = genTable.getColumns();
     GenTable subGenTable = genTable.getSubTable();
     HashSet<String> importList = new HashSet<String>();
-    if (com.github.link2fun.support.utils.StringUtils.isNotNull(subGenTable)) {
+    if (ObjectUtil.isNotNull(subGenTable)) {
       importList.add("java.util.List");
     }
     for (GenTableColumn column : columns) {
@@ -242,7 +245,7 @@ public class VelocityUtils {
     List<GenTableColumn> columns = genTable.getColumns();
     Set<String> dicts = new HashSet<String>();
     addDicts(dicts, columns);
-    if (com.github.link2fun.support.utils.StringUtils.isNotNull(genTable.getSubTable())) {
+    if (ObjectUtil.isNotNull(genTable.getSubTable())) {
       List<GenTableColumn> subColumns = genTable.getSubTable().getColumns();
       addDicts(dicts, subColumns);
     }
@@ -273,7 +276,7 @@ public class VelocityUtils {
    * @return 返回权限前缀
    */
   public static String getPermissionPrefix(String moduleName, String businessName) {
-    return com.github.link2fun.support.utils.StringUtils.format("{}:{}", moduleName, businessName);
+    return StrUtil.format("{}:{}", moduleName, businessName);
   }
 
   /**
@@ -298,7 +301,7 @@ public class VelocityUtils {
    */
   public static String getTreecode(JSONObject paramsObj) {
     if (paramsObj.containsKey(GenConstants.TREE_CODE)) {
-      return com.github.link2fun.support.utils.StringUtils.toCamelCase(paramsObj.getStr(GenConstants.TREE_CODE));
+      return StrUtil.toCamelCase(paramsObj.getStr(GenConstants.TREE_CODE));
     }
     return StringUtils.EMPTY;
   }
@@ -311,7 +314,7 @@ public class VelocityUtils {
    */
   public static String getTreeParentCode(JSONObject paramsObj) {
     if (paramsObj.containsKey(GenConstants.TREE_PARENT_CODE)) {
-      return com.github.link2fun.support.utils.StringUtils.toCamelCase(paramsObj.getStr(GenConstants.TREE_PARENT_CODE));
+      return StrUtil.toCamelCase(paramsObj.getStr(GenConstants.TREE_PARENT_CODE));
     }
     return StringUtils.EMPTY;
   }
@@ -324,7 +327,7 @@ public class VelocityUtils {
    */
   public static String getTreeName(JSONObject paramsObj) {
     if (paramsObj.containsKey(GenConstants.TREE_NAME)) {
-      return com.github.link2fun.support.utils.StringUtils.toCamelCase(paramsObj.getStr(GenConstants.TREE_NAME));
+      return StrUtil.toCamelCase(paramsObj.getStr(GenConstants.TREE_NAME));
     }
     return StringUtils.EMPTY;
   }

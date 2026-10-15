@@ -10,6 +10,7 @@ import com.github.link2fun.support.core.itf.Model;
 import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.core.handle.Context;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
  *
  * @param <T>
  */
+@Slf4j
 @SuppressWarnings("unused")
 public class Page<T> implements EasyPageResult<T>, Model {
 
@@ -146,10 +148,17 @@ public class Page<T> implements EasyPageResult<T>, Model {
     return of(1, limitSize, false);
   }
 
+  /** 「取全部」单次返回的条数上限, 顶到上限时 {@link #of(Page, EasyPageResult)} 记告警 */
+  public static final long ALL_SIZE = 100_000;
+
+  /**
+   * 静态构造方法: 取全部数据, 总数未知(total=-1)
+   *
+   * @param <T> 泛型
+   * @return 页定义
+   */
   public static <T> Page<T> ofAll() {
-    Page<T> all = new Page<>();
-    all.setSearchCount(false);
-    return all;
+    return new Page<>(1, ALL_SIZE, -1, false);
   }
 
 
@@ -199,8 +208,13 @@ public class Page<T> implements EasyPageResult<T>, Model {
     Page<R> page = new Page<>();
     page.setCurrent(pageRequest.getPageNum());
     page.setSize(pageRequest.getPageSize());
-    page.setRecords(pageResult.getData());
+    final List<R> records = pageResult.getData();
+    page.setRecords(records);
     page.setTotal(pageResult.getTotal());
+    // 页大小等于 ALL_SIZE 即「取全部」路径, 返回条数顶满上限说明可能还有数据没返回; 上限更大的 ofLimit 不做截断, 不在此列
+    if (page.getSize() == ALL_SIZE && CollectionUtil.size(records) >= ALL_SIZE) {
+      log.warn("取全部查询返回条数达到上限 {} 条, 若实际数据更多则超出部分不会返回, 请缩小查询范围或分批导出", ALL_SIZE);
+    }
     return page;
   }
 

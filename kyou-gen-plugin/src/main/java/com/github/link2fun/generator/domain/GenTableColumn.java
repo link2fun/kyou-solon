@@ -1,6 +1,8 @@
 package com.github.link2fun.generator.domain;
 
 
+import cn.hutool.core.text.NamingCase;
+import cn.hutool.core.util.StrUtil;
 import com.easy.query.core.annotation.Column;
 import com.easy.query.core.annotation.EasyAlias;
 import com.easy.query.core.annotation.EntityProxy;
@@ -10,7 +12,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.link2fun.generator.domain.proxy.GenTableColumnProxy;
 import com.github.link2fun.generator.util.GenUtils;
 import com.github.link2fun.support.core.domain.BaseEntity;
-import com.github.link2fun.support.utils.StringUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -113,7 +114,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
   private Integer sort;
 
   public String getCapJavaField() {
-    return StringUtils.capitalize(javaField);
+    return NamingCase.toPascalCase(javaField);
   }
 
   @JsonIgnore
@@ -123,7 +124,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
 
   @JsonIgnore
   public boolean isPk(String isPk) {
-    return isPk != null && StringUtils.equals("1", isPk);
+    return isPk != null && StrUtil.equals("1", isPk);
   }
 
   @JsonIgnore
@@ -133,7 +134,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
 
   @JsonIgnore
   public boolean isIncrement(String isIncrement) {
-    return isIncrement != null && StringUtils.equals("1", isIncrement);
+    return isIncrement != null && StrUtil.equals("1", isIncrement);
   }
 
   @JsonIgnore
@@ -143,7 +144,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
 
   @JsonIgnore
   public boolean isRequired(String isRequired) {
-    return isRequired != null && StringUtils.equals("1", isRequired);
+    return isRequired != null && StrUtil.equals("1", isRequired);
   }
 
   @JsonIgnore
@@ -153,7 +154,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
 
   @JsonIgnore
   public boolean isInsert(String isInsert) {
-    return isInsert != null && StringUtils.equals("1", isInsert);
+    return isInsert != null && StrUtil.equals("1", isInsert);
   }
 
   @JsonIgnore
@@ -163,7 +164,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
 
   @JsonIgnore
   public boolean isEdit(String isEdit) {
-    return isEdit != null && StringUtils.equals("1", isEdit);
+    return isEdit != null && StrUtil.equals("1", isEdit);
   }
 
   @JsonIgnore
@@ -173,7 +174,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
 
   @JsonIgnore
   public boolean isList(String isList) {
-    return isList != null && StringUtils.equals("1", isList);
+    return isList != null && StrUtil.equals("1", isList);
   }
 
   @JsonIgnore
@@ -183,7 +184,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
 
   @JsonIgnore
   public boolean isQuery(String isQuery) {
-    return isQuery != null && StringUtils.equals("1", isQuery);
+    return isQuery != null && StrUtil.equals("1", isQuery);
   }
 
   @JsonIgnore
@@ -193,7 +194,7 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
 
   @JsonIgnore
   public static boolean isSuperColumn(String javaField) {
-    return StringUtils.equalsAnyIgnoreCase(javaField,
+    return StrUtil.equalsAnyIgnoreCase(javaField,
       // BaseEntity
       "createBy", "createTime", "updateBy", "updateTime", "remark",
       // TreeEntity
@@ -208,15 +209,15 @@ public class GenTableColumn extends BaseEntity implements ProxyEntityAvailable<G
   @JsonIgnore
   public static boolean isUsableColumn(String javaField) {
     // isSuperColumn()中的名单用于避免生成多余Domain属性，若某些属性在生成页面时需要用到不能忽略，则放在此处白名单
-    return StringUtils.equalsAnyIgnoreCase(javaField, "parentId", "orderNum", "remark");
+    return StrUtil.equalsAnyIgnoreCase(javaField, "parentId", "orderNum", "remark");
   }
 
   public String readConverterExp() {
-    String remarks = StringUtils.subBetween(this.columnComment, "（", "）");
+    String remarks = StrUtil.subBetween(this.columnComment, "（", "）");
     StringBuffer sb = new StringBuffer();
-    if (StringUtils.isNotEmpty(remarks)) {
+    if (StrUtil.isNotBlank(remarks)) {
       for (String value : remarks.split(" ")) {
-        if (StringUtils.isNotEmpty(value)) {
+        if (StrUtil.isNotBlank(value)) {
           Object startStr = value.subSequence(0, 1);
           String endStr = value.substring(1);
           sb.append("").append(startStr).append("=").append(endStr).append(",");

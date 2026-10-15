@@ -1,6 +1,8 @@
 package com.github.link2fun.system.modular.role.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
@@ -10,6 +12,7 @@ import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
+import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
@@ -20,7 +23,6 @@ import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.role.model.req.SysRoleAddReq;
 import com.github.link2fun.system.modular.role.model.req.SysRoleChangeDataScopeReq;
@@ -233,7 +235,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       SysRole role = new SysRole();
       role.setRoleId(roleId);
       List<SysRole> roles = selectRoleList(ActionContext.current(), Page.ofLimit(1), role, SysRole.class).getRecords();
-      if (StringUtils.isEmpty(roles)) {
+      if (CollectionUtil.isEmpty(roles)) {
         throw new ServiceException("没有权限访问角色数据！");
       }
     }
@@ -287,6 +289,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
     SysRole role = entityQuery.queryable(SysRole.class)
       .whereById(roleId)
       .singleNotNull();
+    final String oldRoleKey = role.getRoleKey();
 
     BeanUtil.copyProperties(modifyReq, role);
 
@@ -294,7 +297,23 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
     roleMenuService.reassignMenus(roleId, modifyReq.getMenuIds());
 
+    invalidateRoleSessions(oldRoleKey, role);
     return row;
+  }
+
+  /**
+   * 失效该角色的共享权限缓存与全部持有者的用户级缓存
+   *
+   * @param oldRoleKey 变更前的 roleKey
+   */
+  private void invalidateRoleSessions(final String oldRoleKey, final SysRole role) {
+    SaSessionBizTool.invalidateRole(role.getRoleKey());
+    if (ObjectUtil.isNotNull(oldRoleKey) && !oldRoleKey.equals(role.getRoleKey())) {
+      SaSessionBizTool.invalidateRole(oldRoleKey);
+    }
+    for (final Long userId : userRoleService.findUserIdsByRoleId(role.getRoleId())) {
+      SaSessionBizTool.invalidateUser(userId);
+    }
   }
 
   /**
@@ -308,10 +327,17 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   public long changeRoleStatus(final SysRoleChangeStatusReq changeStatusReq) {
     checkRoleAllowed(changeStatusReq.getRoleId());
     checkRoleDataScope(changeStatusReq.getRoleId());
-    return entityQuery.updatable(SysRole.class)
+    final SysRole role = entityQuery.queryable(SysRole.class)
       .whereById(changeStatusReq.getRoleId())
-      .setColumns(role -> role.status().set(changeStatusReq.getStatus()))
+      .singleNotNull();
+    final long rows = entityQuery.updatable(SysRole.class)
+      .whereById(changeStatusReq.getRoleId())
+      .setColumns(r -> r.status().set(changeStatusReq.getStatus()))
       .executeRows();
+    if (rows > 0) {
+      invalidateRoleSessions(role.getRoleKey(), role);
+    }
+    return rows;
   }
 
   /**
@@ -325,6 +351,9 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   public long authDataScope(final SysRoleChangeDataScopeReq changeDataScopeReq) {
     checkRoleAllowed(changeDataScopeReq.getRoleId());
     checkRoleDataScope(changeDataScopeReq.getRoleId());
+    final SysRole roleEntity = entityQuery.queryable(SysRole.class)
+      .whereById(changeDataScopeReq.getRoleId())
+      .singleNotNull();
 
     long executeRows = entityQuery.updatable(SysRole.class)
       .whereById(changeDataScopeReq.getRoleId())
@@ -336,6 +365,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
     roleDeptService.reassignDepts(changeDataScopeReq.getRoleId(), changeDataScopeReq.getDeptIds());
 
+    invalidateRoleSessions(roleEntity.getRoleKey(), roleEntity);
     return executeRows;
   }
 
@@ -349,7 +379,12 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   @Transaction
   @Override
   public long deleteRoleByIds(final List<Long> roleIds) {
-    return aggregateDeleter.delete(AggregateDeletePlan.of(roleIds)
+    final List<String> roleKeys = entityQuery.queryable(SysRole.class)
+      .whereByIds(roleIds)
+      .selectColumn(SysRoleProxy::roleKey)
+      .toList();
+
+    final long rows = aggregateDeleter.delete(AggregateDeletePlan.of(roleIds)
       .guardPerId(id -> {
         checkRoleAllowed(id);
         checkRoleDataScope(id);
@@ -363,6 +398,9 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
         .allowDeleteStatement(true)
         .whereByIds(ids)
         .executeRows()));
+
+    roleKeys.forEach(SaSessionBizTool::invalidateRole);
+    return rows;
   }
 
   /** 角色已分配用户时阻止删除 */
@@ -380,13 +418,20 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   @Override
   public void unassignUser(final Long roleId, final Long userId) {
     userRoleService.unassignUser(roleId, userId);
+    if (Objects.nonNull(userId)) {
+      SaSessionBizTool.invalidateUser(userId);
+    }
   }
 
   /** 批量取消授权用户角色 */
   @Transaction
   @Override
   public void unassignUsers(final Long roleId, final List<Long> userIds) {
+    if (CollectionUtil.isEmpty(userIds)) {
+      return;
+    }
     userRoleService.unassignUsers(roleId, userIds);
+    invalidateUsers(userIds);
   }
 
   /** 批量为角色授权用户 */
@@ -395,6 +440,16 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   public void assignUsers(final Long roleId, final List<Long> userIds) {
     checkRoleDataScope(roleId);
     userRoleService.assignUsers(roleId, userIds);
+    if (CollectionUtil.isNotEmpty(userIds)) {
+      invalidateUsers(userIds);
+    }
+  }
+
+  /** 失效这些用户的用户级会话缓存 */
+  private void invalidateUsers(final List<Long> userIds) {
+    userIds.stream()
+      .filter(Objects::nonNull)
+      .forEach(SaSessionBizTool::invalidateUser);
   }
 
   /**

@@ -1,8 +1,8 @@
 package com.github.link2fun.schedule.util;
 
 
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.constant.Constants;
-import com.github.link2fun.support.utils.StringUtils;
 import org.noear.solon.Solon;
 
 /**
@@ -21,14 +21,14 @@ public class ScheduleUtils {
    */
   @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public static boolean whiteList(String invokeTarget) {
-    String packageName = StringUtils.subBefore(invokeTarget, "(", false);
-    int count = StringUtils.count(packageName, ".");
+    String packageName = StrUtil.subBefore(invokeTarget, "(", false);
+    int count = StrUtil.count(packageName, ".");
     if (count > 1) {
-      return StringUtils.containsAnyIgnoreCase(invokeTarget, Constants.JOB_WHITELIST_STR);
+      return StrUtil.containsAnyIgnoreCase(invokeTarget, Constants.JOB_WHITELIST_STR);
     }
-    Object obj = Solon.context().getBean(StringUtils.split(invokeTarget, ".").get(0));
+    Object obj = Solon.context().getBean(StrUtil.split(invokeTarget, ".").get(0));
     String beanPackageName = obj.getClass().getPackage().getName();
-    return StringUtils.containsAnyIgnoreCase(beanPackageName, Constants.JOB_WHITELIST_STR)
-      && !StringUtils.containsAnyIgnoreCase(beanPackageName, Constants.JOB_ERROR_STR);
+    return StrUtil.containsAnyIgnoreCase(beanPackageName, Constants.JOB_WHITELIST_STR)
+      && !StrUtil.containsAnyIgnoreCase(beanPackageName, Constants.JOB_ERROR_STR);
   }
 }

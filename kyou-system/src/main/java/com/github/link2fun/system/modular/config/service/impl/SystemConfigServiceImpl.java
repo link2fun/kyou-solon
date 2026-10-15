@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.config.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
@@ -9,7 +10,6 @@ import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.config.ConfigContext;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.UniqueChecker;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.system.modular.config.model.SysConfig;
 import com.github.link2fun.system.modular.config.model.proxy.SysConfigProxy;
 import com.github.link2fun.system.modular.config.service.ISystemConfigService;
@@ -147,7 +147,7 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
     final long row = entityQuery.updatable(config).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
     if (row > 0) {
       // 库成功后再动缓存: 改键名时先失效旧键
-      if (StringUtils.isNotNull(temp)) {
+      if (ObjectUtil.isNotNull(temp)) {
         ConfigContext.remove(temp.getConfigKey());
       }
       ConfigContext.put(config.getConfigKey(), config.getConfigValue());

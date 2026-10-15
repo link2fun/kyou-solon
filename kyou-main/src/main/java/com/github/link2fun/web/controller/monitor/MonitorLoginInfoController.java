@@ -2,7 +2,7 @@ package com.github.link2fun.web.controller.monitor;
 
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.github.link2fun.framework.web.service.SysPasswordService;
+import com.github.link2fun.framework.auth.LoginGuard;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
@@ -10,8 +10,8 @@ import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
-import com.github.link2fun.system.modular.logininfo.model.SysLogininfor;
-import com.github.link2fun.system.modular.logininfo.service.ISystemLogininforService;
+import com.github.link2fun.system.modular.logininfo.model.SysLoginInfo;
+import com.github.link2fun.system.modular.logininfo.service.ISystemLoginInfoService;
 
 import org.noear.solon.annotation.Controller;
 import org.noear.solon.annotation.Inject;
@@ -29,50 +29,55 @@ import java.util.List;
  */
 @Controller
 @Mapping("/monitor/logininfor")
-public class MonitorLogininforController extends BaseController {
+public class MonitorLoginInfoController extends BaseController {
   @Inject
-  private ISystemLogininforService logininforService;
+  private ISystemLoginInfoService loginInfoService;
 
   @Inject
-  private SysPasswordService passwordService;
+  private LoginGuard loginGuard;
 
+  /** 查询登录日志列表 */
   @SaCheckPermission(value = "monitor:logininfor:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public TableDataInfo list(SysLogininfor searchReq) {
+  public TableDataInfo list(SysLoginInfo searchReq) {
 
-    Page<SysLogininfor> list = logininforService.selectLogininforList(Page.ofCurrentContext(), searchReq);
+    Page<SysLoginInfo> list = loginInfoService.selectLoginInfoList(Page.ofCurrentContext(), searchReq);
     return getDataTable(list);
   }
 
+  /** 导出登录日志 */
   @Log(title = "登录日志", businessType = BusinessType.EXPORT)
   @SaCheckPermission(value = "monitor:logininfor:export")
   @Mapping(value = "/export", method = MethodType.POST)
-  public void export(Context context, SysLogininfor logininfor) {
-    Page<SysLogininfor> list = logininforService.selectLogininforList(Page.ofAll(), logininfor);
-    ExcelUtil<SysLogininfor> util = new ExcelUtil<>(SysLogininfor.class);
+  public void export(Context context, SysLoginInfo loginInfo) {
+    Page<SysLoginInfo> list = loginInfoService.selectLoginInfoList(Page.ofAll(), loginInfo);
+    ExcelUtil<SysLoginInfo> util = new ExcelUtil<>(SysLoginInfo.class);
     util.exportExcel(context, list.getRecords(), "登录日志");
   }
 
+  /** 批量删除登录日志 */
   @SaCheckPermission(value = "monitor:logininfor:remove")
   @Log(title = "登录日志", businessType = BusinessType.DELETE)
   @Mapping(value = "/{infoIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> infoIds) {
-    return toAjax(logininforService.deleteLogininforByIds(infoIds));
+    return toAjax(loginInfoService.deleteLoginInfoByIds(infoIds));
   }
 
+  /** 清空登录日志 */
   @SaCheckPermission(value = "monitor:logininfor:remove")
   @Log(title = "登录日志", businessType = BusinessType.CLEAN)
   @Mapping(value = "/clean", method = MethodType.DELETE)
   public AjaxResult clean() {
-    logininforService.cleanLogininfor();
+    loginInfoService.cleanLoginInfo();
     return success();
   }
 
+  /** 解锁账户: 清除该账号的密码重试计数 */
   @SaCheckPermission(value = "monitor:logininfor:unlock")
   @Log(title = "账户解锁", businessType = BusinessType.OTHER)
   @Mapping(value = "/unlock/{userName}", method = MethodType.GET)
   public AjaxResult unlock(@Path("userName") String userName) {
-    passwordService.removePwdErrCnt(userName);
+    loginGuard.unlock(userName);
     return success();
   }
 }

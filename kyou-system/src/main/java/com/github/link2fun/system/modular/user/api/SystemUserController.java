@@ -2,6 +2,7 @@ package com.github.link2fun.system.modular.user.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.ObjectUtil;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.controller.BaseController;
@@ -15,7 +16,6 @@ import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.PasswordUtils;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
@@ -107,7 +107,7 @@ public class SystemUserController extends BaseController {
     ajax.put("roles",
       SysUser.isSuperAdmin(userId) ? roles : roles.stream().filter(r -> !r.isSuperAdminRole()).collect(Collectors.toList()));
     ajax.put("posts", postService.selectPostAll());
-    if (StringUtils.isNotNull(userId)) {
+    if (ObjectUtil.isNotNull(userId)) {
       SysUserDTO sysUser = userService.selectUserById(userId);
       ajax.put(AjaxResult.DATA_TAG, sysUser);
       ajax.put("postIds", postService.selectPostListByUserId(userId)

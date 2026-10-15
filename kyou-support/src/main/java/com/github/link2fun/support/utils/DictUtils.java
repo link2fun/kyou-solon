@@ -1,6 +1,8 @@
 package com.github.link2fun.support.utils;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.constant.CacheConstants;
 import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.context.cache.service.RedisCache;
@@ -39,7 +41,7 @@ public class DictUtils {
    */
   public static List<SysDictData> getDictCache(String key) {
     List<SysDictData> arrayCache = Solon.context().getBean(RedisCache.class).get(getCacheKey(key));
-    if (StringUtils.isNotNull(arrayCache)) {
+    if (ObjectUtil.isNotNull(arrayCache)) {
       return arrayCache;
     }
     return null;
@@ -79,8 +81,8 @@ public class DictUtils {
     StringBuilder propertyString = new StringBuilder();
     List<SysDictData> datas = getDictCache(dictType);
 
-    if (StringUtils.isNotNull(datas)) {
-      if (StringUtils.containsAny(separator, dictValue)) {
+    if (ObjectUtil.isNotNull(datas)) {
+      if (StrUtil.containsAny(separator, dictValue)) {
         for (SysDictData dict : datas) {
           for (String value : dictValue.split(separator)) {
             if (value.equals(dict.getDictValue())) {
@@ -97,7 +99,7 @@ public class DictUtils {
         }
       }
     }
-    return StringUtils.stripEnd(propertyString.toString(), separator);
+    return StrUtil.removeSuffix(propertyString.toString(), separator);
   }
 
   /**
@@ -112,10 +114,10 @@ public class DictUtils {
     StringBuilder propertyString = new StringBuilder();
     List<SysDictData> datas = getDictCache(dictType);
     if (CollectionUtil.isEmpty(datas)) {
-      return StringUtils.EMPTY;
+      return StrUtil.EMPTY;
     }
 
-    if (StringUtils.containsAny(separator, dictLabel) && StringUtils.isNotEmpty(datas)) {
+    if (StrUtil.containsAny(separator, dictLabel) && CollectionUtil.isNotEmpty(datas)) {
       for (SysDictData dict : datas) {
         for (String label : dictLabel.split(separator)) {
           if (label.equals(dict.getDictLabel())) {
@@ -131,7 +133,7 @@ public class DictUtils {
         }
       }
     }
-    return StringUtils.stripEnd(propertyString.toString(), separator);
+    return StrUtil.removeSuffix(propertyString.toString(), separator);
   }
 
   /**

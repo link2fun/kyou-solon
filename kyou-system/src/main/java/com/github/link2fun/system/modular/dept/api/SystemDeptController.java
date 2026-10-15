@@ -3,13 +3,13 @@ package com.github.link2fun.system.modular.dept.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 
 import org.noear.solon.annotation.*;
@@ -51,7 +51,7 @@ public class SystemDeptController extends BaseController {
   public AjaxResult excludeChild(@Path(value = "deptId") Long deptId) {
 
     List<SysDept> deptList = deptService.selectDeptList(ActionContext.current(), new SysDept());
-    deptList.removeIf(d -> d.getDeptId().intValue() == deptId || CollectionUtil.contains(StringUtils.split(d.getAncestors(), ","), deptId + ""));
+    deptList.removeIf(d -> d.getDeptId().intValue() == deptId || CollectionUtil.contains(StrUtil.split(d.getAncestors(), ","), deptId + ""));
     return successData(deptList);
   }
 

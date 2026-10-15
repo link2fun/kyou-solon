@@ -1,7 +1,8 @@
 package com.github.link2fun.system.modular.useronline.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.core.domain.model.SessionUser;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.system.domain.SysUserOnline;
 import com.github.link2fun.system.modular.useronline.service.ISystemUserOnlineService;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ public class SystemUserOnlineServiceImpl implements ISystemUserOnlineService {
    */
   @Override
   public SysUserOnline selectOnlineByIpaddr(String ipaddr, SessionUser user) {
-    if (StringUtils.equals(ipaddr, user.getIpaddr())) {
+    if (StrUtil.equals(ipaddr, user.getIpaddr())) {
       return loginUserToUserOnline(user);
     }
     return null;
@@ -35,7 +36,7 @@ public class SystemUserOnlineServiceImpl implements ISystemUserOnlineService {
    */
   @Override
   public SysUserOnline selectOnlineByUserName(String userName, SessionUser user) {
-    if (StringUtils.equals(userName, user.getUsername())) {
+    if (StrUtil.equals(userName, user.getUsername())) {
       return loginUserToUserOnline(user);
     }
     return null;
@@ -51,7 +52,7 @@ public class SystemUserOnlineServiceImpl implements ISystemUserOnlineService {
    */
   @Override
   public SysUserOnline selectOnlineByInfo(String ipaddr, String userName, SessionUser user) {
-    if (StringUtils.equals(ipaddr, user.getIpaddr()) && StringUtils.equals(userName, user.getUsername())) {
+    if (StrUtil.equals(ipaddr, user.getIpaddr()) && StrUtil.equals(userName, user.getUsername())) {
       return loginUserToUserOnline(user);
     }
     return null;
@@ -65,7 +66,7 @@ public class SystemUserOnlineServiceImpl implements ISystemUserOnlineService {
    */
   @Override
   public SysUserOnline loginUserToUserOnline(SessionUser user) {
-    if (StringUtils.isNull(user) || StringUtils.isNull(user.getUser())) {
+    if (ObjectUtil.isNull(user) || ObjectUtil.isNull(user.getUser())) {
       return null;
     }
     SysUserOnline sysUserOnline = new SysUserOnline();
@@ -76,7 +77,7 @@ public class SystemUserOnlineServiceImpl implements ISystemUserOnlineService {
     sysUserOnline.setBrowser(user.getBrowser());
     sysUserOnline.setOs(user.getOs());
     sysUserOnline.setLoginTime(user.getLoginTime());
-    if (StringUtils.isNotNull(user.getUser().getDept())) {
+    if (ObjectUtil.isNotNull(user.getUser().getDept())) {
       sysUserOnline.setDeptName(user.getUser().getDept().getDeptName());
     }
     return sysUserOnline;

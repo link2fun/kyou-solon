@@ -1,11 +1,10 @@
 package com.github.link2fun.web.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import com.github.link2fun.framework.web.service.SysLoginService;
+import com.github.link2fun.framework.auth.LoginGuard;
 import com.github.link2fun.framework.web.service.SysPermissionService;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
@@ -31,7 +30,7 @@ import java.util.Set;
 @Controller
 public class SysLoginController {
   @Inject
-  private SysLoginService loginService;
+  private LoginGuard loginGuard;
 
   @Inject
   private ISystemMenuService menuService;
@@ -49,15 +48,15 @@ public class SysLoginController {
   public AjaxResult login(@Validated @Body LoginBody loginBody) {
     AjaxResult ajax = AjaxResult.success();
     // 生成令牌
-    String token = loginService.login(loginBody.getUsername(), loginBody.getPassword(), loginBody.getCode(),
-      loginBody.getUuid());
+    String token = loginGuard.login(loginBody);
     ajax.put(Constants.TOKEN, token);
     return ajax;
   }
 
+  /** 注销方法 */
   @Mapping(value = "/logout", method = MethodType.POST)
   public AjaxResult logout() {
-    SaSessionBizTool.logout();
+    loginGuard.logout();
     return AjaxResult.success();
   }
 

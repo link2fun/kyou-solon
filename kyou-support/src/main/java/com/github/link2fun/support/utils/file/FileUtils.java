@@ -3,9 +3,9 @@ package com.github.link2fun.support.utils.file;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.stream.StreamUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.config.KyouProperties;
 import com.github.link2fun.support.utils.DateUtils;
-import com.github.link2fun.support.utils.StringUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -122,7 +122,7 @@ public class FileUtils {
   @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public static boolean checkAllowDownload(String resource) {
     // 禁止目录上跳级别
-    if (StringUtils.contains(resource, "..")) {
+    if (StrUtil.contains(resource, "..")) {
       return false;
     }
 

@@ -1,5 +1,6 @@
 package com.github.link2fun.schedule.modular.job.model;
 
+import cn.hutool.core.util.StrUtil;
 import com.easy.query.core.annotation.Column;
 import com.easy.query.core.annotation.EntityProxy;
 import com.easy.query.core.annotation.Table;
@@ -9,7 +10,6 @@ import com.github.link2fun.schedule.modular.job.model.proxy.SysJobProxy;
 import com.github.link2fun.support.annotation.Excel;
 import com.github.link2fun.support.constant.ScheduleConstants;
 import com.github.link2fun.support.core.domain.BaseEntity;
-import com.github.link2fun.support.utils.StringUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.noear.java_cron.CronUtils;
@@ -86,7 +86,7 @@ public class SysJob extends BaseEntity implements ProxyEntityAvailable<SysJob, S
 
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   public Date getNextValidTime() {
-    if (StringUtils.isNotEmpty(cronExpression)) {
+    if (StrUtil.isNotBlank(cronExpression)) {
       try {
         CronUtils.getNextTime(cronExpression, new Date());
       } catch (ParseException e) {

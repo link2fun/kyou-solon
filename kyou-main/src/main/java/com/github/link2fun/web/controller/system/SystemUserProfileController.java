@@ -3,7 +3,6 @@ package com.github.link2fun.web.controller.system;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.config.KyouProperties;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
@@ -57,21 +56,7 @@ public class SystemUserProfileController extends BaseController {
   @Mapping(method = MethodType.PUT)
   public AjaxResult updateProfile(@Body SysUser updateUserRequest) {
     final Long userId = getUserId();
-
-    final SysUser user = userService.getByIdNotNull(userId);
-
-
-    user.setNickName(updateUserRequest.getNickName());
-    user.setEmail(updateUserRequest.getEmail());
-    user.setPhonenumber(updateUserRequest.getPhonenumber());
-    user.setSex(updateUserRequest.getSex());
-
-    if (userService.updateUserProfile(user) > 0) {
-      // 个人资料变更后刷新当前会话
-      SaSessionBizTool.refreshCurrentSession();
-      return success();
-    }
-    return error("修改个人信息异常，请联系管理员");
+    return toAjax(userService.updateMyProfile(userId, updateUserRequest));
   }
 
   /**
@@ -109,11 +94,9 @@ public class SystemUserProfileController extends BaseController {
     if (!file.isEmpty()) {
       SessionUser currentUser = getCurrentUser();
       String avatar = FileUploadUtils.upload(ruoYiProperties.getAvatarPath(), file, MimeTypeUtils.IMAGE_EXTENSION);
-      if (userService.updateUserAvatar(currentUser.getUsername(), avatar)) {
+      if (userService.updateMyAvatar(currentUser.getUserId(), currentUser.getUsername(), avatar)) {
         AjaxResult ajax = AjaxResult.success();
         ajax.put("imgUrl", avatar);
-        // 头像落库后刷新当前会话
-        SaSessionBizTool.refreshCurrentSession();
         return ajax;
       }
     }
