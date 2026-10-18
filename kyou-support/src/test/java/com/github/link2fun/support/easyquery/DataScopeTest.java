@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 数据范围纯数据的语义测试: 工厂 / contains 点查 / 「不放行 = 过滤到空」。
  *
  * <p>角色到范围的判定矩阵与谓词翻译需要查询器与真实数据, 由 kyou-main 的
- * DataScopeSqlTest(判定 + SQL 形状)与 DataScopeSmokeTest(查询结果)覆盖。
+ * DataScopeSqlIT(判定 + SQL 形状)与 DataScopeSmokeIT(查询结果)覆盖。
  */
 public class DataScopeTest {
 

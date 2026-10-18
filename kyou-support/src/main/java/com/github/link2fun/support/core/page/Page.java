@@ -7,6 +7,7 @@ import cn.hutool.core.util.PageUtil;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.link2fun.support.core.itf.Model;
+import com.github.link2fun.support.exception.ServiceException;
 import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
@@ -79,36 +80,55 @@ public class Page<T> implements EasyPageResult<T>, Model {
   }
 
   public static <T> Page<T> ofCurrentContext() {
-    int pageSize = 10;
-    int pageNum = 1;
-
     Context request = Context.current();
 
     //每页条数
-    String pageSizeString = request.param(PAGE_SIZE_PARAM_NAME);
-    if (ObjectUtil.isNotEmpty(pageSizeString)) {
-      pageSize = Integer.parseInt(pageSizeString);
-    }
+    final int pageSize = parsePageParam(request.param(PAGE_SIZE_PARAM_NAME), 10, 1, MAX_PAGE_SIZE);
 
-    //第几页
-    String pageNumString = request.param(PAGE_NO_PARAM_NAME);
-    if (ObjectUtil.isNotEmpty(pageNumString)) {
-      pageNum = Integer.parseInt(pageNumString);
-    }
-    String current = request.param(CURRENT_PARAM_NAME);
+    //第几页（current 为 ant design pro table 兼容参数, 后传者优先）
+    int pageNum = parsePageParam(request.param(PAGE_NO_PARAM_NAME), 1, 1, Integer.MAX_VALUE);
+    final String current = request.param(CURRENT_PARAM_NAME);
     if (ObjectUtil.isNotEmpty(current)) {
-      pageNum = Integer.parseInt(current);
+      pageNum = parsePageParam(current, 1, 1, Integer.MAX_VALUE);
     }
 
 
-    if (Context.current().param("totalRow") == null) {
+    if (request.param("totalRow") == null) {
       // 没有传总行数, 需要执行 count 查询
       return new Page<>(pageNum, pageSize, -1, true);
     }
-    final long totalRow = Context.current().paramAsLong("totalRow");
+    final long totalRow = request.paramAsLong("totalRow");
 
 
     return new Page<>(pageNum, pageSize, totalRow, false);
+  }
+
+  /** 每页大小允许的上限, 前端「选全部」场景(SystemRoleAuthUser.tsx)会传 10000 */
+  private static final int MAX_PAGE_SIZE = 10_000;
+
+  /**
+   * 解析请求分页参数, 非数字或越界视为非法请求
+   *
+   * @param raw 原始参数值
+   * @param def 参数缺省时的默认值
+   * @param min 允许的最小值(含)
+   * @param max 允许的最大值(含)
+   * @return 解析后的参数值
+   */
+  private static int parsePageParam(final String raw, final int def, final int min, final int max) {
+    if (ObjectUtil.isEmpty(raw)) {
+      return def;
+    }
+    final int value;
+    try {
+      value = Integer.parseInt(raw);
+    } catch (NumberFormatException e) {
+      throw new ServiceException("分页参数非法: " + raw);
+    }
+    if (value < min || value > max) {
+      throw new ServiceException("分页参数非法: " + raw);
+    }
+    return value;
   }
 
 
@@ -148,7 +168,7 @@ public class Page<T> implements EasyPageResult<T>, Model {
     return of(1, limitSize, false);
   }
 
-  /** 「取全部」单次返回的条数上限, 顶到上限时 {@link #of(Page, EasyPageResult)} 记告警 */
+  /** 「取全部」单次返回的条数上限, 顶到上限时 {@link #of(Page, EasyPageResult)} 抛异常拒绝 */
   public static final long ALL_SIZE = 100_000;
 
   /**
@@ -211,9 +231,9 @@ public class Page<T> implements EasyPageResult<T>, Model {
     final List<R> records = pageResult.getData();
     page.setRecords(records);
     page.setTotal(pageResult.getTotal());
-    // 页大小等于 ALL_SIZE 即「取全部」路径, 返回条数顶满上限说明可能还有数据没返回; 上限更大的 ofLimit 不做截断, 不在此列
+    // 页大小等于 ALL_SIZE 即「取全部」路径, 返回条数顶满上限说明还有数据没返回全, 直接拒绝避免静默截断; 上限更大的 ofLimit 不做截断, 不在此列
     if (page.getSize() == ALL_SIZE && CollectionUtil.size(records) >= ALL_SIZE) {
-      log.warn("取全部查询返回条数达到上限 {} 条, 若实际数据更多则超出部分不会返回, 请缩小查询范围或分批导出", ALL_SIZE);
+      throw new ServiceException("取全部查询返回条数达到上限 " + ALL_SIZE + " 条, 超出部分不会返回, 请缩小查询范围或分批导出");
     }
     return page;
   }

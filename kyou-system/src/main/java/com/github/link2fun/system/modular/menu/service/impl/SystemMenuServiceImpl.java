@@ -3,17 +3,20 @@ package com.github.link2fun.system.modular.menu.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.NamingCase;
 import cn.hutool.core.util.StrUtil;
-import com.easy.query.api.proxy.base.LongProxy;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.api.proxy.entity.select.EntityQueryable;
+import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
+import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.TreeSelect;
-import com.github.link2fun.support.core.domain.entity.*;
+import com.github.link2fun.support.core.domain.entity.SysMenu;
+import com.github.link2fun.support.core.domain.entity.SysRole;
+import com.github.link2fun.support.core.domain.entity.SysUser;
+import com.github.link2fun.support.core.domain.entity.proxy.SysMenuProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
 import com.github.link2fun.support.core.tree.TreeBuilder;
 import com.github.link2fun.support.easyquery.UniqueChecker;
@@ -87,8 +90,6 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
     }
 
 
-    searchReq.getParams().put("userId", userId);
-
     return entityQuery.queryable(SysMenu.class).asAlias("menu")
       .where(menu -> {
         menu.menuName().like(StrUtil.isNotBlank(searchReq.getMenuName()), searchReq.getMenuName());
@@ -97,15 +98,12 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
       })
       .where(menu -> {
         if (IdUtils.isIdValid(userId)) {
-          menu.expression().exists(() -> entityQuery.queryable(SysRoleMenu.class).asAlias("roleMenu")
-            .leftJoin(SysUserRole.class, (roleMenu, userRole) -> roleMenu.roleId().eq(userRole.roleId()))
-            .where((roleMenu, userRole) -> {
-              userRole.userId().eq(userId);
-              roleMenu.menuId().eq(menu.menuId());
-            }));
-
+          // 菜单须经由启用角色关联到当前用户, 停用角色不再授予菜单
+          menu.roleMenuList().any(roleMenu -> {
+            roleMenu.role().status().eq(UserConstants.NORMAL);
+            roleMenu.role().userRoleList().any(userRole -> userRole.userId().eq(userId));
+          });
         }
-
       })
       .select(SysMenu.class)
       .toList();
@@ -122,16 +120,15 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   public List<String> selectMenuPermsByUserId(final Long userId) {
 
     List<String> permsList = entityQuery.queryable(SysMenu.class)
-      .leftJoin(SysRoleMenu.class, (menu, roleMenu) -> menu.menuId().eq(roleMenu.menuId()))
-      .leftJoin(SysUserRole.class, (menu, roleMenu, userRole) -> roleMenu.roleId().eq(userRole.roleId()))
-      .leftJoin(SysRole.class, (menu, roleMenu, userRole, role) -> userRole.roleId().eq(role.roleId()))
-      .where((menu, roleMenu, userRole, role) -> {
-        userRole.userId().eq(userId);
+      .where(menu -> {
         menu.status().eq(UserConstants.NORMAL);
-        role.status().eq(UserConstants.NORMAL);
+        // 权限须经由启用角色关联到当前用户, 停用角色不再授予权限
+        menu.roleMenuList().any(roleMenu -> {
+          roleMenu.role().status().eq(UserConstants.NORMAL);
+          roleMenu.role().userRoleList().any(userRole -> userRole.userId().eq(userId));
+        });
       })
-      .selectColumn((menu, roleMenu, userRole, role) -> menu.perms())
-      .distinct()
+      .selectColumn(SysMenuProxy::perms)
       .toList();
 
     return permsList.stream()
@@ -152,13 +149,15 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   public List<String> selectMenuPermsByRoleId(final Long roleId) {
 
     List<String> permsList = entityQuery.queryable(SysMenu.class)
-      .leftJoin(SysRoleMenu.class, (menu, roleMenu) -> menu.menuId().eq(roleMenu.menuId()))
-      .where((menu, roleMenu) -> {
-        roleMenu.roleId().eq(roleId);
+      .where(menu -> {
         menu.status().eq(UserConstants.NORMAL);
+        // 权限须来自角色勾选且角色启用, 停用角色不再授予权限
+        menu.roleMenuList().any(roleMenu -> {
+          roleMenu.roleId().eq(roleId);
+          roleMenu.role().status().eq(UserConstants.NORMAL);
+        });
       })
-      .selectColumn((menu, roleMenu) -> menu.perms())
-      .distinct()
+      .selectColumn(SysMenuProxy::perms)
       .toList();
 
     return permsList.stream()
@@ -347,6 +346,22 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
     }
   }
 
+  /** 菜单增改影响面广, 全量失效所有角色的共享权限缓存 */
+  private void invalidateAllRoleSessions() {
+    entityQuery.queryable(SysRole.class)
+      .selectColumn(SysRoleProxy::roleKey)
+      .toList()
+      .forEach(SaSessionBizTool::invalidateRole);
+  }
+
+  /** 失效与指定菜单关联的角色共享权限缓存, 须在删除菜单前取关联 */
+  private List<String> findRoleKeysByMenuId(final Long menuId) {
+    return entityQuery.queryable(SysRole.class)
+      .where(role -> role.roleMenuList().any(roleMenu -> roleMenu.menuId().eq(menuId)))
+      .selectColumn(SysRoleProxy::roleKey)
+      .toList();
+  }
+
   /**
    * 新增保存菜单信息
    *
@@ -357,9 +372,11 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   @Override
   public long insertMenu(final SysMenu menu) {
     checkMenuFieldUnique("新增", menu);
-    return entityQuery.insertable(menu)
+    final long rows = entityQuery.insertable(menu)
       .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
       .executeRows(true);
+    invalidateAllRoleSessions();
+    return rows;
   }
 
   /**
@@ -375,9 +392,11 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
     if (menu.getMenuId().equals(menu.getParentId())) {
       throw new ServiceException("修改菜单'" + menu.getMenuName() + "'失败，上级菜单不能选择自己");
     }
-    return entityQuery.updatable(menu)
+    final long rows = entityQuery.updatable(menu)
       .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
       .executeRows();
+    invalidateAllRoleSessions();
+    return rows;
   }
 
   /**
@@ -389,7 +408,10 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   @Transaction
   @Override
   public long deleteMenuById(final Long menuId) {
-    return aggregateDeleter.delete(AggregateDeletePlan.of(Collections.singletonList(menuId))
+    // 删除后 sys_role_menu 关联不复存在, 先取受影响角色
+    final List<String> affectedRoleKeys = findRoleKeysByMenuId(menuId);
+
+    final long rows = aggregateDeleter.delete(AggregateDeletePlan.of(Collections.singletonList(menuId))
       .guardPerId(id -> {
         if (hasChildByMenuId(id)) {
           throw new ServiceException("存在子菜单,不允许删除");
@@ -402,6 +424,9 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
         .allowDeleteStatement(true)
         .where(menu -> menu.menuId().in(ids))
         .executeRows()));
+
+    affectedRoleKeys.forEach(SaSessionBizTool::invalidateRole);
+    return rows;
   }
 
   @Transaction(policy = TranPolicy.supports)
@@ -422,22 +447,18 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   @Override
   public List<Long> selectMenuListByRoleId(Long roleId, boolean menuCheckStrictly) {
     return entityQuery.queryable(SysMenu.class)
-      .leftJoin(SysRoleMenu.class, (menu, roleMenu) -> menu.menuId().eq(roleMenu.menuId()))
-      .where((menu, roleMenu) -> roleMenu.roleId().eq(roleId))
-      .where((menu, roleMenu) -> {
+      .where(menu -> {
+        menu.roleMenuList().any(roleMenu -> roleMenu.roleId().eq(roleId));
         if (menuCheckStrictly) {
           // 严格勾选: 排除已勾选菜单的父节点, 只回显该角色勾选的叶子
-          EntityQueryable<LongProxy, Long> checkedParentIds = entityQuery.queryable(SysMenu.class)
-            .innerJoin(SysRoleMenu.class, (_menu, _roleMenu) -> {
-              _menu.menuId().eq(_roleMenu.menuId());
-              _roleMenu.roleId().eq(roleId);
-            })
-            .select((_menu, _roleMenu) -> new LongProxy(_menu.parentId()));
+          Query<Long> checkedParentIds = entityQuery.queryable(SysMenu.class)
+            .where(_menu -> _menu.roleMenuList().any(_roleMenu -> _roleMenu.roleId().eq(roleId)))
+            .selectColumn(SysMenuProxy::parentId);
+
           menu.menuId().notIn(checkedParentIds);
         }
       })
-      .selectColumn((menu, roleMenu) -> menu.menuId())
-      .distinct()
+      .selectColumn(SysMenuProxy::menuId)
       .toList();
   }
 

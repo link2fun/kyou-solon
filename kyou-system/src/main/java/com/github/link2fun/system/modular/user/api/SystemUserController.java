@@ -67,7 +67,7 @@ public class SystemUserController extends BaseController {
   @SaCheckPermission("system:user:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context response, SysUser user) {
-    Page<SysUserDTO> pageData = userService.selectUserList(ActionContext.current(), Page.ofLimit(Long.MAX_VALUE), user, SysUserDTO.class);
+    Page<SysUserDTO> pageData = userService.selectUserList(ActionContext.current(), Page.ofAll(), user, SysUserDTO.class);
     List<SysUserDTO> dataList = pageData.getRecords();
 
 
@@ -112,7 +112,10 @@ public class SystemUserController extends BaseController {
       ajax.put(AjaxResult.DATA_TAG, sysUser);
       ajax.put("postIds", postService.selectPostListByUserId(userId)
         .stream().map(Convert::toStr).collect(Collectors.toList()));
-      ajax.put("roleIds", sysUser.getRoles().stream().map(RoleDTO::getRoleId)
+      // 编辑回显须含停用角色(sysUser.getRoles() 已按启用过滤), 否则整行保存会误剥离停用角色关联
+      ajax.put("roleIds", roleService.selectRolesByUserId(userId).stream()
+        .filter(RoleDTO::getFlag)
+        .map(RoleDTO::getRoleId)
         .map(Convert::toStr)
         .collect(Collectors.toList()));
     }

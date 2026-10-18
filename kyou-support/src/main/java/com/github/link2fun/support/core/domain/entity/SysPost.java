@@ -2,6 +2,7 @@ package com.github.link2fun.support.core.domain.entity;
 
 
 import com.easy.query.core.annotation.*;
+import com.easy.query.core.enums.RelationTypeEnum;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -12,11 +13,13 @@ import com.github.link2fun.support.core.domain.BaseEntity;
 import com.github.link2fun.support.core.domain.entity.proxy.SysPostProxy;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
 import org.noear.solon.validation.annotation.Length;
 import org.noear.solon.validation.annotation.NotBlank;
 import org.noear.solon.validation.annotation.NotNull;
 
 import java.io.Serial;
+import java.util.List;
 
 /**
  * 岗位表 sys_post
@@ -26,6 +29,7 @@ import java.io.Serial;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @EntityProxy
+@FieldNameConstants
 @EasyAlias("postProxy")
 @Table("sys_post")
 public class SysPost extends BaseEntity implements ProxyEntityAvailable<SysPost, SysPostProxy> {
@@ -35,7 +39,7 @@ public class SysPost extends BaseEntity implements ProxyEntityAvailable<SysPost,
   /** 岗位序号 */
   @Excel(name = "岗位序号", cellType = Excel.ColumnType.NUMERIC)
   @JsonSerialize(using = ToStringSerializer.class)
-  @Column(value = "post_id", primaryKey = true,generatedKey = true)
+  @Column(value = "post_id", primaryKey = true, generatedKey = true)
   private Long postId;
 
   /** 岗位编码 */
@@ -70,5 +74,9 @@ public class SysPost extends BaseEntity implements ProxyEntityAvailable<SysPost,
   /** 用户是否存在此岗位标识 默认不存在 */
   @ColumnIgnore
   private boolean flag = false;
+
+  /** 岗位和用户关联关系 */
+  @Navigate(value = RelationTypeEnum.ManyToMany, selfProperty = Fields.postId, targetProperty = SysUserPost.Fields.postId)
+  private List<SysUserPost> userPostList;
 
 }

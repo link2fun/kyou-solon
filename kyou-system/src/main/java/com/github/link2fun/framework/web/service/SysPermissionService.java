@@ -59,11 +59,9 @@ public class SysPermissionService {
     } else {
       List<RoleDTO> roles = user.getRoles();
       if (!CollectionUtils.isEmpty(roles)) {
-        // 多角色设置permissions属性，以便数据权限匹配权限
+        // 逐角色归集权限, 汇总为用户的菜单权限
         for (RoleDTO role : roles) {
-          List<String> rolePerms = menuService.selectMenuPermsByRoleId(role.getRoleId());
-          role.setPermissions(rolePerms);
-          perms.addAll(rolePerms);
+          perms.addAll(menuService.selectMenuPermsByRoleId(role.getRoleId()));
         }
       } else {
         perms.addAll(menuService.selectMenuPermsByUserId(user.getUserId()));

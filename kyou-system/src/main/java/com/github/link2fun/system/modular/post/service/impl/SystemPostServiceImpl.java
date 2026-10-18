@@ -7,7 +7,6 @@ import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.core.domain.entity.SysPost;
-import com.github.link2fun.support.core.domain.entity.SysUserPost;
 import com.github.link2fun.support.core.domain.entity.proxy.SysPostProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.UniqueChecker;
@@ -102,11 +101,9 @@ public class SystemPostServiceImpl implements ISystemPostService {
   @Override
   public List<Long> selectPostListByUserId(final Long userId) {
     return entityQuery.queryable(SysPost.class)
-      .innerJoin(SysUserPost.class, (post, userPost) -> post.postId().eq(userPost.postId()))
-      .where((post, userPost) -> userPost.userId().eq(userId))
-      .select((post, userPost) -> post.postId())
+      .where(post -> post.userPostList().any(userPost -> userPost.userId().eq(userId)))
+      .selectColumn(SysPostProxy::postId)
       .toList();
-
   }
 
   /**

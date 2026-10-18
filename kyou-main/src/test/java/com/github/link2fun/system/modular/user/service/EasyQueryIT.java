@@ -21,7 +21,7 @@ import java.util.List;
 @Import(profiles = "classpath:app-test.yml", scanPackages = "com.github.link2fun")
 @SolonTest(value = KyouApp.class)
 @ExtendWith(SolonJUnit5Extension.class)
-public class EasyQueryTest {
+public class EasyQueryIT {
 
   @Db
   private EasyEntityQuery entityQuery;

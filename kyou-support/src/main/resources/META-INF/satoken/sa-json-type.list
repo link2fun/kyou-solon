@@ -1,0 +1,8 @@
+# sa-token 1.46 起 Jackson 多态反序列化启用全局类型白名单(SaJsonStrategy),
+# 会话(SaSession)里缓存的业务对象必须在此声明, 否则读写会话时抛 SaJsonConvertException。
+# 列出 AccountSession/TokenSession 实际会存的对象图:
+# SessionUser -> SysUserDTO -> { DeptDTO dept, List<RoleDTO> roles }, 其余字段均为 JDK 类型。
+com.github.link2fun.support.core.domain.model.SessionUser
+com.github.link2fun.support.core.domain.dto.SysUserDTO
+com.github.link2fun.support.core.domain.dto.DeptDTO
+com.github.link2fun.support.core.domain.dto.RoleDTO

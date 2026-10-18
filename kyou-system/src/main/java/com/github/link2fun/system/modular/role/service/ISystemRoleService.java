@@ -45,6 +45,14 @@ public interface ISystemRoleService {
   Set<String> selectRolePermissionByUserId(Long userId);
 
   /**
+   * 查询用户持有的启用角色标识集合(停用/软删角色不参与授权)
+   *
+   * @param userId 用户ID
+   * @return 启用角色的 roleKey 集合
+   */
+  List<String> listEnabledRoleKeysByUserId(Long userId);
+
+  /**
    * 查询所有角色
    *
    * @return 角色列表

@@ -1,11 +1,8 @@
 package com.github.link2fun.support.core.domain.entity;
 
 
-
-import com.easy.query.core.annotation.Column;
-import com.easy.query.core.annotation.EasyAlias;
-import com.easy.query.core.annotation.EntityProxy;
-import com.easy.query.core.annotation.Table;
+import com.easy.query.core.annotation.*;
+import com.easy.query.core.enums.RelationTypeEnum;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleMenuProxy;
 import lombok.Data;
@@ -23,14 +20,18 @@ import java.io.Serializable;
 @EntityProxy
 @EasyAlias("roleMenu")
 @Table("sys_role_menu")
-public class SysRoleMenu implements Serializable , ProxyEntityAvailable<SysRoleMenu, SysRoleMenuProxy> {
+public class SysRoleMenu implements Serializable, ProxyEntityAvailable<SysRoleMenu, SysRoleMenuProxy> {
   /** 角色ID */
-  @Column(value = "role_id",primaryKey = true)
+  @Column(value = "role_id", primaryKey = true)
   private Long roleId;
 
   /** 菜单ID */
-  @Column(value = "menu_id",primaryKey = true)
+  @Column(value = "menu_id", primaryKey = true)
   private Long menuId;
+
+  /** 关联的角色 */
+  @Navigate(value = RelationTypeEnum.OneToOne, selfProperty = Fields.roleId, targetProperty = SysRole.Fields.roleId)
+  private SysRole role;
 
 
 }

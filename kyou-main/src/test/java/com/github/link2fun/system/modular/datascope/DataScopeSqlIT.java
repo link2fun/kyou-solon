@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 数据范围判定矩阵与生成 SQL 的渲染测试: 判定断言落在作用域对象上(白名单 / 本人轴 / 两态),
  * SQL 只构造查询取 toSQL 不执行; 每种谓词形状另配一条真实执行断言(同构查询跑真库取回行)。
  *
- * <p>结果正确性由 DataScopeSmokeTest 断言, 这里钉的是「角色解析成什么白名单」与 SQL 形状 ——
+ * <p>结果正确性由 DataScopeSmokeIT 断言, 这里钉的是「角色解析成什么白名单」与 SQL 形状 ——
  * 白名单并集、in 绑定参数、or 分组结构、恒假兜底; 以及这些 SQL 在真库上能执行、行集符合种子数据
  * (种子: admin=用户1/部门103, ry=用户2/部门105, 角色2 的自定义范围=100/101/105)。
  * 改坏解析或谓词翻译时这里先红。解析需要真实数据(sys_role_dept / sys_dept),
@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Import(profiles = "classpath:app-test.yml", scanPackages = "com.github.link2fun")
 @SolonTest(value = KyouApp.class)
 @ExtendWith(SolonJUnit5Extension.class)
-public class DataScopeSqlTest {
+public class DataScopeSqlIT {
 
   /** 种子数据里的超管用户 ID */
   private static final long SUPER_ADMIN_ID = 1L;
@@ -79,7 +79,7 @@ public class DataScopeSqlTest {
     return DataScope.of(entityQuery, context);
   }
 
-  /** 用户列表形态的查询(部门 join 声明别名), 与 SystemUserServiceImpl.selectUserList 同构 */
+  /** 用户列表形态的查询 */
   private String userListSQL(final ActionContext context) {
     final DataScope dataScope = scopeOf(context);
     return entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)
@@ -91,7 +91,7 @@ public class DataScopeSqlTest {
       .toSQL();
   }
 
-  /** 执行用户列表形态的查询, 返回用户名集合(与 selectUserList 同构) */
+  /** 执行用户列表形态的查询(同 {@link #userListSQL} 的独立构造形态), 返回用户名集合 */
   private Set<String> userListUserNames(final ActionContext context) {
     final DataScope dataScope = scopeOf(context);
     return entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)

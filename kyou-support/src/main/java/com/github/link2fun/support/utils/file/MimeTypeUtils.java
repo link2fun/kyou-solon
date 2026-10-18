@@ -28,8 +28,8 @@ public class MimeTypeUtils {
   public static final String[] DEFAULT_ALLOWED_EXTENSION = {
     // 图片
     "bmp", "gif", "jpg", "jpeg", "png",
-    // word excel powerpoint
-    "doc", "docx", "xls", "xlsx", "ppt", "pptx", "html", "htm", "txt",
+    // word excel powerpoint (html/htm 已移除: 防止上传页面型文件后在同源下被浏览器执行, 造成存储型 XSS)
+    "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt",
     // 压缩文件
     "rar", "zip", "gz", "bz2",
     // 视频格式

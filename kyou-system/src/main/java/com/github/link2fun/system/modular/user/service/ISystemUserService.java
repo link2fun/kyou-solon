@@ -1,11 +1,10 @@
 package com.github.link2fun.system.modular.user.service;
 
 import com.easy.query.core.basic.api.select.Query;
-import com.easy.query.core.expression.lambda.SQLActionExpression2;
+import com.easy.query.core.expression.lambda.SQLActionExpression1;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysUser;
-import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
@@ -59,7 +58,7 @@ public interface ISystemUserService {
 
 
   /** 构造已预加载部门与角色的用户 DTO 查询 */
-  Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression2<SysUserProxy, SysDeptProxy> whereExpression);
+  Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression1<SysUserProxy> whereExpression);
 
   /**
    * 通过用户ID查询用户
@@ -227,7 +226,7 @@ public interface ISystemUserService {
    * 根据用户名称查询用户ID
    *
    * @param userName 用户名称
-   * @return 用户ID; 查无此人时返回 -1, 同名多行视为数据错误直接抛出
+   * @return 用户ID; 查无此人或已软删时返回 {@code null}, 同名多行视为数据错误直接抛出
    */
   Long findUserIdByUserName(String userName);
 

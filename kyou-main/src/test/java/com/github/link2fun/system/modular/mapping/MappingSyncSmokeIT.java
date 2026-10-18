@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Import(profiles = "classpath:app-test.yml", scanPackages = "com.github.link2fun")
 @SolonTest(value = KyouApp.class)
 @ExtendWith(SolonJUnit5Extension.class)
-public class MappingSyncSmokeTest {
+public class MappingSyncSmokeIT {
 
   /** 库里不存在的合成宿主 ID, 与真实数据隔离 */
   private static final long OWNER_A = 990001L;

@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Import(profiles = "classpath:app-test.yml", scanPackages = "com.github.link2fun")
 @SolonTest(value = KyouApp.class)
 @ExtendWith(SolonJUnit5Extension.class)
-public class ISystemUserServiceTest {
+public class ISystemUserServiceIT {
 
   @Inject
   private ISystemUserService userService;

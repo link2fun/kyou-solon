@@ -12,7 +12,6 @@ import cn.hutool.http.useragent.UserAgentUtil;
 import com.easy.query.core.exception.EasyQuerySingleNotNullException;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.context.action.service.ActionContextService;
-import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.model.SessionUser;
@@ -254,11 +253,7 @@ public class SaSessionBizTool {
 
     SaSession session = StpUtil.getSessionByLoginId(loginId);
     return session.get(ROLE_LIST_KEY,
-      () -> contextService().roleListByUserId(Convert.toLong(loginId)).
-        stream()
-        .map(RoleDTO::getRoleKey)
-        .collect(Collectors.toList())
-    );
+      () -> contextService().roleKeyListByUserId(Convert.toLong(loginId)));
   }
 
 

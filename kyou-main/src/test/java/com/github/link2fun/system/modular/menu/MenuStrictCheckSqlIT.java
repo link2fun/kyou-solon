@@ -1,8 +1,7 @@
 package com.github.link2fun.system.modular.menu;
 
-import com.easy.query.api.proxy.base.LongProxy;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.api.proxy.entity.select.EntityQueryable;
+import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.KyouApp;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
@@ -33,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Import(profiles = "classpath:app-test.yml", scanPackages = "com.github.link2fun")
 @SolonTest(value = KyouApp.class)
 @ExtendWith(SolonJUnit5Extension.class)
-public class MenuStrictCheckSqlTest {
+public class MenuStrictCheckSqlIT {
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -44,42 +43,37 @@ public class MenuStrictCheckSqlTest {
   /** 与 SystemMenuServiceImpl.selectMenuListByRoleId 同构的查询, 取 toSQL 不执行 */
   private String checkedMenuSQL(final Long roleId, final boolean menuCheckStrictly) {
     return entityQuery.queryable(SysMenu.class)
-      .leftJoin(SysRoleMenu.class, (menu, roleMenu) -> menu.menuId().eq(roleMenu.menuId()))
-      .where((menu, roleMenu) -> roleMenu.roleId().eq(roleId))
-      .where((menu, roleMenu) -> {
+      .where(menu -> {
+        menu.roleMenuList().any(roleMenu -> roleMenu.roleId().eq(roleId));
         if (menuCheckStrictly) {
-          EntityQueryable<LongProxy, Long> checkedParentIds = entityQuery.queryable(SysMenu.class)
-            .innerJoin(SysRoleMenu.class, (_menu, _roleMenu) -> {
-              _menu.menuId().eq(_roleMenu.menuId());
-              _roleMenu.roleId().eq(roleId);
-            })
-            .select((_menu, _roleMenu) -> new LongProxy(_menu.parentId()));
+          // 严格勾选: 排除已勾选菜单的父节点, 只回显该角色勾选的叶子
+          Query<Long> checkedParentIds = entityQuery.queryable(SysMenu.class)
+            .where(_menu -> _menu.roleMenuList().any(_roleMenu -> _roleMenu.roleId().eq(roleId)))
+            .selectColumn(SysMenuProxy::parentId);
+
           menu.menuId().notIn(checkedParentIds);
         }
       })
-      .selectColumn((menu, roleMenu) -> menu.menuId())
-      .distinct()
+      .selectColumn(SysMenuProxy::menuId)
       .toSQL();
   }
 
   @Test
-  @DisplayName("严格分支 SQL: 主查询勾选 + not in 子查询排除已勾选菜单的父节点")
+  @DisplayName("严格分支 SQL: 勾选 EXISTS + not in 子查询排除已勾选菜单的父节点")
   void strictSQLContent() {
-    assertEquals("SELECT DISTINCT t.`menu_id` FROM `sys_menu` t "
-        + "LEFT JOIN `sys_role_menu` t1 ON t.`menu_id` = t1.`menu_id` "
-        + "WHERE t1.`role_id` = ? "
+    assertEquals("SELECT t.`menu_id` FROM `sys_menu` t "
+        + "WHERE EXISTS(SELECT 1 FROM `sys_role_menu` t1 WHERE t1.`menu_id` = t.`menu_id` AND t1.`role_id` = ? LIMIT 1) "
         + "AND t.`menu_id` NOT IN ("
         + "SELECT t2.`parent_id` FROM `sys_menu` t2 "
-        + "INNER JOIN `sys_role_menu` t3 ON t2.`menu_id` = t3.`menu_id` AND t3.`role_id` = ?)",
+        + "WHERE EXISTS(SELECT 1 FROM `sys_role_menu` t3 WHERE t3.`menu_id` = t2.`menu_id` AND t3.`role_id` = ? LIMIT 1))",
       checkedMenuSQL(2L, true));
   }
 
   @Test
-  @DisplayName("非严格分支 SQL: 单段勾选查询, 无子查询")
+  @DisplayName("非严格分支 SQL: 单段勾选 EXISTS 查询, 无子查询")
   void nonStrictSQLContent() {
-    assertEquals("SELECT DISTINCT t.`menu_id` FROM `sys_menu` t "
-        + "LEFT JOIN `sys_role_menu` t1 ON t.`menu_id` = t1.`menu_id` "
-        + "WHERE t1.`role_id` = ?",
+    assertEquals("SELECT t.`menu_id` FROM `sys_menu` t "
+        + "WHERE EXISTS(SELECT 1 FROM `sys_role_menu` t1 WHERE t1.`menu_id` = t.`menu_id` AND t1.`role_id` = ? LIMIT 1)",
       checkedMenuSQL(2L, false));
   }
 

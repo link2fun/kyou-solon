@@ -20,6 +20,7 @@ import SystemDeptSearchTree from '@/pages/system/dept/references/SystemDeptSearc
 import SystemUserEditModal from '@/pages/system/user/components/SystemUserEditModal';
 import SystemUserImportModal from '@/pages/system/user/components/SystemUserImportModal';
 import ApiSystemUser from '@/services/system/ApiSystemUser';
+import buildDetailFormValues from '@/utils/DetailFormValues';
 import { dateRangeToRequestParams } from '@/utils/utils';
 
 const SystemUserIndex = () => {
@@ -31,7 +32,10 @@ const SystemUserIndex = () => {
       onActionCall: (values) => ApiSystemUser.add(values),
     },
     editAction: {
-      onModalOpen: (values) => ApiSystemUser.detail(values.userId),
+      // detail 返回带额外顶层键(roles/posts/postIds/roleIds)的信封,
+      // 显式组装为表单值: 基础字段取 data, postIds/roleIds 取信封顶层, 基础字段不再回落列表行旧值
+      onModalOpen: async (values) =>
+        buildDetailFormValues(await ApiSystemUser.detail(values.userId)),
       onActionCall: (values) => ApiSystemUser.edit(values),
     },
     removeAction: {

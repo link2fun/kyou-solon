@@ -101,5 +101,5 @@ public class Constants {
 
   /** 定时任务违规的字符 */
   public static final String[] JOB_ERROR_STR = {"java.net.URL", "javax.naming.InitialContext", "org.yaml.snakeyaml",
-    "org.springframework", "org.apache", "com.ruoyi.support.utils.file", "com.ruoyi.support.config"};
+    "org.springframework", "org.apache", "com.github.link2fun.support.utils.file", "com.github.link2fun.support.config"};
 }

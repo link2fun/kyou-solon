@@ -33,7 +33,7 @@
     <java.version>17</java.version>
     <jackson.version>2.21.4</jackson.version>
     <mysql.connector.version>26.7.0</mysql.connector.version>
-    <sa-token.version>1.45.0</sa-token.version>
+    <sa-token.version>1.46.0</sa-token.version>
     <poi.version>5.5.1</poi.version>
     <easy-query.version>3.2.16</easy-query.version>
     <maven.compiler.source>17</maven.compiler.source>
@@ -183,4 +183,36 @@
 
     </resources>
   </build>
+
+  <!-- 集成测试: *IT 需要容器(MySQL/Redis/启动 KyouApp), 默认不随构建执行(surefire 只拾取 *Test),
+       由 failsafe 绑定本 profile, -Pintegration 时才在 integration-test/verify 阶段执行 -->
+  <profiles>
+    <profile>
+      <id>integration</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <!-- solon-parent 只管理 surefire(3.5.5), failsafe 未纳入 pluginManagement, 版本对齐 surefire -->
+            <version>3.5.5</version>
+            <configuration>
+              <!-- kyou-main 被 solon-maven-plugin repackage 成胖包后, failsafe 默认拿胖包当主 classpath,
+                   胖包内的类不在 jar 根路径, 加载不到 KyouApp(52 个 IT 全部 TypeNotPresent)。
+                   指回 target/classes(与 spring-boot-starter-parent 对 failsafe 的处理一致) -->
+              <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

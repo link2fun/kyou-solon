@@ -1,6 +1,7 @@
 package com.github.link2fun.web.controller.common;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.framework.config.ServerConfig;
 import com.github.link2fun.support.config.KyouProperties;
@@ -68,6 +69,7 @@ public class CommonController {
    * 通用上传请求（单个）
    */
   @SaCheckLogin
+  @SaCheckPermission("common:upload")
   @Mapping(value = "/upload", method = MethodType.POST)
   public AjaxResult uploadFile(UploadedFile file) {
     try {
@@ -91,6 +93,7 @@ public class CommonController {
    * 通用上传请求（多个）
    */
   @SaCheckLogin
+  @SaCheckPermission("common:upload")
   @Mapping(value = "/uploads", method = MethodType.POST)
   public AjaxResult uploadFiles(List<UploadedFile> files) {
     try {

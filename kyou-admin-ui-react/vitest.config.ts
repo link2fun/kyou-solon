@@ -33,7 +33,7 @@ export default defineConfig({
         'src/**/index.style.ts',
       ],
     },
-    passWithNoTests: true,
+    passWithNoTests: false,
     testTimeout: 15000,
   },
 });

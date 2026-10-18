@@ -1,11 +1,9 @@
 package com.github.link2fun.support.core.domain.entity;
 
-import com.easy.query.core.annotation.Table;
 import com.easy.query.core.annotation.*;
+import com.easy.query.core.enums.RelationTypeEnum;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
 import com.github.link2fun.support.core.domain.BaseEntity;
-
-
 import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -96,6 +94,10 @@ public class SysDept extends BaseEntity implements ProxyEntityAvailable<SysDept,
   /** 子部门 */
   @ColumnIgnore
   private List<SysDept> children = new ArrayList<>();
+
+  /** 部门和角色部门关联关系 */
+  @Navigate(value = RelationTypeEnum.ManyToMany, selfProperty = Fields.deptId, targetProperty = SysRoleDept.Fields.deptId)
+  private List<SysRoleDept> roleDeptList;
 
 
 }

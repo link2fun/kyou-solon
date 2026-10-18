@@ -5,12 +5,11 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import com.easy.query.api.proxy.base.LongProxy;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
-import com.easy.query.core.expression.lambda.SQLActionExpression2;
+import com.easy.query.core.expression.lambda.SQLActionExpression1;
 import com.easy.query.core.proxy.columns.types.SQLStringTypeColumn;
 import com.easy.query.core.proxy.columns.types.impl.SQLStringTypeColumnImpl;
 import com.easy.query.solon.annotation.Db;
@@ -20,7 +19,10 @@ import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
-import com.github.link2fun.support.core.domain.entity.*;
+import com.github.link2fun.support.core.domain.entity.SysDept;
+import com.github.link2fun.support.core.domain.entity.SysPost;
+import com.github.link2fun.support.core.domain.entity.SysRole;
+import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.core.page.Page;
@@ -94,8 +96,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
     final DataScope dataScope = DataScope.of(entityQuery, context);
 
     Query<T> query = entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)
-      .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId())).asAlias(SysDept.TABLE_ALIAS)
-      .where((user, dept) -> {
+      .where(user -> {
         user.delFlag().eq(UserConstants.NORMAL);
         user.userId().eq(IdUtils.isIdValid(searchReq.getUserId()), searchReq.getUserId());
         user.userName().like(StrUtil.isNotBlank(searchReq.getUserName()), searchReq.getUserName());
@@ -112,7 +113,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
         });
         user.createTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime());
         user.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
-        dataScope.applyTo(user, dept.deptId(), user.userId());
+        dataScope.applyTo(user, user.dept().deptId(), user.userId());
       })
       .include(SysUserProxy::dept)
 
@@ -135,29 +136,23 @@ public class SystemUserServiceImpl implements ISystemUserService {
     final DataScope dataScope = DataScope.of(entityQuery, context);
 
     EasyPageResult<AllocatedUserDTO> pageResult = entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)
-      .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId())).asAlias(SysDept.TABLE_ALIAS)
-      .leftJoin(SysUserRole.class, (user, dept, userRole) -> user.userId().eq(userRole.userId()))
-      .leftJoin(SysRole.class, (user, dept, userRole, role) -> userRole.roleId().eq(role.roleId()))
-
-      .where((user, dept, userRole, role) -> {
+      .where(user -> {
         user.delFlag().eq(UserConstants.NORMAL);
-        role.roleId().eq(searchReq.getRoleId());
+        user.roles().any(role -> role.roleId().eq(searchReq.getRoleId()));
         user.userName().like(StrUtil.isNotBlank(searchReq.getUserName()), searchReq.getUserName());
         user.phonenumber().like(StrUtil.isNotBlank(searchReq.getPhonenumber()), searchReq.getPhonenumber());
-        dataScope.applyTo(user, dept.deptId(), user.userId());
+        dataScope.applyTo(user, user.dept().deptId(), user.userId());
       })
-      // FIXME 这里的分页查询有问题， count(distinct *) 会导致分页查询出现问题
-      .select((user, dept, userRole, role) -> new AllocatedUserDTOProxy()
+      .select(user -> new AllocatedUserDTOProxy()
         .userId().set(user.userId())
         .deptId().set(user.deptId())
-        .deptName().set(dept.deptName())
+        .deptName().set(user.dept().deptName())
         .userName().set(user.userName())
         .nickName().set(user.nickName())
         .email().set(user.email())
         .phonenumber().set(user.phonenumber())
         .status().set(user.status())
         .createTime().set(user.createTime()))
-      .distinct()
       .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
 
     return Page.of(pageRequest, pageResult);
@@ -176,66 +171,24 @@ public class SystemUserServiceImpl implements ISystemUserService {
   public Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, final Page<AllocatedUserDTO> pageRequest, final SysUser searchReq) {
     final DataScope dataScope = DataScope.of(entityQuery, context);
 //    return getBaseMapper().selectUnallocatedList(pageRequest, searchReq);
-    //select distinct user.user_id     as userId,
-    //                      user.dept_id     as deptId,
-    //                      user.user_name   as userName,
-    //                      user.nick_name   as nickName,
-    //                      user.email,
-    //                      user.phonenumber,
-    //                      user.status,
-    //                      user.create_time as createTime
-    //      from sys_user user
-    //               left join sys_dept dept on user.dept_id = dept.dept_id
-    //               left join sys_user_role user_dept on user.user_id = user_dept.user_id
-    //               left join sys_role role on role.role_id = user_dept.role_id
-    //      where user.del_flag = '0'
-    //        and (role.role_id != #{searchReq.roleId} or role.role_id IS NULL)
-    //        and user.user_id not in (select user.user_id
-    //                                 from sys_user u
-    //                                          inner join sys_user_role ur
-    //                                                     on user.user_id = user_dept.user_id and user_dept.role_id = #{searchReq.roleId})
-    //      <if test="searchReq.userName != null and searchReq.userName != ''">
-    //          AND user.user_name like concat('%', #{searchReq.userName}, '%')
-    //      </if>
-    //      <if test="searchReq.phonenumber != null and searchReq.phonenumber != ''">
-    //          AND user.phonenumber like concat('%', #{searchReq.phonenumber}, '%')
-    //      </if>
-    //      <!-- 数据范围过滤 -->
-    //      ${searchReq.params.dataScope}
     EasyPageResult<AllocatedUserDTO> pageResult = entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)
-      .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId())).asAlias(SysDept.TABLE_ALIAS)
-      .leftJoin(SysUserRole.class, (user, dept, userRole) -> user.userId().eq(userRole.userId()))
-      .leftJoin(SysRole.class, (user, dept, userRole, role) -> userRole.roleId().eq(role.roleId()))
-      .where((user, dept, userRole, role) -> {
+      .where(user -> {
         user.delFlag().eq(UserConstants.NORMAL);
-        role.or(() -> {
-          role.roleId().ne(searchReq.getRoleId());
-          role.roleId().isNull();
-        });
-        user.userId().notIn(IdUtils.isIdValid(searchReq.getRoleId()),
-          entityQuery.queryable(SysUser.class)
-            .innerJoin(SysUserRole.class, (u, ur) -> {
-              u.userId().eq(ur.userId());
-              ur.roleId().eq(searchReq.getRoleId());
-            })
-            .select((u, ur) -> new LongProxy(u.userId())));
-
+        user.roles().none(role -> role.roleId().eq(IdUtils.isIdValid(searchReq.getRoleId()), searchReq.getRoleId()));
         user.userName().like(StrUtil.isNotBlank(searchReq.getUserName()), searchReq.getUserName());
         user.phonenumber().like(StrUtil.isNotBlank(searchReq.getPhonenumber()), searchReq.getPhonenumber());
-        dataScope.applyTo(user, dept.deptId(), user.userId());
+        dataScope.applyTo(user, user.dept().deptId(), user.userId());
       })
-
-      .select((user, dept, userRole, role) -> new AllocatedUserDTOProxy()
+      .select(user -> new AllocatedUserDTOProxy()
         .userId().set(user.userId())
         .deptId().set(user.deptId())
-        .deptName().set(dept.deptName())
+        .deptName().set(user.dept().deptName())
         .userName().set(user.userName())
         .nickName().set(user.nickName())
         .email().set(user.email())
         .phonenumber().set(user.phonenumber())
         .status().set(user.status())
         .createTime().set(user.createTime()))
-      .distinct()
       .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
     return Page.of(pageRequest, pageResult);
   }
@@ -249,21 +202,23 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public SysUserDTO selectUserByUserName(final String userName) {
 
-    return self.getSysUserDTOQuery((user, dept) -> {
+    return self.getSysUserDTOQuery(user -> {
       user.userName().eq(userName);
       user.delFlag().eq(UserConstants.NORMAL);
     }).singleOrNull();
   }
 
 
-  /** 构造已预加载部门与角色的用户 DTO 查询 */
+  /** 构造已预加载部门与角色的用户 DTO 查询(角色仅取启用状态) */
   @Override
-  public Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression2<SysUserProxy, SysDeptProxy> whereExpression) {
+  public Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression1<SysUserProxy> whereExpression) {
     return entityQuery.queryable(SysUser.class)
-      .leftJoin(SysDept.class, (user, dept) -> user.deptId().eq(dept.deptId()))
       .where(whereExpression)
       .include(SysUserProxy::dept)
-      .include(SysUserProxy::roles)
+      .include(SysUserProxy::roles, roleQuery -> {
+        // 停用角色不参与授权, 预加载时即过滤
+        roleQuery.where(role -> role.status().eq(UserConstants.NORMAL));
+      })
       .selectAutoInclude(SysUserDTO.class);
   }
 
@@ -277,7 +232,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   public SysUserDTO selectUserById(final Long userId) {
 
 //    return getBaseMapper().selectUserByUserId(userId);
-    return self.getSysUserDTOQuery((user, dept) -> {
+    return self.getSysUserDTOQuery(user -> {
       user.userId().eq(userId);
       user.delFlag().eq(UserConstants.NORMAL);
     }).singleNotNull();
@@ -296,7 +251,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 //      .eq(SysUser::getUserName, userName)
 //      .oneOpt()
 //      .map(SysUser::getUserId).orElse(-1L);
-    final Long userId = self.findUserIdByUserName(userName);
+    final Long userId = requireUserIdByUserName(userName);
 
     List<Long> roleIdList = userRoleService.findRoleIdsByUserId(userId);
 
@@ -315,12 +270,21 @@ public class SystemUserServiceImpl implements ISystemUserService {
    */
   @Override
   public String selectUserPostGroup(final String userName) {
-    final Long userId = self.findUserIdByUserName(userName);
+    final Long userId = requireUserIdByUserName(userName);
     final List<Long> postIdList = userPostService.findPostIdsByUserId(userId);
     if (CollectionUtil.isEmpty(postIdList)) {
       return StrUtil.EMPTY;
     }
     return postService.listByIds(postIdList).stream().map(SysPost::getPostName).collect(Collectors.joining(","));
+  }
+
+  /** 按用户名取用户ID, 查无此人或已软删时抛业务异常 */
+  private Long requireUserIdByUserName(final String userName) {
+    final Long userId = self.findUserIdByUserName(userName);
+    if (ObjectUtil.isNull(userId)) {
+      throw new ServiceException("用户不存在");
+    }
+    return userId;
   }
 
 
@@ -456,6 +420,13 @@ public class SystemUserServiceImpl implements ISystemUserService {
     checkUserDataScope(context, userId);
     checkUserFieldUnique("修改", updateReq.getUserName(), updateReq.getPhonenumber(), updateReq.getEmail(), userId);
 
+    // 整行编辑提交, 状态与部门为必填, 缺失视为非法请求
+    if (StrUtil.isBlank(updateReq.getStatus())) {
+      throw new ServiceException("修改用户'" + updateReq.getUserName() + "'失败，状态不能为空");
+    }
+    if (ObjectUtil.isNull(updateReq.getDeptId())) {
+      throw new ServiceException("修改用户'" + updateReq.getUserName() + "'失败，部门不能为空");
+    }
 
 //    final SysUser sysUser = getBaseMapper().selectById(userId);
     final SysUser sysUser = entityQuery.queryable(SysUser.class)
@@ -463,15 +434,20 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .singleNotNull();
 
 
-    userRoleService.reassignRoles(userId, updateReq.getRoleIds());
+    // null 表示本次未提交角色/岗位信息, 跳过重分配; 空集合表示显式清空
+    if (ObjectUtil.isNotNull(updateReq.getRoleIds())) {
+      userRoleService.reassignRoles(userId, updateReq.getRoleIds());
+    }
 
-    userPostService.reassignPosts(userId, updateReq.getPostIds());
+    if (ObjectUtil.isNotNull(updateReq.getPostIds())) {
+      userPostService.reassignPosts(userId, updateReq.getPostIds());
+    }
 
     BeanUtil.copyProperties(updateReq, sysUser);
 
 //    return getBaseMapper().updateById(sysUser);
     final long rows = entityQuery.updatable(sysUser)
-      .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
+      .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
       .executeRows();
     SaSessionBizTool.invalidateUser(userId);
     return rows;
@@ -613,7 +589,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .where(user -> user.userName().eq(userName))
       .executeRows() > 0;
     if (updated) {
-      SaSessionBizTool.logoutByLoginId(findUserIdByUserName(userName));
+      // 查无有效用户(如已软删)时无从失效会话, 跳过
+      final Long userId = self.findUserIdByUserName(userName);
+      if (ObjectUtil.isNotNull(userId)) {
+        SaSessionBizTool.logoutByLoginId(userId);
+      }
     }
     return updated;
   }
@@ -749,7 +729,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * 根据用户名称查询用户ID
    *
    * @param userName 用户名称
-   * @return 用户ID; 查无此人时返回 -1, 同名多行视为数据错误直接抛出
+   * @return 用户ID; 查无此人或已软删时返回 {@code null}, 同名多行视为数据错误直接抛出
    */
   @Override
   public Long findUserIdByUserName(final String userName) {
@@ -758,10 +738,13 @@ public class SystemUserServiceImpl implements ISystemUserService {
 //      .oneOpt().map(SysUser::getUserId)
 //      .orElse(-1L);
     return entityQuery.queryable(SysUser.class)
-      .where(user -> user.userName().eq(userName))
+      .where(user -> {
+        user.userName().eq(userName);
+        user.delFlag().eq(UserConstants.NORMAL);
+      })
       .select(SysUserProxy::userId)
       .singleOptional()
-      .orElse(-1L);
+      .orElse(null);
   }
 
   /** 根据用户ID查询用户 */

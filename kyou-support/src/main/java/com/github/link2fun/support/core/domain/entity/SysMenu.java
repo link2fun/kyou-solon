@@ -1,6 +1,7 @@
 package com.github.link2fun.support.core.domain.entity;
 
 import com.easy.query.core.annotation.*;
+import com.easy.query.core.enums.RelationTypeEnum;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -36,7 +37,7 @@ public class SysMenu extends BaseEntity implements ProxyEntityAvailable<SysMenu,
   private static final long serialVersionUID = 1L;
 
   /** 菜单ID */
-  @Column(value = "menu_id",primaryKey = true,generatedKey = true)
+  @Column(value = "menu_id", primaryKey = true, generatedKey = true)
   @JsonSerialize(using = ToStringSerializer.class)
   private Long menuId;
 
@@ -111,5 +112,9 @@ public class SysMenu extends BaseEntity implements ProxyEntityAvailable<SysMenu,
   /** 子菜单 */
   @ColumnIgnore
   private List<SysMenu> children = new ArrayList<>();
+
+  /** 菜单和角色菜单关联关系 */
+  @Navigate(value = RelationTypeEnum.ManyToMany, selfProperty = Fields.menuId, targetProperty = SysRoleMenu.Fields.menuId)
+  private List<SysRoleMenu> roleMenuList;
 
 }

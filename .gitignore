@@ -39,3 +39,7 @@ doc/pdmaner/.back_kyou-solon
 app*local.yml
 
 env/docker/.env
+
+### 本地文档（不纳入 git 管理） ###
+.scratch/
+*.md

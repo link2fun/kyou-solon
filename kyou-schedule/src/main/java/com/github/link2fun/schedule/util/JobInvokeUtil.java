@@ -3,12 +3,14 @@ package com.github.link2fun.schedule.util;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.schedule.modular.job.model.SysJob;
+import com.github.link2fun.support.exception.job.TaskException;
 import org.noear.solon.Solon;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 任务执行工具
@@ -16,6 +18,13 @@ import java.util.List;
  * @author ruoyi
  */
 public class JobInvokeUtil {
+  /** 方法级白名单（bean名#方法名），执行前校验，防止直接修改数据库绕过入口校验 */
+  private static final Set<String> METHOD_WHITELIST = Set.of(
+    "ryTask#ryMultipleParams",
+    "ryTask#ryParams",
+    "ryTask#ryNoParams"
+  );
+
   /**
    * 执行方法
    *
@@ -27,13 +36,17 @@ public class JobInvokeUtil {
     String methodName = getMethodName(invokeTarget);
     List<Object[]> methodParams = getMethodParams(invokeTarget);
 
-    if (!isValidClassName(beanName)) {
-      Object bean = Solon.context().getBean(beanName);
-      invokeMethod(bean, methodName, methodParams);
-    } else {
-      Object bean = Class.forName(beanName).getDeclaredConstructor().newInstance();
-      invokeMethod(bean, methodName, methodParams);
+    if (isValidClassName(beanName)) {
+      throw new TaskException("不支持类名形式的调用目标：" + invokeTarget, TaskException.Code.CONFIG_ERROR);
     }
+    if (!METHOD_WHITELIST.contains(beanName + "#" + methodName)) {
+      throw new TaskException("调用目标不在方法白名单内：" + invokeTarget, TaskException.Code.CONFIG_ERROR);
+    }
+    Object bean = Solon.context().getBean(beanName);
+    if (ObjectUtil.isNull(bean)) {
+      throw new TaskException("调用目标 bean 不存在：" + beanName, TaskException.Code.CONFIG_ERROR);
+    }
+    invokeMethod(bean, methodName, methodParams);
   }
 
   /**

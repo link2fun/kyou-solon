@@ -27,13 +27,13 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 数据范围与真实查询拼装的集成 smoke：判定矩阵与 SQL 形状由 DataScopeSqlTest 覆盖，
+ * 数据范围与真实查询拼装的集成 smoke：判定矩阵与 SQL 形状由 DataScopeSqlIT 覆盖，
  * 这里只钉「别名与 asAlias 对齐」与「条件真的进了查询结果」这类纯单测看不到的故障。
  */
 @Import(profiles = "classpath:app-test.yml", scanPackages = "com.github.link2fun")
 @SolonTest(value = KyouApp.class)
 @ExtendWith(SolonJUnit5Extension.class)
-public class DataScopeSmokeTest {
+public class DataScopeSmokeIT {
 
   /** 种子数据里的超管用户 ID */
   private static final long SUPER_ADMIN_ID = 1L;
@@ -191,5 +191,21 @@ public class DataScopeSmokeTest {
 
     // 未分配角色 2 的用户只有 admin(部门 103), 不在白名单 {100,101,105} 内
     assertTrue(page.getRecords().isEmpty());
+  }
+
+  @Test
+  @DisplayName("未分配用户列表: 不带 roleId 时守卫生效, 语义为「无任何角色的用户」而非「全部用户」")
+  public void unallocatedListWithoutRoleIdGuardsToRolelessUsers() {
+    final ActionContext admin = contextOf(SUPER_ADMIN_ID, SUPER_ADMIN_DEPT_ID, 1L, "1");
+
+    // roleId 保持 null, 模拟入口 GET 不带 roleId(Controller 对 roleId 无校验, null 直达 service)
+    final SysUser searchReq = new SysUser();
+    final Page<AllocatedUserDTO> page = userService.selectUnallocatedList(admin, Page.of(1L, 10L), searchReq);
+
+    // 种子数据里两个用户都持有角色(sys_user_role: 1→1, 2→2), 无任何角色的用户是空集。
+    // 若 none(eq(...)) 的 IdUtils.isIdValid 守卫丢失, eq(null) 生成 role_id = null 恒 UNKNOWN,
+    // EXISTS 恒假 → 退化为「全部未删用户」, 超管下会查出 2 条, 本断言即失败。
+    assertTrue(page.getRecords().isEmpty(),
+      "roleId=null 应返回无任何角色的用户(种子数据下为空), 而不是全部用户");
   }
 }

@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * MappingSync 的纯逻辑测试：用假 adapter 替代真实关联表, 覆盖差集、去重与空集合语义。
- * adapter 各自的 EasyQuery 写法由 kyou-main 的 MappingSyncSmokeTest 覆盖。
+ * adapter 各自的 EasyQuery 写法由 kyou-main 的 MappingSyncSmokeIT 覆盖。
  */
 public class MappingSyncTest {
 

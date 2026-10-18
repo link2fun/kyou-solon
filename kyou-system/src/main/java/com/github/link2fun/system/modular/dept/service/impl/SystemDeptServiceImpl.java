@@ -2,9 +2,8 @@ package com.github.link2fun.system.modular.dept.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import com.easy.query.api.proxy.base.LongProxy;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
-import com.easy.query.api.proxy.entity.select.EntityQueryable;
+import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
@@ -14,7 +13,7 @@ import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
-import com.github.link2fun.support.core.domain.entity.SysRoleDept;
+import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import com.github.link2fun.support.core.text.Convert;
 import com.github.link2fun.support.core.tree.TreeBuilder;
 import com.github.link2fun.support.easyquery.DataScope;
@@ -138,23 +137,18 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
     final SysRole role = roleService.selectRoleById(roleId, SysRole.class);
 
     return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
-      .leftJoin(SysRoleDept.class, (dept, roleDept) -> dept.deptId().eq(roleDept.deptId()))
-      .where((dept, roleDept) -> roleDept.roleId().eq(roleId))
-      .where((dept, roleDept) -> {
+      .where(dept -> {
+        dept.roleDeptList().any(roleDept -> roleDept.roleId().eq(roleId));
         if (role.getDeptCheckStrictly()) {
-          // select dept.parent_id from sys_dept d
-          //    //          inner join sys_role_dept rd on dept.dept_id = role_dept.dept_id and role_dept.role_id = #{roleId}
-          EntityQueryable<LongProxy, Long> subQuery = entityQuery.queryable(SysDept.class).asAlias("d")
-            .innerJoin(SysRoleDept.class, (_dept, _roleDept) -> {
-              _dept.deptId().eq(_roleDept.deptId());
-              _roleDept.roleId().eq(roleId);
-            })
-            .select((_dept, _roleDept) -> new LongProxy(_dept.deptId()));
+          // 严格勾选: 排除已勾选部门的父节点, 只回显该角色勾选的叶子
+          Query<Long> checkedParentIds = entityQuery.queryable(SysDept.class)
+            .where(_dept -> _dept.roleDeptList().any(_roleDept -> _roleDept.roleId().eq(roleId)))
+            .selectColumn(SysDeptProxy::parentId);
 
-          dept.deptId().notIn(subQuery);
+          dept.deptId().notIn(checkedParentIds);
         }
       })
-      .selectColumn((dept, roleDept) -> dept.deptId())
+      .selectColumn(SysDeptProxy::deptId)
       .toList();
 
 

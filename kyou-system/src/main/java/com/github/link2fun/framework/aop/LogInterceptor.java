@@ -16,8 +16,6 @@ import com.github.link2fun.framework.auth.AuditSink;
 import com.github.link2fun.framework.tool.LogTool;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.core.domain.AjaxResult;
-import com.github.link2fun.support.core.domain.R;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.enums.BusinessStatus;
@@ -29,12 +27,12 @@ import org.noear.solon.core.aspect.Interceptor;
 import org.noear.solon.core.aspect.Invocation;
 import org.noear.solon.core.handle.Context;
 import org.noear.solon.core.handle.DownloadedFile;
-import org.noear.solon.core.handle.Result;
 import org.noear.solon.core.handle.UploadedFile;
 import org.noear.solon.core.wrap.MethodHolder;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,7 +62,7 @@ public class LogInterceptor implements Interceptor {
   static final FilterProvider filters = new SimpleFilterProvider()
     .addFilter("defaultFilter", SimpleBeanPropertyFilter.serializeAllExcept(EXCLUDE_PROPERTIES));
 
-  public static final ObjectMapper objectMapper = new ObjectMapper().setFilterProvider(filters);
+  public static final ObjectMapper objectMapper = new ObjectMapper().setFilterProvider(filters).findAndRegisterModules();
 
 
   // 创建一个LoadingCache来缓存ObjectMapper实例
@@ -81,6 +79,53 @@ public class LogInterceptor implements Interceptor {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /** PARAMS 日志脱敏：敏感 key 匹配正则（不区分大小写） */
+  private static final Pattern SENSITIVE_PARAM_PATTERN = Pattern.compile("(?i)(pass|pwd|token|secret|credential|idcard|phone|email)");
+
+  /**
+   * PARAMS 日志序列化：脱敏后输出，且序列化失败时吞掉异常（日志失败绝不影响业务）
+   */
+  private static String toMaskedParamsJson(Map<?, ?> paramsMap) {
+    try {
+      return toJsonStr(maskSensitiveMap(paramsMap));
+    } catch (Exception ignored) {
+      return "[unserializable]";
+    }
+  }
+
+  /**
+   * 递归脱敏 Map 结构：key 命中敏感词的值替换为 ***，嵌套 Map/集合继续递归处理
+   */
+  private static Map<String, Object> maskSensitiveMap(Map<?, ?> source) {
+    Map<String, Object> masked = new LinkedHashMap<>();
+    for (Map.Entry<?, ?> entry : source.entrySet()) {
+      String key = String.valueOf(entry.getKey());
+      if (SENSITIVE_PARAM_PATTERN.matcher(key).find()) {
+        masked.put(key, "***");
+      } else {
+        masked.put(key, maskSensitiveValue(entry.getValue()));
+      }
+    }
+    return masked;
+  }
+
+  /**
+   * 递归脱敏嵌套 Map/集合中的参数值
+   */
+  private static Object maskSensitiveValue(Object value) {
+    if (value instanceof Map) {
+      return maskSensitiveMap((Map<?, ?>) value);
+    }
+    if (value instanceof Collection) {
+      List<Object> maskedItems = new ArrayList<>(((Collection<?>) value).size());
+      for (Object item : (Collection<?>) value) {
+        maskedItems.add(maskSensitiveValue(item));
+      }
+      return maskedItems;
+    }
+    return value;
   }
 
 
@@ -112,17 +157,11 @@ public class LogInterceptor implements Interceptor {
     // URL
     logMsg.append("URL\t: ").append(current.method()).append(" ").append(current.path()).append(System.lineSeparator());
     // PARAMS
-    logMsg.append("PARAMS\t: ").append(toJsonStr(current.paramMap().toValuesMap())).append(System.lineSeparator());
-    // BODY
-    logMsg.append("BODY\t: ").append(current.body()).append(System.lineSeparator());
+    logMsg.append("PARAMS\t: ").append(toMaskedParamsJson(current.paramMap().toValuesMap())).append(System.lineSeparator());
 
     Object invokeResult;
     try {
       invokeResult = inv.invoke();
-      if ((invokeResult instanceof Result<?> || invokeResult instanceof AjaxResult || invokeResult instanceof R<?>) && !StrUtil.equals(current.method(), "GET")) {
-        // 如果是常见的 Result 类型，且不是 GET 请求，打印响应
-        logMsg.append("RESPONSE\t: ").append(objectMapper.writeValueAsString(invokeResult)).append(System.lineSeparator());
-      }
       // 到这里是正常结束的
       handleLog(inv, apiLog, null, invokeResult);
 

@@ -14,10 +14,7 @@ import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
-import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
-import com.github.link2fun.support.core.domain.entity.SysUser;
-import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.DataScope;
@@ -83,19 +80,9 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       })
       .where(roleOuter -> {
         if (dataScope.filters()) {
-          // 角色列表按「角色下有可见用户」判定, 故数据范围作用在关联用户/部门的子查询上
-          roleOuter.expression().exists(() -> {
-            return entityQuery.queryable(SysRole.class)
-              .leftJoin(SysUserRole.class, (role, userRole) -> role.roleId().eq(userRole.roleId()))
-              .leftJoin(SysUser.class, (role, userRole, user) -> userRole.userId().eq(user.userId()))
-              .asAlias(SysUser.TABLE_ALIAS)
-              .leftJoin(SysDept.class, (role, userRole, user, dept) -> user.deptId().eq(dept.deptId()))
-              .asAlias(SysDept.TABLE_ALIAS)
-              .where((role, userRole, user, dept) -> {
-                dataScope.applyTo(role, dept.deptId(), user.userId()); // 数据范围过滤
-                role.roleId().eq(roleOuter.roleId());
-              });
-          });
+          // 角色列表按「角色下有可见用户」判定, 故数据范围作用在关联用户/部门的存在性子查询上
+          roleOuter.userRoleList().any(userRole ->
+            dataScope.applyTo(userRole, userRole.user().dept().deptId(), userRole.user().userId())); // 数据范围过滤
         }
       });
 
@@ -147,16 +134,35 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   @Override
   public Set<String> selectRolePermissionByUserId(final Long userId) {
     List<String> roleKeyList = entityQuery.queryable(SysRole.class)
-      .leftJoin(SysUserRole.class, (role, userRole) -> role.roleId().eq(userRole.roleId()))
-      .where((role, userRole) -> userRole.userId().eq(userId))
-      .selectColumn((role, userRole) -> role.roleKey())
-      .distinct()
+      .where(role -> {
+        role.status().eq(UserConstants.NORMAL);
+        role.userRoleList().any(userRole -> userRole.userId().eq(userId));
+      })
+      .selectColumn(SysRoleProxy::roleKey)
       .toList();
 
     return roleKeyList.stream()
       .flatMap(_roleKey -> StrUtil.split(_roleKey, StrUtil.COMMA).stream())
       .filter(StrUtil::isNotBlank)
       .collect(Collectors.toSet());
+  }
+
+  /**
+   * 查询用户持有的启用角色标识集合(停用/软删角色不参与授权)
+   *
+   * @param userId 用户ID
+   * @return 启用角色的 roleKey 集合
+   */
+  @Override
+  public List<String> listEnabledRoleKeysByUserId(final Long userId) {
+    return entityQuery.queryable(SysRole.class)
+      .where(role -> {
+        role.delFlag().eq(UserConstants.NORMAL);
+        role.status().eq(UserConstants.NORMAL);
+        role.userRoleList().any(userRole -> userRole.userId().eq(userId));
+      })
+      .selectColumn(SysRoleProxy::roleKey)
+      .toList();
   }
 
   /**

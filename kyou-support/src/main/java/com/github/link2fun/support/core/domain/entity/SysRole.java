@@ -85,6 +85,10 @@ public class SysRole extends BaseEntity implements ProxyEntityAvailable<SysRole,
   @Column(value = "remark")
   private String remark;
 
+  /** 角色和用户关联关系 */
+  @Navigate(value = RelationTypeEnum.ManyToMany, selfProperty = Fields.roleId, targetProperty = SysUserRole.Fields.roleId)
+  private List<SysUserRole> userRoleList;
+
   /** 角色和菜单关联关系 */
   @Navigate(value = RelationTypeEnum.ManyToMany, selfProperty = Fields.roleId, targetProperty = SysRoleMenu.Fields.roleId)
   private List<SysRoleMenu> roleMenuList;

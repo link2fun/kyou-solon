@@ -1,8 +1,10 @@
 package com.github.link2fun.schedule.util;
 
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.constant.Constants;
+import com.github.link2fun.support.exception.ServiceException;
 import org.noear.solon.Solon;
 
 /**
@@ -11,6 +13,9 @@ import org.noear.solon.Solon;
  * @author ruoyi
  */
 public class ScheduleUtils {
+
+  /** 定时任务 bean 允许的包名前缀 */
+  private static final String TASK_PACKAGE_PREFIX = "com.github.link2fun.schedule.task";
 
 
   /**
@@ -26,9 +31,12 @@ public class ScheduleUtils {
     if (count > 1) {
       return StrUtil.containsAnyIgnoreCase(invokeTarget, Constants.JOB_WHITELIST_STR);
     }
-    Object obj = Solon.context().getBean(StrUtil.split(invokeTarget, ".").get(0));
+    String beanName = StrUtil.split(invokeTarget, ".").get(0);
+    Object obj = Solon.context().getBean(beanName);
+    if (ObjectUtil.isNull(obj)) {
+      throw new ServiceException("定时任务目标 bean 不存在：" + beanName);
+    }
     String beanPackageName = obj.getClass().getPackage().getName();
-    return StrUtil.containsAnyIgnoreCase(beanPackageName, Constants.JOB_WHITELIST_STR)
-      && !StrUtil.containsAnyIgnoreCase(beanPackageName, Constants.JOB_ERROR_STR);
+    return StrUtil.startWith(beanPackageName, TASK_PACKAGE_PREFIX);
   }
 }
