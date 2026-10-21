@@ -69,7 +69,7 @@ public class MonitorOnlineController extends BaseController {
    * 强退用户
    */
   @SaCheckPermission(value = {"monitor:online:forceLogout"})
-  @Log(title = "在线用户", businessType = BusinessType.FORCE)
+  @Log(title = "在线用户", businessType = BusinessType.FORCE, mask = true)
   @Mapping(value = "/{tokenId}", method = MethodType.DELETE)
   public AjaxResult forceLogout(@Path String tokenId) {
     SaSessionBizTool.kickout(tokenId);

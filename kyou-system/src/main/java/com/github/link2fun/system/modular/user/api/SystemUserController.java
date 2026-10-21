@@ -63,7 +63,8 @@ public class SystemUserController extends BaseController {
     return getDataTable(list);
   }
 
-  @Log(title = "用户管理", businessType = BusinessType.EXPORT)
+  // 搜索条件可带手机号/邮箱，导出接口也要脱敏，否则查询参数会明文进操作日志
+  @Log(title = "用户管理", businessType = BusinessType.EXPORT, mask = true)
   @SaCheckPermission("system:user:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context response, SysUser user) {
@@ -126,7 +127,7 @@ public class SystemUserController extends BaseController {
    * 新增用户
    */
   @SaCheckPermission("system:user:add")
-  @Log(title = "用户管理", businessType = BusinessType.INSERT)
+  @Log(title = "用户管理", businessType = BusinessType.INSERT, mask = true)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysUserReq.AddReq addReq) {
     addReq.setCreateBy(getUsername());
@@ -138,7 +139,7 @@ public class SystemUserController extends BaseController {
    * 修改用户
    */
   @SaCheckPermission("system:user:edit")
-  @Log(title = "用户管理", businessType = BusinessType.UPDATE)
+  @Log(title = "用户管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysUserReq.UpdateReq user) {
     user.setUpdateBy(getUsername());
@@ -160,7 +161,7 @@ public class SystemUserController extends BaseController {
    * 重置密码
    */
   @SaCheckPermission("system:user:resetPwd")
-  @Log(title = "用户管理", businessType = BusinessType.UPDATE)
+  @Log(title = "用户管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(value = "/resetPwd", method = MethodType.PUT)
   public AjaxResult resetPwd(@Body SysUser user) {
     user.setPassword(PasswordUtils.encryptPassword(user.getPassword()));
@@ -172,7 +173,7 @@ public class SystemUserController extends BaseController {
    * 状态修改
    */
   @SaCheckPermission("system:user:edit")
-  @Log(title = "用户管理", businessType = BusinessType.UPDATE)
+  @Log(title = "用户管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(value = "/changeStatus", method = MethodType.PUT)
   public AjaxResult changeStatus(@Body SysUser user) {
     user.setUpdateBy(getUsername());

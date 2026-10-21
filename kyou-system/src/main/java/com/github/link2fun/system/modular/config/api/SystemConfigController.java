@@ -40,7 +40,8 @@ public class SystemConfigController extends BaseController {
     return getDataTable(page);
   }
 
-  @Log(title = "参数管理", businessType = BusinessType.EXPORT)
+  // 搜索条件可带 configValue，导出接口也要脱敏
+  @Log(title = "参数管理", businessType = BusinessType.EXPORT, mask = true)
   @SaCheckPermission("system:config:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context context, SysConfig config) {
@@ -72,7 +73,7 @@ public class SystemConfigController extends BaseController {
    * 新增参数配置
    */
   @SaCheckPermission("system:config:add")
-  @Log(title = "参数管理", businessType = BusinessType.INSERT)
+  @Log(title = "参数管理", businessType = BusinessType.INSERT, mask = true)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysConfig config) {
     config.setCreateBy(getUsername());
@@ -83,7 +84,7 @@ public class SystemConfigController extends BaseController {
    * 修改参数配置
    */
   @SaCheckPermission("system:config:edit")
-  @Log(title = "参数管理", businessType = BusinessType.UPDATE)
+  @Log(title = "参数管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysConfig config) {
     config.setUpdateBy(getUsername());

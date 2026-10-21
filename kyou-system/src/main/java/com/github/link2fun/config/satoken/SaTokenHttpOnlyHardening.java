@@ -1,6 +1,5 @@
 package com.github.link2fun.config.satoken;
 
-import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.config.SaTokenConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.Solon;
@@ -22,8 +21,7 @@ public class SaTokenHttpOnlyHardening {
     Solon.context().getBeanAsync(SaTokenConfig.class, cfg -> {
       if (cfg.getCookie() != null) {
         cfg.getCookie().setHttpOnly(true);
-        // 与 sa-token 插件的注入保持同一实例, 确保 SaManager 持有的是这份配置
-        SaManager.setConfig(cfg);
+        // 拿到的是容器中的 SaTokenConfig bean, sa-token 插件注入的是同一实例, 改字段即全局生效
         log.info("sa-token cookie HttpOnly 已开启");
       }
     });

@@ -30,6 +30,8 @@ import org.noear.solon.data.annotation.Transaction;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Slf4j
@@ -251,6 +253,9 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
     checkDeptNameUnique("新增", dept);
 
     final SysDept parentDept = self.selectDeptById(dept.getParentId());
+    if (ObjectUtil.isNull(parentDept)) {
+      throw new ServiceException("上级部门不存在");
+    }
     if (!StrUtil.equals(parentDept.getStatus(), UserConstants.DEPT_NORMAL)) {
       throw new ServiceException("部门停用，不允许新增");
     }
@@ -273,6 +278,9 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
     final Long deptId = dept.getDeptId();
     checkDeptDataScope(context, deptId);
     checkDeptNameUnique("修改", dept);
+    if (dept.getParentId() == null) {
+      throw new ServiceException("修改部门'" + dept.getDeptName() + "'失败，上级部门不能为空");
+    }
     if (dept.getParentId().equals(deptId)) {
       throw new ServiceException("修改部门'" + dept.getDeptName() + "'失败，上级部门不能是自己");
     }
@@ -280,9 +288,27 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
       throw new ServiceException("该部门包含未停用的子部门！");
     }
 
+    if (dept.getParentId() == 0L) {
+      // 根部门（parentId=0）没有上级记录, ancestors 固定为 "0"；但子孙的 ancestors 仍要跟着改写,
+      // 否则 find_in_set 会继续沿旧父链命中, 部门树与数据权限都会错乱
+      final SysDept oldDept = self.selectDeptById(deptId);
+      dept.setAncestors("0");
+      if (ObjectUtil.isNotNull(oldDept)) {
+        updateDeptChildren(deptId, "0", oldDept.getAncestors());
+      }
+      return entityQuery.updatable(dept).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
+    }
+
     SysDept newParentDept = self.selectDeptById(dept.getParentId());
     SysDept oldDept = self.selectDeptById(dept.getDeptId());
-    if (ObjectUtil.isNotNull(newParentDept) && ObjectUtil.isNotNull(oldDept)) {
+    if (ObjectUtil.isNull(newParentDept)) {
+      throw new ServiceException("修改部门'" + dept.getDeptName() + "'失败，上级部门不存在");
+    }
+    // 上级不能是自己的子孙：否则 ancestors 首尾相接成环, 树构建会栈溢出, find_in_set 递归查询也会失效
+    if (containsAncestor(newParentDept.getAncestors(), deptId)) {
+      throw new ServiceException("修改部门'" + dept.getDeptName() + "'失败，上级部门不能是自己的下级部门");
+    }
+    if (ObjectUtil.isNotNull(oldDept)) {
       String newAncestors = newParentDept.getAncestors() + "," + newParentDept.getDeptId();
       String oldAncestors = oldDept.getAncestors();
       dept.setAncestors(newAncestors);
@@ -295,6 +321,25 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
       updateParentDeptStatusNormal(dept);
     }
     return result;
+  }
+
+  /**
+   * 判断 deptId 是否出现在上级链中（即 deptId 是 parent 的祖先）。
+   *
+   * <p>ancestors 形如 "0,100,101"，必须按逗号切分后逐个比较：
+   * 字符串包含会把 1 误判成 10 的祖先，从而错误拦截合法的移动。
+   *
+   * @param ancestors 上级链
+   * @param deptId    待检查的部门ID
+   * @return 命中返回 true
+   */
+  static boolean containsAncestor(final String ancestors, final Long deptId) {
+    if (StrUtil.isBlank(ancestors) || deptId == null) {
+      return false;
+    }
+    final String target = String.valueOf(deptId);
+    return StrUtil.split(ancestors, ',').stream()
+      .anyMatch(item -> StrUtil.equals(item.trim(), target));
   }
 
   /**
@@ -316,13 +361,35 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param oldAncestors 旧的父ID集合
    */
   public void updateDeptChildren(Long deptId, String newAncestors, String oldAncestors) {
+    if (StrUtil.isBlank(oldAncestors) || StrUtil.equals(oldAncestors, newAncestors)) {
+      // 父链没变（如根部门之间互转）或旧值缺失：子孙的 ancestors 无需改写
+      return;
+    }
     List<SysDept> childrenList = self.selectChildrenDeptById(deptId);
     for (SysDept child : childrenList) {
-      child.setAncestors(child.getAncestors().replaceFirst(oldAncestors, newAncestors));
+      child.setAncestors(rebaseAncestors(child.getAncestors(), oldAncestors, newAncestors));
     }
     if (!childrenList.isEmpty()) {
       entityQuery.updatable(childrenList).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
     }
+  }
+
+  /**
+   * 把子部门的 ancestors 从旧父链改写为新父链。
+   *
+   * <p>{@code replaceFirst} 的第一个参数是正则、第二个参数会解释 {@code $} 与 {@code \}，
+   * 直接传裸字符串在 ancestors 含元字符时会静默改写错误，这里显式 quote。
+   *
+   * @param childAncestors 子部门原 ancestors，形如 {@code "0,100,101"}
+   * @param oldAncestors   被移动部门的旧父链
+   * @param newAncestors   被移动部门的新父链
+   * @return 改写后的 ancestors；输入缺失时原样返回
+   */
+  static String rebaseAncestors(String childAncestors, String oldAncestors, String newAncestors) {
+    if (StrUtil.isBlank(childAncestors) || StrUtil.isBlank(oldAncestors)) {
+      return childAncestors;
+    }
+    return childAncestors.replaceFirst(Pattern.quote(oldAncestors), Matcher.quoteReplacement(newAncestors));
   }
 
   /**

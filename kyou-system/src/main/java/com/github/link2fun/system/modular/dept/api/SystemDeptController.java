@@ -38,7 +38,7 @@ public class SystemDeptController extends BaseController {
   public AjaxResult list(SysDept dept) {
 
     final ActionContext context = ActionContext.current();
-    List<SysDept> deptList = deptService.selectDeptList(context,dept);
+    List<SysDept> deptList = deptService.selectDeptList(context, dept);
 
     return successData(deptList);
   }
@@ -63,7 +63,7 @@ public class SystemDeptController extends BaseController {
   @Mapping(value = "/{deptId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long deptId) {
     final ActionContext context = ActionContext.current();
-    deptService.checkDeptDataScope(context,deptId);
+    deptService.checkDeptDataScope(context, deptId);
     return successData(deptService.selectDeptById(deptId));
   }
 
@@ -71,7 +71,7 @@ public class SystemDeptController extends BaseController {
    * 新增部门
    */
   @SaCheckPermission("system:dept:add")
-  @Log(title = "部门管理", businessType = BusinessType.INSERT)
+  @Log(title = "部门管理", businessType = BusinessType.INSERT, mask = true)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysDept dept) {
     dept.setCreateBy(getUsername());
@@ -82,7 +82,7 @@ public class SystemDeptController extends BaseController {
    * 修改部门
    */
   @SaCheckPermission("system:dept:edit")
-  @Log(title = "部门管理", businessType = BusinessType.UPDATE)
+  @Log(title = "部门管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysDept dept) {
     dept.setUpdateBy(getUsername());

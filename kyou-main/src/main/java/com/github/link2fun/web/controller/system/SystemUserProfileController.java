@@ -52,7 +52,7 @@ public class SystemUserProfileController extends BaseController {
    * 修改用户
    */
   @SaCheckLogin
-  @Log(title = "个人信息", businessType = BusinessType.UPDATE)
+  @Log(title = "个人信息", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
   public AjaxResult updateProfile(@Body SysUser updateUserRequest) {
     final Long userId = getUserId();
@@ -63,7 +63,7 @@ public class SystemUserProfileController extends BaseController {
    * 修改密码
    */
   @SaCheckLogin
-  @Log(title = "个人信息", businessType = BusinessType.UPDATE)
+  @Log(title = "个人信息", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(value = "/updatePwd", method = MethodType.PUT)
   public AjaxResult updatePwd(String oldPassword, String newPassword) {
     SessionUser currentUser = getCurrentUser();

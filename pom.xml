@@ -39,8 +39,6 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!--        打包跳过单元测试-->
-    <skipTests>true</skipTests>
   </properties>
 
   <dependencyManagement>
@@ -187,6 +185,17 @@
   <!-- 集成测试: *IT 需要容器(MySQL/Redis/启动 KyouApp), 默认不随构建执行(surefire 只拾取 *Test),
        由 failsafe 绑定本 profile, -Pintegration 时才在 integration-test/verify 阶段执行 -->
   <profiles>
+    <!-- 本地迭代档: 跳过测试的编译与执行(maven.test.skip 同时作用于 surefire 与 failsafe)。
+         默认构建仍执行单测, 只有显式 -Pquick 才走这条快路径:
+           mvn -Pquick package        # 快速打包, 不编译也不跑测试
+         注意 -DskipTests 只跳过执行、仍编译测试代码, 省不掉那部分时间 -->
+    <profile>
+      <id>quick</id>
+      <properties>
+        <maven.test.skip>true</maven.test.skip>
+      </properties>
+    </profile>
+
     <profile>
       <id>integration</id>
       <build>

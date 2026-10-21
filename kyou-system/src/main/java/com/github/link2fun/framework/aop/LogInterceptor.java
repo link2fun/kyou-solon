@@ -6,12 +6,8 @@ import cn.hutool.core.thread.threadlocal.NamedThreadLocal;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.link2fun.framework.auth.AuditSink;
 import com.github.link2fun.framework.tool.LogTool;
 import com.github.link2fun.support.annotation.Log;
@@ -32,98 +28,194 @@ import org.noear.solon.core.wrap.MethodHolder;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 public class LogInterceptor implements Interceptor {
 
+  /** 序列化失败的统一占位输出：能区分「空对象」和「序列化失败」，日志失败绝不影响业务 */
+  static final String UNSERIALIZABLE = "[unserializable]";
+
+  /** 入日志的集合/Map 最多保留的元素个数，超出先截断再序列化（防大报文全量序列化后被 sub(2000) 丢弃） */
+  private static final int MAX_LOG_ITEMS = 100;
+
+  /** 入日志的字符串最大长度，超出先截断再序列化 */
+  private static final int MAX_LOG_STRING_LEN = 4096;
+
+  /** 截断深度上限：只走 Map/集合这类可廉价计量的结构，不反射进 Bean 字段（防循环引用） */
+  private static final int MAX_TRUNCATE_DEPTH = 3;
+
+  private static final String TRUNCATED = "…(已截断)";
+
+  /** 路径中长度达到该值的单段视为会话凭据：sa-token 的 uuid 风格 token 为 32 位，24 是留余量的下界 */
+  private static final int PATH_TOKEN_MIN_LEN = 24;
+
+  /** 路径里的凭据保留的首尾位数：够核对是哪一次会话，又不足以重放 */
+  private static final int PATH_KEEP_PREFIX = 4;
+  private static final int PATH_KEEP_SUFFIX = 4;
 
   /**
-   * 排除敏感属性字段
+   * 路径里的长字符段（{@code /monitor/online/{tokenId}} 之类）。
+   *
+   * <p>会话 token 是「持有即可用」的凭据，落进 {@code oper_url} 等于把可重放的密钥写进审计表，
+   * 而 {@code @Log(mask=true)} 只作用于参数与响应体，管不到 URL。
    */
-  public static final String[] EXCLUDE_PROPERTIES = {"password", "oldPassword", "newPassword", "confirmPassword"};
+  private static final Pattern PATH_SECRET = Pattern.compile("(?<=/)[^/?#]{" + PATH_TOKEN_MIN_LEN + ",}(?=/|$)");
+
 
   /**
    * 计算操作消耗时间
    */
   private static final ThreadLocal<Long> TIME_THREADLOCAL = new NamedThreadLocal<>("Cost Time");
 
+  /** 审计写入端；由 KyouApp 在 AuditSink bean 注册后注入 */
   private AuditSink auditSink;
+
+  /**
+   * 日志用的对象映射器。默认与 API 响应同一份（Solon 的 {@code JacksonStringSerializer}），
+   * 日期格式、Long 转换等与接口输出保持一致；未注入时退回独立实例（单元测试用）。
+   */
+  private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
   /** 由 KyouApp 在 AuditSink bean 注册后注入 */
   public void setAuditSink(AuditSink auditSink) {
     this.auditSink = auditSink;
   }
 
-
-  /** 定义jackson对象 */
-  static final FilterProvider filters = new SimpleFilterProvider()
-    .addFilter("defaultFilter", SimpleBeanPropertyFilter.serializeAllExcept(EXCLUDE_PROPERTIES));
-
-  public static final ObjectMapper objectMapper = new ObjectMapper().setFilterProvider(filters).findAndRegisterModules();
-
-
-  // 创建一个LoadingCache来缓存ObjectMapper实例
-  private static final LoadingCache<Set<String>, ObjectMapper> OBJECT_MAPPER_CACHE = Caffeine.newBuilder()
-    .build((excludeParamNames) -> objectMapper.copy()
-      .setFilterProvider(new SimpleFilterProvider().addFilter("customFilter", SimpleBeanPropertyFilter.serializeAllExcept(excludeParamNames)))
-    );
-
-
-  /** toJsonStr */
-  private static String toJsonStr(Object obj) {
-    try {
-      return objectMapper.writeValueAsString(obj);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  /**
+   * 注入全局映射器。由 KyouApp 在 Solon 序列化器初始化完成后调用，
+   * 使日志里的日期、Long 呈现与 API 响应逐字节一致。
+   */
+  public void setObjectMapper(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
   }
 
-  /** PARAMS 日志脱敏：敏感 key 匹配正则（不区分大小写） */
-  private static final Pattern SENSITIVE_PARAM_PATTERN = Pattern.compile("(?i)(pass|pwd|token|secret|credential|idcard|phone|email)");
+  /** 当前日志使用的映射器（测试与诊断用） */
+  ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
 
   /**
-   * PARAMS 日志序列化：脱敏后输出，且序列化失败时吞掉异常（日志失败绝不影响业务）
+   * 序列化并脱敏（{@code @Log(mask=true)} 的方法专用）。
+   *
+   * <p>先序列化成 JSON 树，再对<b>实际序列化出的内容</b>逐字段判定——Map 的 key、
+   * 运行时子类多出的字段、自定义序列化器的输出都在覆盖范围内，不存在
+   * 「声明类型干净就跳过脱敏」的旁路。序列化失败统一返回 {@link #UNSERIALIZABLE}。
    */
-  private static String toMaskedParamsJson(Map<?, ?> paramsMap) {
+  String toMaskedJson(Object obj, Set<String> excludeNames) {
+    return toTreeJson(obj, LogMasker::mask, excludeNames);
+  }
+
+  /**
+   * 序列化并整体剔除指定字段（不脱敏）。{@code @Log(mask=false)} 但声明了
+   * {@code excludeParamNames} 的方法使用。
+   */
+  private String toFilteredJson(Object obj, Set<String> excludeNames) {
+    return toTreeJson(obj, LogMasker::removeNames, excludeNames);
+  }
+
+  /** 共享的「建树 → 变换 → 回写」管线；null 写 "null"，失败统一 {@link #UNSERIALIZABLE} */
+  private String toTreeJson(Object obj, BiConsumer<JsonNode, Set<String>> transformer, Set<String> excludeNames) {
+    if (obj == null) {
+      return "null";
+    }
     try {
-      return toJsonStr(maskSensitiveMap(paramsMap));
+      JsonNode node = objectMapper.valueToTree(truncateForLog(obj));
+      transformer.accept(node, excludeNames);
+      return objectMapper.writeValueAsString(node);
     } catch (Exception ignored) {
-      return "[unserializable]";
+      return UNSERIALIZABLE;
+    }
+  }
+
+  /** 序列化入日志；失败统一返回 {@link #UNSERIALIZABLE}，日志失败绝不影响业务 */
+  private String toJsonQuietly(Object obj) {
+    try {
+      return objectMapper.writeValueAsString(truncateForLog(obj));
+    } catch (Exception ignored) {
+      return UNSERIALIZABLE;
     }
   }
 
   /**
-   * 递归脱敏 Map 结构：key 命中敏感词的值替换为 ***，嵌套 Map/集合继续递归处理
+   * 按方法注解序列化入参/响应：{@code mask=true} 脱敏，否则原样输出
+   * （声明了 {@code excludeParamNames} 时仅剔除指定字段）。
    */
-  private static Map<String, Object> maskSensitiveMap(Map<?, ?> source) {
-    Map<String, Object> masked = new LinkedHashMap<>();
-    for (Map.Entry<?, ?> entry : source.entrySet()) {
-      String key = String.valueOf(entry.getKey());
-      if (SENSITIVE_PARAM_PATTERN.matcher(key).find()) {
-        masked.put(key, "***");
-      } else {
-        masked.put(key, maskSensitiveValue(entry.getValue()));
-      }
+  private String serializeForLog(Object value, Log apiLog) {
+    Set<String> excludeNames = excludeNamesOf(apiLog);
+    if (apiLog.mask()) {
+      return toMaskedJson(value, excludeNames);
     }
-    return masked;
+    if (!excludeNames.isEmpty()) {
+      return toFilteredJson(value, excludeNames);
+    }
+    return toJsonQuietly(value);
+  }
+
+  /** 注解里的排除名单转 Set；空数组短路，绝大多数方法在这里直接返回空集合 */
+  private static Set<String> excludeNamesOf(Log apiLog) {
+    String[] names = apiLog.excludeParamNames();
+    if (ArrayUtil.isEmpty(names)) {
+      return Collections.emptySet();
+    }
+    // 不能用 Set.of(...)：注解里写了重复名字会抛 IllegalArgumentException
+    return new HashSet<>(Arrays.asList(names));
   }
 
   /**
-   * 递归脱敏嵌套 Map/集合中的参数值
+   * 日志序列化前的体积预截断：超长字符串、超大集合/Map 先裁到上限再序列化，
+   * 避免「全量序列化后再 sub(2000)」的结构性浪费。
+   *
+   * <p>只处理字符串与集合/Map 结构（能廉价计量体积的部分），不反射进入 Bean 字段。
    */
-  private static Object maskSensitiveValue(Object value) {
-    if (value instanceof Map) {
-      return maskSensitiveMap((Map<?, ?>) value);
+  static Object truncateForLog(Object value) {
+    return truncate(value, 0);
+  }
+
+  private static Object truncate(Object value, int depth) {
+    if (value == null || depth > MAX_TRUNCATE_DEPTH) {
+      return value;
     }
-    if (value instanceof Collection) {
-      List<Object> maskedItems = new ArrayList<>(((Collection<?>) value).size());
-      for (Object item : (Collection<?>) value) {
-        maskedItems.add(maskSensitiveValue(item));
+    if (value instanceof String text) {
+      return text.length() > MAX_LOG_STRING_LEN
+        ? text.substring(0, MAX_LOG_STRING_LEN) + TRUNCATED
+        : text;
+    }
+    if (value instanceof Collection<?> collection) {
+      List<Object> result = new ArrayList<>(Math.min(collection.size(), MAX_LOG_ITEMS + 1));
+      int index = 0;
+      for (Object item : collection) {
+        if (index++ == MAX_LOG_ITEMS) {
+          result.add("…(共 " + collection.size() + " 项" + TRUNCATED + ")");
+          return result;
+        }
+        result.add(truncate(item, depth + 1));
       }
-      return maskedItems;
+      return result;
+    }
+    if (value instanceof Map<?, ?> map) {
+      Map<Object, Object> result = new LinkedHashMap<>(Math.min(map.size(), MAX_LOG_ITEMS + 1));
+      int index = 0;
+      for (Map.Entry<?, ?> entry : map.entrySet()) {
+        if (index++ == MAX_LOG_ITEMS) {
+          result.put("(其余字段" + TRUNCATED + ")", "…(共 " + map.size() + " 项)");
+          return result;
+        }
+        result.put(entry.getKey(), truncate(entry.getValue(), depth + 1));
+      }
+      return result;
+    }
+    if (value.getClass().isArray() && !value.getClass().getComponentType().isPrimitive()) {
+      Object[] array = (Object[]) value;
+      if (array.length <= MAX_LOG_ITEMS) {
+        // 小数组原样返回；元素不做深层截断（数组入参罕见，不值得为它复制）
+        return value;
+      }
+      List<Object> result = new ArrayList<>(MAX_LOG_ITEMS + 1);
+      result.addAll(Arrays.asList(array).subList(0, MAX_LOG_ITEMS));
+      result.add("…(共 " + array.length + " 项" + TRUNCATED + ")");
+      return result;
     }
     return value;
   }
@@ -137,53 +229,120 @@ public class LogInterceptor implements Interceptor {
   @Override
   public Object doIntercept(Invocation inv) throws Throwable {
 
-    TIME_THREADLOCAL.set(System.currentTimeMillis());
-
-    Context current = Context.current();
-
     MethodHolder methodHolder = inv.method();
     final Method method = methodHolder.getMethod();
     final Log apiLog = method.getAnnotation(Log.class);
 
-    String methodName = method.getName();
-    Class<?> controllerClazz = method.getDeclaringClass();
-    Integer methodLineNumber = LogTool.getMethodLineNumberFromCache(method);
+    // 无 @Log 的方法不产生请求日志（控制台与入库都不做），直接放行
+    if (apiLog == null) {
+      return inv.invoke();
+    }
 
-    StringBuffer logMsg = new StringBuffer();
-    // METHOD
-    logMsg.append("METHOD\t: ").append("(").append(controllerClazz.getSimpleName()).append(".java:")
-      .append(methodLineNumber).append(") ").append(controllerClazz.getSimpleName()).append(".").append(methodName)
-      .append(System.lineSeparator());
-    // URL
-    logMsg.append("URL\t: ").append(current.method()).append(" ").append(current.path()).append(System.lineSeparator());
-    // PARAMS
-    logMsg.append("PARAMS\t: ").append(toMaskedParamsJson(current.paramMap().toValuesMap())).append(System.lineSeparator());
+    TIME_THREADLOCAL.set(System.currentTimeMillis());
 
-    Object invokeResult;
+    // 控制台日志关掉时，下面的拼装（含一次 JSON 序列化）全是白干
+    final boolean infoEnabled = log.isInfoEnabled();
+    StringBuffer logMsg = infoEnabled ? safeBuildRequestLog(method, apiLog) : null;
+
+    Object invokeResult = null;
+    // Throwable 而非 Exception：StackOverflowError（树构建成环）、OutOfMemoryError 这些
+    // 「最需要日志」的场景恰恰不是 Exception，用 Exception 会让审计行与控制台日志同时消失
+    Throwable failure = null;
     try {
       invokeResult = inv.invoke();
-      // 到这里是正常结束的
-      handleLog(inv, apiLog, null, invokeResult);
-
-      // 记录一下耗时
-      logMsg.append("COST TIME\t: ").append(System.currentTimeMillis() - TIME_THREADLOCAL.get()).append("ms").append(System.lineSeparator());
-
       return invokeResult;
-    } catch (Exception throwable) {
-      // 到这里是异常结束的
-      handleLog(inv, apiLog, throwable, null);
+    } catch (Throwable throwable) {
+      failure = throwable;
       throw throwable;
     } finally {
-      log.info("{}", logMsg);
-      TIME_THREADLOCAL.remove();
+      // 日志收口全部在业务 try 之外：日志失败绝不改写业务结果
+      try {
+        if (infoEnabled) {
+          logMsg.append("COST TIME\t: ").append(System.currentTimeMillis() - TIME_THREADLOCAL.get())
+            .append("ms").append(System.lineSeparator());
+        }
+        handleLog(inv, apiLog, failure, invokeResult);
+      } finally {
+        if (infoEnabled) {
+          log.info("{}", logMsg);
+        }
+        TIME_THREADLOCAL.remove();
+      }
     }
   }
 
+  /**
+   * 控制台日志拼装失败不能影响业务：异常时退化为「方法名 + 失败标记」。
+   *
+   * <p>必须在这里兜住——{@link #buildRequestLog} 在业务 try 之外，抛出的异常会直接冒泡成 500，
+   * 且 {@link #TIME_THREADLOCAL} 不会被 {@code finally} 清理，线程复用时下一个请求的耗时统计就错了。
+   */
+  private StringBuffer safeBuildRequestLog(Method method, Log apiLog) {
+    try {
+      return buildRequestLog(method, apiLog);
+    } catch (Throwable t) {
+      log.debug("请求日志拼装失败, 已降级: {}", t.toString());
+      return new StringBuffer(64)
+        .append("METHOD\t: ").append(method.getDeclaringClass().getSimpleName()).append(".").append(method.getName())
+        .append(" [request log build failed]").append(System.lineSeparator());
+    }
+  }
 
-  protected void handleLog(final Invocation invocation, Log controllerLog, final Exception e, Object jsonResult) {
+  /**
+   * 把路径里的会话凭据打码，其余部分保持原样。
+   *
+   * <p>只按「单段长度」判定：数字 ID、{@code changeStatus} 这类短段不受影响，
+   * 而 sa-token 的 32 位 uuid、JWT 都会被打码。保留前 4 后 4 位，便于按日志核对
+   * 「是哪一次会话」；token 本体仍不可还原。
+   */
+  static String maskPathSecrets(String path) {
+    if (StrUtil.isEmpty(path)) {
+      return path;
+    }
+    return PATH_SECRET.matcher(path).replaceAll(match -> {
+      String secret = match.group();
+      return secret.length() <= PATH_KEEP_PREFIX + PATH_KEEP_SUFFIX
+        ? LogMasker.MASK
+        : StrUtil.hide(secret, PATH_KEEP_PREFIX, secret.length() - PATH_KEEP_SUFFIX);
+    });
+  }
 
-    // 如果 @Mapping 的方法上没有加上 @Log 注解，则不记录数据库日志
-    if (Objects.isNull(controllerLog)) {
+  /**
+   * 审计里的错误摘要。
+   *
+   * <p>{@code StackOverflowError} 的 {@code getMessage()} 是 {@code null}，
+   * 直接写库会让「最需要日志的场景」只留一行空白，因此退化为异常类名。
+   */
+  static String errorMessageOf(Throwable e) {
+    String message = e.getMessage();
+    return StrUtil.isBlank(message) ? e.getClass().getSimpleName() : message;
+  }
+
+  /** 控制台请求日志的 METHOD/URL/PARAMS 三行 */
+  StringBuffer buildRequestLog(Method method, Log apiLog) {
+    Context current = Context.current();
+    Class<?> controllerClazz = method.getDeclaringClass();
+    Integer methodLineNumber = LogTool.getMethodLineNumberFromCache(method);
+
+    StringBuffer logMsg = new StringBuffer(256);
+    // METHOD
+    logMsg.append("METHOD\t: ").append("(").append(controllerClazz.getSimpleName()).append(".java:")
+      .append(methodLineNumber).append(") ").append(controllerClazz.getSimpleName()).append(".").append(method.getName())
+      .append(System.lineSeparator());
+    // URL：与入库 oper_url 同口径，路径里的会话凭据同样打码（控制台日志也会被采集/转发）
+    logMsg.append("URL\t: ").append(current.method()).append(" ").append(maskPathSecrets(current.path()))
+      .append(System.lineSeparator());
+    // PARAMS
+    logMsg.append("PARAMS\t: ").append(serializeForLog(current.paramMap().toValuesMap(), apiLog))
+      .append(System.lineSeparator());
+    return logMsg;
+  }
+
+
+  private void handleLog(final Invocation invocation, Log apiLog, final Throwable e, Object jsonResult) {
+
+    // 无 @Log 注解的方法不记录数据库日志（doIntercept 已提前放行，这里防御）
+    if (apiLog == null) {
       return;
     }
     try {
@@ -198,7 +357,7 @@ public class LogInterceptor implements Interceptor {
       // 请求的地址
       String ip = IpUtils.getIpAddr();
       operLog.setOperIp(ip);
-      operLog.setOperUrl(StrUtil.sub(context.path(), 0, 255));
+      operLog.setOperUrl(StrUtil.sub(maskPathSecrets(context.path()), 0, 255));
       if (currentUser != null) {
         operLog.setOperName(currentUser.getUsername());
         SysUserDTO userDTO = currentUser.getUser();
@@ -209,7 +368,7 @@ public class LogInterceptor implements Interceptor {
 
       if (e != null) {
         operLog.setStatus(BusinessStatus.FAIL.ordinal());
-        operLog.setErrorMsg(StrUtil.sub(e.getMessage(), 0, 2000));
+        operLog.setErrorMsg(StrUtil.sub(errorMessageOf(e), 0, 2000));
       }
       // 设置方法名称
       String className = method.getDeclaringClass().getName();
@@ -218,7 +377,7 @@ public class LogInterceptor implements Interceptor {
       // 设置请求方式
       operLog.setRequestMethod(Context.current().method());
       // 处理设置注解上的参数
-      getControllerMethodDescription(invocation, controllerLog, operLog, jsonResult);
+      getControllerMethodDescription(invocation, apiLog, operLog, jsonResult);
       operLog.setOperTime(LocalDateTimeUtil.of(new Date(TIME_THREADLOCAL.get())));
       // 设置消耗时间
       operLog.setCostTime(System.currentTimeMillis() - TIME_THREADLOCAL.get());
@@ -226,103 +385,83 @@ public class LogInterceptor implements Interceptor {
       if (auditSink != null) {
         auditSink.operEvent(operLog);
       }
-    } catch (Exception exp) {
-      // 记录本地异常日志
-      log.error("异常信息:{}", exp.getMessage(), e);
+    } catch (Throwable exp) {
+      // 记录本地异常日志（含 Error：审计写不进去时至少控制台要留下痕迹）
+      log.error("异常信息:{}", exp.getMessage(), exp);
     }
   }
 
   /**
    * 获取注解中对方法的描述信息 用于Controller层注解
    *
-   * @param log     日志
    * @param operLog 操作日志
    */
-  public void getControllerMethodDescription(Invocation joinPoint, Log log, SysOperLog operLog, Object jsonResult) {
+  private void getControllerMethodDescription(Invocation joinPoint, Log apiLog, SysOperLog operLog, Object jsonResult) {
     // 设置action动作
-    operLog.setBusinessType(log.businessType().ordinal());
+    operLog.setBusinessType(apiLog.businessType().ordinal());
     // 设置标题
-    operLog.setTitle(log.title());
+    operLog.setTitle(apiLog.title());
     // 设置操作人类别
-    operLog.setOperatorType(log.operatorType().ordinal());
+    operLog.setOperatorType(apiLog.operatorType().ordinal());
     // 是否需要保存request，参数和值
-    if (log.isSaveRequestData()) {
+    if (apiLog.isSaveRequestData()) {
       // 获取参数的信息，传入到数据库中。
-      setRequestValue(joinPoint, operLog, log.excludeParamNames());
+      setRequestValue(joinPoint, operLog, apiLog);
     }
-    // 是否需要保存response，参数和值
-    if (log.isSaveResponseData() && ObjectUtil.isNotNull(jsonResult)) {
-      operLog.setJsonResult(StrUtil.sub(toJsonStr(jsonResult), 0, 2000));
+    // 是否需要保存response，参数和值（响应体与请求同口径：mask=true 才脱敏）
+    if (apiLog.isSaveResponseData() && ObjectUtil.isNotNull(jsonResult)) {
+      operLog.setJsonResult(StrUtil.sub(serializeForLog(jsonResult, apiLog), 0, 2000));
     }
   }
 
   /**
    * 获取请求的参数，放到log中
+   * <p>
+   * 两条来源同口径处理：POST/PUT 的 JSON body 走 {@code inv.args()}，
+   * 其余（含 query string / form）走 {@code paramMap}。
    *
    * @param operLog 操作日志
    */
-  private void setRequestValue(Invocation inv, SysOperLog operLog, String[] excludeParamNames) {
+  private void setRequestValue(Invocation inv, SysOperLog operLog, Log apiLog) {
     Map<?, ?> paramsMap = Context.current().paramMap().toValuesMap();
     String requestMethod = operLog.getRequestMethod();
+
+    String params;
     if (MapUtil.isEmpty(paramsMap)
       && (HttpMethod.PUT.name().equals(requestMethod) || HttpMethod.POST.name().equals(requestMethod))) {
-      String params = argsArrayToString(inv.args(), excludeParamNames);
-      operLog.setOperParam(StrUtil.sub(params, 0, 2000));
+      params = argsArrayToString(inv.args(), apiLog);
     } else {
-      operLog.setOperParam(StrUtil.sub(toJsonStr(paramsMap), 0, 2000));
+      params = serializeForLog(paramsMap, apiLog);
     }
+    operLog.setOperParam(StrUtil.sub(params, 0, 2000));
   }
 
   /**
    * 参数拼装
    */
-  private String argsArrayToString(Object[] paramsArray, String[] excludeParamNames) {
+  private String argsArrayToString(Object[] paramsArray, Log apiLog) {
     if (paramsArray == null) {
       return StrUtil.EMPTY;
     }
 
     StringBuilder params = new StringBuilder();
     for (Object o : paramsArray) {
-
       if (!ObjectUtil.isNotNull(o) || isFilterObject(o)) {
         continue;
       }
-
-      try {
-        // json序列化需要临时添加 filter
-        String jsonObj;
-        if (ArrayUtil.isNotEmpty(excludeParamNames)) {
-          // 说明有要忽略的, 使用自定义的 objectMapper
-          final ObjectMapper customFilterObjectMapper = getCustomFilterObjectMapper(excludeParamNames);
-          jsonObj = customFilterObjectMapper
-            .writeValueAsString(o);
-        } else {
-          jsonObj = toJsonStr(o);
-        }
+      String jsonObj = serializeForLog(o, apiLog);
+      if (StrUtil.isNotEmpty(jsonObj)) {
         params.append(jsonObj).append(" ");
-      } catch (Exception ignored) {
       }
     }
     return params.toString().trim();
   }
 
   /**
-   * 获取自定义过滤的ObjectMapper实例
-   *
-   * @param excludeParamNames 要排除的参数名数组
-   * @return 自定义过滤的ObjectMapper实例
-   */
-  private ObjectMapper getCustomFilterObjectMapper(final String[] excludeParamNames) {
-
-    return OBJECT_MAPPER_CACHE.get(Stream.of(excludeParamNames).collect(Collectors.toSet()));
-  }
-
-
-  /**
    * 判断是否需要过滤的对象。
    *
    * @param o 对象信息。
-   * @return 如果是需要过滤的对象，则返回true；否则返回false。
+   * @return 如果是需要过滤的对象，则返回true，则说明不需要记录。
    */
   @SuppressWarnings("rawtypes")
   public boolean isFilterObject(final Object o) {

@@ -44,4 +44,13 @@ public @interface Log {
    * 排除指定的请求参数
    */
   String[] excludeParamNames() default {};
+
+  /**
+   * 请求与响应日志是否脱敏（敏感字段值打码为 {@code ***}）。
+   *
+   * <p>默认 {@code false}，按接口显式开启：入参或响应中会出现口令、证件号、
+   * 手机号、邮箱等字段的接口（用户资料类、改密类）应设为 {@code true}。
+   * 开启后按运行时实际序列化内容判定，不受参数声明类型的子类替换影响。
+   */
+  boolean mask() default false;
 }

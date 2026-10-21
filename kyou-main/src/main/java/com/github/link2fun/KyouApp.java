@@ -59,6 +59,8 @@ public class KyouApp {
         };
         jacksonSerializer.addEncoder(Long.class, converter);
         jacksonSerializer.addEncoder(long.class, converter);
+        // 日志与 API 响应共用同一份映射器：日期格式、Long 转换等对外呈现完全一致
+        logInterceptor.setObjectMapper(jacksonSerializer.getSerializeConfig().getMapper());
       });
 
       /* 提示：path 可以是目录或单文件；repository 只能是目录（表示这个 path 映射到这个 repository 里） */

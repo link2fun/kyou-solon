@@ -9,6 +9,7 @@ import com.github.link2fun.support.constant.HttpStatus;
 import com.github.link2fun.support.core.domain.R;
 import com.github.link2fun.support.exception.DemoModeException;
 import com.github.link2fun.support.exception.ServiceException;
+import com.github.link2fun.support.exception.base.BaseException;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.core.handle.Context;
@@ -64,6 +65,11 @@ public class ResponseFilter implements Filter {
     } catch (ValidatorException e) {
       log.warn("参数校验失败: {}", e.getMessage(), e);
       ctx.render(R.fail(e.getCode(), e.getMessage()));
+    } catch (BaseException e) {
+      // 业务预期内的失败（密码错误、账号不存在、文件类型不支持等）：
+      // 只记一行 warn，不打堆栈，避免正常的登录失败被当成系统故障刷 ERROR 日志、触发告警
+      log.warn("业务异常: {}", e.getMessage());
+      ctx.render(R.fail(HttpStatus.ERROR, e.getMessage()));
     } catch (DataThrowable e) {
       log.error("DataThrowable: {}", e.getMessage(), e);
       ctx.render(R.fail(HttpStatus.ERROR, e.getMessage()));
