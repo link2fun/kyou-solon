@@ -7,11 +7,12 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.framework.auth.AuthCacheInvalidator;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
+import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.support.core.domain.entity.SysRole;
@@ -53,6 +54,9 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
 
   @Inject
   private AggregateDeleter aggregateDeleter;
+
+  @Inject
+  private AuthCacheInvalidator authCacheInvalidator;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -346,22 +350,6 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
     }
   }
 
-  /** 菜单增改影响面广, 全量失效所有角色的共享权限缓存 */
-  private void invalidateAllRoleSessions() {
-    entityQuery.queryable(SysRole.class)
-      .selectColumn(SysRoleProxy::roleKey)
-      .toList()
-      .forEach(SaSessionBizTool::invalidateRole);
-  }
-
-  /** 失效与指定菜单关联的角色共享权限缓存, 须在删除菜单前取关联 */
-  private List<String> findRoleKeysByMenuId(final Long menuId) {
-    return entityQuery.queryable(SysRole.class)
-      .where(role -> role.roleMenuList().any(roleMenu -> roleMenu.menuId().eq(menuId)))
-      .selectColumn(SysRoleProxy::roleKey)
-      .toList();
-  }
-
   /**
    * 新增保存菜单信息
    *
@@ -372,11 +360,10 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   @Override
   public long insertMenu(final SysMenu menu) {
     checkMenuFieldUnique("新增", menu);
-    final long rows = entityQuery.insertable(menu)
+    // 新菜单无角色引用, 无需失效
+    return entityQuery.insertable(menu)
       .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
       .executeRows(true);
-    invalidateAllRoleSessions();
-    return rows;
   }
 
   /**
@@ -395,7 +382,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
     final long rows = entityQuery.updatable(menu)
       .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
       .executeRows();
-    invalidateAllRoleSessions();
+    // 权限码/状态只进入引用它的角色的缓存
+    authCacheInvalidator.onMenusChanged(List.of(menu.getMenuId()));
     return rows;
   }
 
@@ -408,10 +396,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   @Transaction
   @Override
   public long deleteMenuById(final Long menuId) {
-    // 删除后 sys_role_menu 关联不复存在, 先取受影响角色
-    final List<String> affectedRoleKeys = findRoleKeysByMenuId(menuId);
-
-    final long rows = aggregateDeleter.delete(AggregateDeletePlan.of(Collections.singletonList(menuId))
+    // 守卫已保证能删成功的菜单无角色引用, 无需失效
+    return aggregateDeleter.delete(AggregateDeletePlan.of(Collections.singletonList(menuId))
       .guardPerId(id -> {
         if (hasChildByMenuId(id)) {
           throw new ServiceException("存在子菜单,不允许删除");
@@ -424,9 +410,6 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
         .allowDeleteStatement(true)
         .where(menu -> menu.menuId().in(ids))
         .executeRows()));
-
-    affectedRoleKeys.forEach(SaSessionBizTool::invalidateRole);
-    return rows;
   }
 
   @Transaction(policy = TranPolicy.supports)

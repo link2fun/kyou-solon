@@ -13,11 +13,11 @@ import com.easy.query.core.expression.lambda.SQLActionExpression1;
 import com.easy.query.core.proxy.columns.types.SQLStringTypeColumn;
 import com.easy.query.core.proxy.columns.types.impl.SQLStringTypeColumnImpl;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.framework.auth.AuthCacheInvalidator;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysPost;
@@ -78,6 +78,9 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
   @Inject
   private AggregateDeleter aggregateDeleter;
+
+  @Inject
+  private AuthCacheInvalidator authCacheInvalidator;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -449,7 +452,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
     final long rows = entityQuery.updatable(sysUser)
       .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
       .executeRows();
-    SaSessionBizTool.invalidateUser(userId);
+    authCacheInvalidator.onUsersChanged(List.of(userId));
     return rows;
   }
 
@@ -465,7 +468,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   public void insertUserAuth(final ActionContext context, final Long userId, final List<Long> roleIds) {
     checkUserDataScope(context, userId);
     userRoleService.reassignRoles(userId, roleIds);
-    SaSessionBizTool.invalidateUser(userId);
+    authCacheInvalidator.onUsersChanged(List.of(userId));
   }
 
   /**
@@ -484,8 +487,10 @@ public class SystemUserServiceImpl implements ISystemUserService {
     final long rows = entityQuery.updatable(user)
       .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
       .executeRows();
-    if (rows > 0 && UserConstants.USER_DISABLE.equals(user.getStatus())) {
-      SaSessionBizTool.logoutByLoginId(user.getUserId());
+    if (UserConstants.USER_DISABLE.equals(user.getStatus())) {
+      authCacheInvalidator.onUsersKicked(List.of(user.getUserId()));
+    } else {
+      authCacheInvalidator.onUsersChanged(List.of(user.getUserId()));
     }
     return rows;
   }
@@ -518,9 +523,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
     user.setPhonenumber(profilePatch.getPhonenumber());
     user.setSex(profilePatch.getSex());
     final long rows = updateUserProfile(user);
-    if (rows > 0) {
-      SaSessionBizTool.invalidateUser(userId);
-    }
+    authCacheInvalidator.onUsersChanged(List.of(userId));
     return rows;
   }
 
@@ -546,9 +549,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public boolean updateMyAvatar(final Long userId, final String userName, final String avatar) {
     final boolean updated = updateUserAvatar(userName, avatar);
-    if (updated) {
-      SaSessionBizTool.invalidateUser(userId);
-    }
+    authCacheInvalidator.onUsersChanged(List.of(userId));
     return updated;
   }
 
@@ -569,9 +570,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .setColumns(userProxy -> userProxy.password().set(user.getPassword()))
       // TODO 用户管理应该加上乐观锁
       .executeRows();
-    if (rows > 0) {
-      SaSessionBizTool.logoutByLoginId(user.getUserId());
-    }
+    authCacheInvalidator.onUsersKicked(List.of(user.getUserId()));
     return rows;
   }
 
@@ -588,12 +587,10 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .setColumns(user -> user.password().set(password))
       .where(user -> user.userName().eq(userName))
       .executeRows() > 0;
-    if (updated) {
-      // 查无有效用户(如已软删)时无从失效会话, 跳过
-      final Long userId = self.findUserIdByUserName(userName);
-      if (ObjectUtil.isNotNull(userId)) {
-        SaSessionBizTool.logoutByLoginId(userId);
-      }
+    // 查无有效用户(如已软删)时无从强退会话
+    final Long userId = self.findUserIdByUserName(userName);
+    if (ObjectUtil.isNotNull(userId)) {
+      authCacheInvalidator.onUsersKicked(List.of(userId));
     }
     return updated;
   }
@@ -630,9 +627,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
         .setColumns(user -> user.delFlag().set(UserConstants.DELETED))
         .where(user -> user.userId().in(ids))
         .executeRows()));
-    if (rows > 0) {
-      userIds.forEach(SaSessionBizTool::logoutByLoginId);
-    }
+    authCacheInvalidator.onUsersKicked(userIds);
     return rows > 0;
   }
 
@@ -678,6 +673,8 @@ public class SystemUserServiceImpl implements ISystemUserService {
           user.setUpdateBy(operName);
 //          getBaseMapper().updateById(user);
           entityQuery.updatable(user).executeRows();
+          // 导入会改部门/状态等会话载荷字段, 在线用户须重建
+          authCacheInvalidator.onUsersChanged(List.of(u.getUserId()));
 
           successNum++;
           successMsg.append("<br/>").append(successNum).append("、账号 ").append(user.getUserName()).append(" 更新成功");

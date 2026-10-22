@@ -8,11 +8,11 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.framework.auth.AuthCacheInvalidator;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
@@ -57,6 +57,9 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
   @Inject
   private AggregateDeleter aggregateDeleter;
+
+  @Inject
+  private AuthCacheInvalidator authCacheInvalidator;
 
   @Db
   private EasyEntityQuery entityQuery;
@@ -303,23 +306,8 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
     roleMenuService.reassignMenus(roleId, modifyReq.getMenuIds());
 
-    invalidateRoleSessions(oldRoleKey, role);
+    authCacheInvalidator.onRolesChanged(List.of(roleId), List.of(oldRoleKey));
     return row;
-  }
-
-  /**
-   * 失效该角色的共享权限缓存与全部持有者的用户级缓存
-   *
-   * @param oldRoleKey 变更前的 roleKey
-   */
-  private void invalidateRoleSessions(final String oldRoleKey, final SysRole role) {
-    SaSessionBizTool.invalidateRole(role.getRoleKey());
-    if (ObjectUtil.isNotNull(oldRoleKey) && !oldRoleKey.equals(role.getRoleKey())) {
-      SaSessionBizTool.invalidateRole(oldRoleKey);
-    }
-    for (final Long userId : userRoleService.findUserIdsByRoleId(role.getRoleId())) {
-      SaSessionBizTool.invalidateUser(userId);
-    }
   }
 
   /**
@@ -333,16 +321,11 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   public long changeRoleStatus(final SysRoleChangeStatusReq changeStatusReq) {
     checkRoleAllowed(changeStatusReq.getRoleId());
     checkRoleDataScope(changeStatusReq.getRoleId());
-    final SysRole role = entityQuery.queryable(SysRole.class)
-      .whereById(changeStatusReq.getRoleId())
-      .singleNotNull();
     final long rows = entityQuery.updatable(SysRole.class)
       .whereById(changeStatusReq.getRoleId())
       .setColumns(r -> r.status().set(changeStatusReq.getStatus()))
       .executeRows();
-    if (rows > 0) {
-      invalidateRoleSessions(role.getRoleKey(), role);
-    }
+    authCacheInvalidator.onRolesChanged(List.of(changeStatusReq.getRoleId()), List.of());
     return rows;
   }
 
@@ -357,9 +340,6 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   public long authDataScope(final SysRoleChangeDataScopeReq changeDataScopeReq) {
     checkRoleAllowed(changeDataScopeReq.getRoleId());
     checkRoleDataScope(changeDataScopeReq.getRoleId());
-    final SysRole roleEntity = entityQuery.queryable(SysRole.class)
-      .whereById(changeDataScopeReq.getRoleId())
-      .singleNotNull();
 
     long executeRows = entityQuery.updatable(SysRole.class)
       .whereById(changeDataScopeReq.getRoleId())
@@ -371,7 +351,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
     roleDeptService.reassignDepts(changeDataScopeReq.getRoleId(), changeDataScopeReq.getDeptIds());
 
-    invalidateRoleSessions(roleEntity.getRoleKey(), roleEntity);
+    authCacheInvalidator.onRolesChanged(List.of(changeDataScopeReq.getRoleId()), List.of());
     return executeRows;
   }
 
@@ -405,7 +385,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
         .whereByIds(ids)
         .executeRows()));
 
-    roleKeys.forEach(SaSessionBizTool::invalidateRole);
+    authCacheInvalidator.onRolesChanged(List.of(), roleKeys);
     return rows;
   }
 
@@ -425,7 +405,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   public void unassignUser(final Long roleId, final Long userId) {
     userRoleService.unassignUser(roleId, userId);
     if (Objects.nonNull(userId)) {
-      SaSessionBizTool.invalidateUser(userId);
+      authCacheInvalidator.onUsersChanged(List.of(userId));
     }
   }
 
@@ -437,7 +417,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       return;
     }
     userRoleService.unassignUsers(roleId, userIds);
-    invalidateUsers(userIds);
+    authCacheInvalidator.onUsersChanged(userIds);
   }
 
   /** 批量为角色授权用户 */
@@ -446,16 +426,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   public void assignUsers(final Long roleId, final List<Long> userIds) {
     checkRoleDataScope(roleId);
     userRoleService.assignUsers(roleId, userIds);
-    if (CollectionUtil.isNotEmpty(userIds)) {
-      invalidateUsers(userIds);
-    }
-  }
-
-  /** 失效这些用户的用户级会话缓存 */
-  private void invalidateUsers(final List<Long> userIds) {
-    userIds.stream()
-      .filter(Objects::nonNull)
-      .forEach(SaSessionBizTool::invalidateUser);
+    authCacheInvalidator.onUsersChanged(userIds);
   }
 
   /**
