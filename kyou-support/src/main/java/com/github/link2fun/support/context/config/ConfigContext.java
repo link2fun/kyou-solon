@@ -82,6 +82,7 @@ public class ConfigContext {
   }
 
 
+  /** 缺键时取 defaultVal; 键存在但值不是 true/false 词表时一律按 false, 不再回落到 defaultVal */
   public static boolean getBoolean(String configKey, boolean defaultVal) {
     return Convert.toBool(get(configKey), defaultVal);
   }

@@ -11,7 +11,7 @@ import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
-import com.github.link2fun.support.core.text.Convert;
+import cn.hutool.core.convert.Convert;
 import com.github.link2fun.support.enums.BusinessType;
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.Context;

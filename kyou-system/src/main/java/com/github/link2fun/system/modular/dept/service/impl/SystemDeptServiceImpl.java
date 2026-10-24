@@ -14,7 +14,6 @@ import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
-import com.github.link2fun.support.core.text.Convert;
 import com.github.link2fun.support.core.tree.TreeBuilder;
 import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
@@ -348,8 +347,10 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @param dept 当前部门
    */
   private void updateParentDeptStatusNormal(SysDept dept) {
-    String ancestors = dept.getAncestors();
-    List<Long> deptIds = List.of(Convert.toLongArray(ancestors));
+    List<Long> deptIds = StrUtil.split(dept.getAncestors(), ',').stream()
+      .filter(StrUtil::isNotBlank)
+      .map(Long::valueOf)
+      .toList();
     self.updateDeptStatusNormal(deptIds);
   }
 

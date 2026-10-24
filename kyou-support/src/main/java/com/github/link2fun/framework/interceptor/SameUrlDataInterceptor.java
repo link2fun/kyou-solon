@@ -1,12 +1,12 @@
 package com.github.link2fun.framework.interceptor;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.github.link2fun.support.annotation.RepeatSubmit;
 import com.github.link2fun.support.constant.CacheConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.cache.service.RedisCache;
-import com.github.link2fun.support.core.text.Convert;
 import org.noear.solon.core.handle.Context;
 
 import java.io.IOException;

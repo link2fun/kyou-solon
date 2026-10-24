@@ -1,6 +1,7 @@
 package com.github.link2fun.support.utils.file;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.config.KyouConfig;
 import com.github.link2fun.support.config.KyouProperties;
@@ -9,7 +10,6 @@ import com.github.link2fun.support.exception.file.FileNameLengthLimitExceededExc
 import com.github.link2fun.support.exception.file.FileSizeLimitExceededException;
 import com.github.link2fun.support.exception.file.InvalidExtensionException;
 import com.github.link2fun.support.utils.DateUtils;
-import com.github.link2fun.support.utils.uuid.Seq;
 import lombok.Getter;
 import org.apache.commons.io.FilenameUtils;
 import org.noear.solon.Solon;
@@ -111,7 +111,7 @@ public class FileUploadUtils {
    */
   public static String extractFilename(UploadedFile file) {
     return StrUtil.format("{}/{}_{}.{}", DateUtils.datePath(),
-      FilenameUtils.getBaseName(file.getName()), Seq.getId(Seq.uploadSeqType), getExtension(file));
+      FilenameUtils.getBaseName(file.getName()), IdUtil.getSnowflakeNextIdStr(), getExtension(file));
   }
 
   public static File getAbsoluteFile(String uploadDir, String fileName) {

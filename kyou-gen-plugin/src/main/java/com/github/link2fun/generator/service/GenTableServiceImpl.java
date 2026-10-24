@@ -19,11 +19,10 @@ import com.github.link2fun.generator.domain.proxy.GenTableProxy;
 import com.github.link2fun.generator.util.GenUtils;
 import com.github.link2fun.generator.util.VelocityInitializer;
 import com.github.link2fun.generator.util.VelocityUtils;
+import com.github.link2fun.generator.constant.GenConstants;
 import com.github.link2fun.support.constant.Constants;
-import com.github.link2fun.support.constant.GenConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.page.Page;
-import com.github.link2fun.support.core.text.CharsetKit;
 import com.github.link2fun.support.exception.ServiceException;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +43,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -345,7 +345,7 @@ public class GenTableServiceImpl implements IGenTableService {
         tpl.merge(context, sw);
         try {
           String path = getGenPath(table, template);
-          FileUtils.writeStringToFile(new File(path), sw.toString(), CharsetKit.UTF_8);
+          FileUtils.writeStringToFile(new File(path), sw.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new ServiceException("渲染模板失败，表名：" + table.getTableName());
         }

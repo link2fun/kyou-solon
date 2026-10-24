@@ -5,8 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import com.easy.query.core.annotation.*;
 import com.easy.query.core.enums.RelationTypeEnum;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
+import com.github.link2fun.generator.constant.GenConstants;
 import com.github.link2fun.generator.domain.proxy.GenTableProxy;
-import com.github.link2fun.support.constant.GenConstants;
 import com.github.link2fun.support.core.domain.BaseEntity;
 
 import lombok.Data;

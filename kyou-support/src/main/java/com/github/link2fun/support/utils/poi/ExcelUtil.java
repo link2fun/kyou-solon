@@ -1,9 +1,11 @@
 package com.github.link2fun.support.utils.poi;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.annotation.Excel;
@@ -16,7 +18,6 @@ import com.github.link2fun.support.utils.DictUtils;
 import com.github.link2fun.support.utils.file.FileTypeUtils;
 import com.github.link2fun.support.utils.file.FileUtils;
 import com.github.link2fun.support.utils.file.ImageUtils;
-import com.github.link2fun.support.utils.reflect.ReflectUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.ooxml.POIXMLDocumentPart;
@@ -376,7 +377,8 @@ public class ExcelUtil<T> {
               val = FileUtils.writeImportBytes(data);
             }
           }
-          ReflectUtils.invokeSetter(entity, propertyName, val);
+          // setProperty 走 BeanPath: 有 setter 用 setter, 无 setter 直接反射写字段, 字段不存在抛 IllegalArgumentException
+          BeanUtil.setProperty(entity, propertyName, val);
         }
         list.add(entity);
       }
@@ -592,7 +594,7 @@ public class ExcelUtil<T> {
               row = sheet.createRow(rowNo);
             }
 
-            List<Field> subFields = ReflectUtils.getFieldsListWithAnnotation(obj.getClass(), Excel.class);
+            List<Field> subFields = getExcelFields(obj.getClass());
             int subIndex = 0;
             for (Field subField : subFields) {
               if (subField.isAnnotationPresent(Excel.class)) {
@@ -1186,7 +1188,7 @@ public class ExcelUtil<T> {
             subMethod = getSubMethod(field.getName(), clazz);
             ParameterizedType pt = (ParameterizedType) field.getGenericType();
             Class<?> subClass = (Class<?>) pt.getActualTypeArguments()[0];
-            this.subFields = ReflectUtils.getFieldsListWithAnnotation(subClass, Excel.class);
+            this.subFields = getExcelFields(subClass);
           }
         }
 
@@ -1423,5 +1425,16 @@ public class ExcelUtil<T> {
       log.error("获取对象异常{}", e.getMessage());
     }
     return method;
+  }
+
+  /** 取带 @Excel 注解的字段(含父类) */
+  private static List<Field> getExcelFields(Class<?> clazz) {
+    List<Field> fields = new ArrayList<>();
+    for (Field field : ReflectUtil.getFields(clazz)) {
+      if (field.getAnnotation(Excel.class) != null) {
+        fields.add(field);
+      }
+    }
+    return fields;
   }
 }

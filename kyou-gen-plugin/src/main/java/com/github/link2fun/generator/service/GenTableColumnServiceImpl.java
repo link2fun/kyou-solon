@@ -5,7 +5,7 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.generator.domain.GenTableColumn;
-import com.github.link2fun.support.core.text.Convert;
+import cn.hutool.core.convert.Convert;
 import org.noear.solon.annotation.Component;
 
 import java.util.List;

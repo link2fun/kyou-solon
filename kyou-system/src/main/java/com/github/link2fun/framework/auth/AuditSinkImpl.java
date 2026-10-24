@@ -6,7 +6,6 @@ import cn.hutool.http.useragent.UserAgentUtil;
 import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.utils.LogUtils;
-import com.github.link2fun.support.utils.Threads;
 import com.github.link2fun.support.utils.ip.AddressUtils;
 import com.github.link2fun.system.modular.logininfo.model.SysLoginInfo;
 import com.github.link2fun.system.modular.logininfo.service.ISystemLoginInfoService;
@@ -88,7 +87,18 @@ public class AuditSinkImpl implements AuditSink {
   /** 停机时排空在途审计任务 */
   @Override
   public void shutdown() {
-    Threads.shutdownAndAwaitTermination(executor);
+    executor.shutdown();
+    try {
+      if (!executor.awaitTermination(300, TimeUnit.SECONDS)) {
+        executor.shutdownNow();
+        if (!executor.awaitTermination(300, TimeUnit.SECONDS)) {
+          log.info("审计线程池未能完全排空");
+        }
+      }
+    } catch (InterruptedException ie) {
+      executor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 
   static ExecutorService buildTtlExecutor() {

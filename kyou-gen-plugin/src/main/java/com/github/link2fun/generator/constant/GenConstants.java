@@ -1,11 +1,10 @@
-package com.github.link2fun.support.constant;
+package com.github.link2fun.generator.constant;
 
 /**
  * 代码生成通用常量
  *
  * @author ruoyi
  */
-@SuppressWarnings("unused")
 public class GenConstants {
   /** 单表（增删改查） */
   public static final String TPL_CRUD = "crud";
@@ -96,9 +95,6 @@ public class GenConstants {
 
   /** 长整型 */
   public static final String TYPE_LONG = "Long";
-
-  /** 浮点型 */
-  public static final String TYPE_DOUBLE = "Double";
 
   /** 高精度计算类型 */
   public static final String TYPE_BIGDECIMAL = "BigDecimal";
