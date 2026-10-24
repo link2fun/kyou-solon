@@ -6,7 +6,6 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -43,9 +42,6 @@ public class SessionUser implements Serializable {
 
   /** 操作系统 */
   private String os;
-
-  /** 权限列表 */
-  private List<String> permissions;
 
   /** 用户信息 */
   private SysUserDTO user;

@@ -22,7 +22,7 @@ public class StpInterfaceImpl implements StpInterface {
   @Override
   public List<String> getPermissionList(final Object loginId, final String loginType) {
 
-    return SaSessionBizTool.getPermissionList(loginId, loginType);
+    return SaSessionBizTool.getPermissionList(loginId);
   }
 
   /**
@@ -36,6 +36,6 @@ public class StpInterfaceImpl implements StpInterface {
   @Override
   public List<String> getRoleList(final Object loginId, final String loginType) {
 
-    return SaSessionBizTool.getRoleList(loginId, loginType);
+    return SaSessionBizTool.getRoleList(loginId);
   }
 }

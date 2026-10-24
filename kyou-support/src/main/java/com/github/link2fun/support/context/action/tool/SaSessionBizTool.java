@@ -75,12 +75,6 @@ public class SaSessionBizTool {
   }
 
 
-  /** 当前登录类型 */
-  public static String currentLoginType() {
-    return StpUtil.getLoginType();
-  }
-
-
   /**
    * 读取当前会话的登录用户。
    *
@@ -113,7 +107,8 @@ public class SaSessionBizTool {
     sessionUser.setUser(sysUser);
     attachToken(sessionUser);
     setUserAgent(sessionUser);
-    sessionUser.setPermissions(getPermissionList(sysUser.getUserId(), currentLoginType()));
+    // 登录即预热角色与权限会话缓存, 首次请求不必回表
+    getPermissionList(sysUser.getUserId());
 
     setCurrentUser(sessionUser);
     return sessionUser;
@@ -219,16 +214,15 @@ public class SaSessionBizTool {
   /**
    * 返回指定账号id所拥有的权限码集合
    *
-   * @param loginId   账号id
-   * @param loginType 账号类型
+   * @param loginId 账号id
    * @return 该账号id具有的权限码集合
    */
-  public static List<String> getPermissionList(final Object loginId, final String loginType) {
+  public static List<String> getPermissionList(final Object loginId) {
     if (SysUser.isSuperAdmin(Convert.toLong(loginId))) {
       return List.of("*:*:*");
     }
 
-    final List<String> roleKeyList = getRoleList(loginId, loginType);
+    final List<String> roleKeyList = getRoleList(loginId);
 
 
     return roleKeyList.stream()
@@ -245,11 +239,10 @@ public class SaSessionBizTool {
   /**
    * 返回指定账号id所拥有的角色标识集合
    *
-   * @param loginId   账号id
-   * @param loginType 账号类型
+   * @param loginId 账号id
    * @return 该账号id具有的角色标识集合
    */
-  public static List<String> getRoleList(final Object loginId, final String loginType) {
+  public static List<String> getRoleList(final Object loginId) {
 
     SaSession session = StpUtil.getSessionByLoginId(loginId);
     return session.get(ROLE_LIST_KEY,
@@ -304,7 +297,6 @@ public class SaSessionBizTool {
 
     final SysUserDTO sysUserDTO = userByUserId(loginId);
     sessionUser.setDeptId(sysUserDTO.getDeptId());
-    sessionUser.setPermissions(getPermissionList(loginId, currentLoginType()));
     sessionUser.setUser(sysUserDTO);
 
     return sessionUser;

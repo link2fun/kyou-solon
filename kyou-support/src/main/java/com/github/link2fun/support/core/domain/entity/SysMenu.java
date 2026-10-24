@@ -15,6 +15,7 @@ import lombok.experimental.FieldNameConstants;
 import org.noear.solon.validation.annotation.Length;
 import org.noear.solon.validation.annotation.NotBlank;
 import org.noear.solon.validation.annotation.NotNull;
+import org.noear.solon.validation.annotation.Pattern;
 
 import java.io.Serial;
 import java.util.ArrayList;
@@ -98,6 +99,7 @@ public class SysMenu extends BaseEntity implements ProxyEntityAvailable<SysMenu,
 
   /** 权限字符串 */
   @Length(max = 100, message = "权限字符串长度不能超过100个字符")
+  @Pattern(value = "^[^,]*$", message = "权限字符串不能包含逗号")
   @Column(value = "perms")
   private String perms;
 

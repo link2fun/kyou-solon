@@ -115,35 +115,6 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   }
 
   /**
-   * 根据用户ID查询权限
-   *
-   * @param userId 用户ID
-   * @return 权限列表
-   */
-  @Override
-  public List<String> selectMenuPermsByUserId(final Long userId) {
-
-    List<String> permsList = entityQuery.queryable(SysMenu.class)
-      .where(menu -> {
-        menu.status().eq(UserConstants.NORMAL);
-        // 权限须经由启用角色关联到当前用户, 停用角色不再授予权限
-        menu.roleMenuList().any(roleMenu -> {
-          roleMenu.role().status().eq(UserConstants.NORMAL);
-          roleMenu.role().userRoleList().any(userRole -> userRole.userId().eq(userId));
-        });
-      })
-      .selectColumn(SysMenuProxy::perms)
-      .toList();
-
-    return permsList.stream()
-      .filter(StrUtil::isNotBlank)
-      .flatMap(_perms -> StrUtil.split(_perms, StrUtil.COMMA).stream())
-      .filter(StrUtil::isNotBlank)
-      .distinct()
-      .collect(Collectors.toList());
-  }
-
-  /**
    * 根据角色ID查询权限
    *
    * @param roleId 角色ID
@@ -166,18 +137,20 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
 
     return permsList.stream()
       .filter(StrUtil::isNotBlank)
-      .flatMap(_perms -> StrUtil.split(_perms, StrUtil.COMMA).stream())
-      .filter(StrUtil::isNotBlank)
       .distinct()
       .collect(Collectors.toList());
   }
 
-  /** 根据角色Key查询权限 */
+  /** 根据角色Key查询权限; 角色已不存在时返回空集合并告警, 不打断调用方 */
   @Override
   public List<String> selectMenuPermsByRoleKey(final String roleKey) {
 
     final SysRole role = roleService.selectRoleByRoleKey(roleKey);
-    return self.selectMenuPermsByRoleId(Optional.ofNullable(role).map(SysRole::getRoleId).orElseThrow());
+    if (role == null) {
+      log.warn("[授权事实] 会话中的角色标识在库里已不存在, 按无权限处理: roleKey={}", roleKey);
+      return List.of();
+    }
+    return self.selectMenuPermsByRoleId(role.getRoleId());
   }
 
   /**
@@ -347,6 +320,10 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   private void checkMenuPathFormat(final String action, final SysMenu menu) {
     if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StrUtil.startWithAny(menu.getPath(), Constants.HTTP, Constants.HTTPS)) {
       throw new ServiceException(action + "菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
+    }
+    // 权限码是单个标识(如 @SaCheckPermission("system:user:list") 的入参), 含分隔符会被误读成多个权限
+    if (StrUtil.contains(menu.getPerms(), StrUtil.COMMA)) {
+      throw new ServiceException(action + "菜单'" + menu.getMenuName() + "'失败，权限字符串不能包含逗号");
     }
   }
 

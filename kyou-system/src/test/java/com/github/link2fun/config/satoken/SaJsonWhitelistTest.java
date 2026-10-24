@@ -53,7 +53,6 @@ public class SaJsonWhitelistTest {
     final SessionUser sessionUser = new SessionUser();
     sessionUser.setUserId(1L);
     sessionUser.setDeptId(103L);
-    sessionUser.setPermissions(List.of("system:user:list"));
     sessionUser.setUser(userDTO);
 
     final SaJsonTemplateForJackson template = new SaJsonTemplateForJackson();
@@ -61,7 +60,7 @@ public class SaJsonWhitelistTest {
     final SessionUser back = template.jsonToObject(json, SessionUser.class);
 
     assertEquals(sessionUser.getUserId(), back.getUserId());
-    assertEquals(sessionUser.getPermissions(), back.getPermissions());
+    assertEquals(sessionUser.getDeptId(), back.getDeptId());
     assertEquals(userDTO.getUserName(), back.getUser().getUserName());
     assertEquals(dept.getDeptName(), back.getUser().getDept().getDeptName());
     assertEquals(role.getRoleKey(), back.getUser().getRoles().get(0).getRoleKey());

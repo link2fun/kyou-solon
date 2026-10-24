@@ -10,7 +10,6 @@ import com.github.link2fun.system.modular.role.model.req.SysRoleChangeStatusReq;
 import com.github.link2fun.system.modular.role.model.req.SysRoleModifyReq;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * 角色业务层
@@ -35,14 +34,6 @@ public interface ISystemRoleService {
    * @return 角色列表
    */
   List<RoleDTO> selectRolesByUserId(Long userId);
-
-  /**
-   * 根据用户ID查询角色权限
-   *
-   * @param userId 用户ID
-   * @return 权限列表
-   */
-  Set<String> selectRolePermissionByUserId(Long userId);
 
   /**
    * 查询用户持有的启用角色标识集合(停用/软删角色不参与授权)

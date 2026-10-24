@@ -3,6 +3,7 @@ package com.github.link2fun.system.modular.role.model.req;
 import cn.hutool.core.bean.BeanUtil;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import lombok.Data;
+import org.noear.solon.validation.annotation.Pattern;
 
 import java.util.List;
 
@@ -22,6 +23,7 @@ public class SysRoleModifyReq {
   /** 角色名称 */
   private String roleName;
   /** 角色权限 */
+  @Pattern(value = "^[^,]*$", message = "角色权限不能包含逗号")
   private String roleKey;
   /** 角色排序 */
   private Integer roleSort;

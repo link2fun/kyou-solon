@@ -2,7 +2,6 @@ package com.github.link2fun.system.modular.role.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
@@ -36,8 +35,6 @@ import org.noear.solon.data.annotation.Transaction;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -129,28 +126,6 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
 
   /**
-   * 根据用户ID查询角色权限
-   *
-   * @param userId 用户ID
-   * @return 权限列表
-   */
-  @Override
-  public Set<String> selectRolePermissionByUserId(final Long userId) {
-    List<String> roleKeyList = entityQuery.queryable(SysRole.class)
-      .where(role -> {
-        role.status().eq(UserConstants.NORMAL);
-        role.userRoleList().any(userRole -> userRole.userId().eq(userId));
-      })
-      .selectColumn(SysRoleProxy::roleKey)
-      .toList();
-
-    return roleKeyList.stream()
-      .flatMap(_roleKey -> StrUtil.split(_roleKey, StrUtil.COMMA).stream())
-      .filter(StrUtil::isNotBlank)
-      .collect(Collectors.toSet());
-  }
-
-  /**
    * 查询用户持有的启用角色标识集合(停用/软删角色不参与授权)
    *
    * @param userId 用户ID
@@ -217,6 +192,9 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @param roleId 当前角色id(编辑时排除自身), 新增时为 null
    */
   private void checkRoleFieldUnique(final String action, final String roleName, final String roleKey, final Long roleId) {
+    if (StrUtil.contains(roleKey, StrUtil.COMMA)) {
+      throw new ServiceException(action + "角色'" + roleName + "'失败，角色权限不能包含逗号");
+    }
     UniqueChecker.checkOccupied(entityQuery.queryable(SysRole.class)
         .where(_role -> {
           _role.roleName().eq(roleName);

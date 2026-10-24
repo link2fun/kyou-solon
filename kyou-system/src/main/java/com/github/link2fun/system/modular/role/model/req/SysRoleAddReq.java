@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.github.link2fun.support.annotation.Excel;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import lombok.Data;
+import org.noear.solon.validation.annotation.Pattern;
 
 import java.util.List;
 
@@ -25,6 +26,7 @@ public class SysRoleAddReq {
   private String roleName;
   /** 角色权限 */
   @Excel(name = "角色权限")
+  @Pattern(value = "^[^,]*$", message = "角色权限不能包含逗号")
   private String roleKey;
   /** 角色排序 */
   @Excel(name = "角色排序")
