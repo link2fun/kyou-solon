@@ -1,5 +1,27 @@
 import WebConst from '@/constants/WebConst';
-import { deleteJSON, get, postJSON, putJSON } from '@/utils/request';
+import ObjectTool from '@/utils/ObjectTool';
+import {deleteJSON, get, postJSON, putJSON} from '@/utils/request';
+
+/** 新增菜单请求字段, 与后端 SysMenuAddReq 对齐 */
+const ADD_FIELDS: string[] = [
+  'menuName',
+  'parentId',
+  'orderNum',
+  'path',
+  'component',
+  'query',
+  'isFrame',
+  'isCache',
+  'menuType',
+  'visible',
+  'status',
+  'perms',
+  'icon',
+  'remark',
+];
+
+/** 修改菜单请求字段 */
+const EDIT_FIELDS: string[] = ['menuId', ...ADD_FIELDS];
 
 const ApiSystemMenu = {
   /** 获取菜单列表 */
@@ -14,9 +36,17 @@ const ApiSystemMenu = {
   roleMenuTreeSelect: (roleId: string) =>
     get(`${WebConst.API_PREFIX}/system/menu/roleMenuTreeselect/${roleId}`),
   /** 新增菜单 */
-  add: (data: any) => postJSON(`${WebConst.API_PREFIX}/system/menu`, data),
+  add: (data: any) =>
+    postJSON(
+      `${WebConst.API_PREFIX}/system/menu`,
+      ObjectTool.pick(data, ADD_FIELDS),
+    ),
   /** 修改菜单 */
-  edit: (data: any) => putJSON(`${WebConst.API_PREFIX}/system/menu`, data),
+  edit: (data: any) =>
+    putJSON(
+      `${WebConst.API_PREFIX}/system/menu`,
+      ObjectTool.pick(data, EDIT_FIELDS),
+    ),
   /**删除菜单 */
   remove: (menuId: string) =>
     deleteJSON(`${WebConst.API_PREFIX}/system/menu/${menuId}`),

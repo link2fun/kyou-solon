@@ -3,13 +3,15 @@ package com.github.link2fun.system.modular.dict.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.ObjectUtil;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataAddReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataModifyReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataSearchReq;
 import com.github.link2fun.system.modular.dict.service.ISystemDictDataService;
 import com.github.link2fun.system.modular.dict.service.ISystemDictTypeService;
 import org.noear.solon.annotation.*;
@@ -27,7 +29,7 @@ import java.util.List;
  */
 @Controller
 @Mapping("/system/dict/data")
-public class SystemDictDataController extends BaseController {
+public class SystemDictDataController {
   @Inject
   private ISystemDictDataService dictDataService;
 
@@ -36,16 +38,16 @@ public class SystemDictDataController extends BaseController {
 
   @SaCheckPermission("system:dict:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public TableDataInfo list(SysDictData dictData) {
-    Page<SysDictData> page = dictDataService.pageSearch(Page.ofCurrentContext(), dictData);
-    return getDataTable(page);
+  public TableDataInfo list(SysDictDataSearchReq searchReq) {
+    Page<SysDictData> page = dictDataService.pageSearch(Page.ofCurrentContext(), searchReq);
+    return TableDataInfo.of(page);
   }
 
   @Log(title = "字典数据", businessType = BusinessType.EXPORT)
   @SaCheckPermission("system:dict:export")
   @Mapping(value = "/export", method = MethodType.POST)
-  public void export(Context response, SysDictData dictData) {
-    List<SysDictData> list = dictDataService.selectDictDataList(dictData);
+  public void export(Context response, SysDictDataSearchReq searchReq) {
+    List<SysDictData> list = dictDataService.selectDictDataList(searchReq);
     ExcelUtil<SysDictData> util = new ExcelUtil<>(SysDictData.class);
     util.exportExcel(response, list, "字典数据");
   }
@@ -56,7 +58,7 @@ public class SystemDictDataController extends BaseController {
   @SaCheckPermission("system:dict:query")
   @Mapping(value = "/{dictCode}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long dictCode) {
-    return successData(dictDataService.selectDictDataById(dictCode));
+    return AjaxResult.successData(dictDataService.selectDictDataById(dictCode));
   }
 
   /**
@@ -68,7 +70,7 @@ public class SystemDictDataController extends BaseController {
     if (ObjectUtil.isNull(data)) {
       data = new ArrayList<>();
     }
-    return successData(data);
+    return AjaxResult.successData(data);
   }
 
   /**
@@ -77,9 +79,8 @@ public class SystemDictDataController extends BaseController {
   @SaCheckPermission("system:dict:add")
   @Log(title = "字典数据", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysDictData dict) {
-    dict.setCreateBy(getUsername());
-    return toAjax(dictDataService.insertDictData(dict));
+  public AjaxResult add(@Validated @Body SysDictDataAddReq addReq) {
+    return AjaxResult.ofAffected(dictDataService.insertDictData(addReq));
   }
 
   /**
@@ -88,9 +89,8 @@ public class SystemDictDataController extends BaseController {
   @SaCheckPermission("system:dict:edit")
   @Log(title = "字典数据", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysDictData dict) {
-    dict.setUpdateBy(getUsername());
-    return toAjax(dictDataService.updateDictData(dict));
+  public AjaxResult edit(@Validated @Body SysDictDataModifyReq modifyReq) {
+    return AjaxResult.ofAffected(dictDataService.updateDictData(modifyReq));
   }
 
   /**
@@ -101,6 +101,6 @@ public class SystemDictDataController extends BaseController {
   @Mapping(value = "/{dictCodes}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> dictCodes) {
     dictDataService.deleteDictDataByIds(dictCodes);
-    return success();
+    return AjaxResult.success();
   }
 }

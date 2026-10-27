@@ -8,7 +8,7 @@ import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
-import com.github.link2fun.system.modular.user.model.req.SysUserReq;
+import com.github.link2fun.system.modular.user.model.req.*;
 
 import java.util.List;
 
@@ -23,30 +23,30 @@ public interface ISystemUserService {
    *
    * @param context
    * @param pageRequest 分页适配器
-   * @param searchReq   用户信息
+   * @param searchReq   用户查询条件
    * @return 用户信息集合信息
    */
-  <T> Page<T> selectUserList(final ActionContext context, Page<T> pageRequest, SysUser searchReq, Class<T> resultClass);
+  <T> Page<T> selectUserList(final ActionContext context, Page<T> pageRequest, SysUserSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 根据条件分页查询已分配用户角色列表
    *
    * @param context
    * @param pageRequest 分页适配器
-   * @param searchReq   用户信息
+   * @param searchReq   已分配角色用户的查询条件
    * @return 用户信息集合信息
    */
-  Page<AllocatedUserDTO> selectAllocatedList(final ActionContext context, Page<AllocatedUserDTO> pageRequest, SysUser searchReq);
+  Page<AllocatedUserDTO> selectAllocatedList(final ActionContext context, Page<AllocatedUserDTO> pageRequest, SysUserSearchReq searchReq);
 
   /**
    * 根据条件分页查询未分配用户角色列表
    *
    * @param context
    * @param pageRequest 分页适配器
-   * @param searchReq   用户信息
+   * @param searchReq   未分配角色用户的查询条件
    * @return 用户信息集合信息
    */
-  Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, Page<AllocatedUserDTO> pageRequest, SysUser searchReq);
+  Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, Page<AllocatedUserDTO> pageRequest, SysUserSearchReq searchReq);
 
   /**
    * 通过用户名查询用户
@@ -134,11 +134,11 @@ public interface ISystemUserService {
   /**
    * 修改用户状态(内部已完成操作权限/数据权限检查)
    *
-   * @param context 操作上下文, 含有当前用户信息
-   * @param user    用户信息
+   * @param context         操作上下文, 含有当前用户信息
+   * @param changeStatusReq 用户ID与目标状态
    * @return 结果
    */
-  long updateUserStatus(final ActionContext context, SysUser user);
+  long updateUserStatus(final ActionContext context, SysUserChangeStatusReq changeStatusReq);
 
   /**
    * 修改用户基本信息(内部已完成手机号/邮箱唯一性检查)
@@ -151,11 +151,11 @@ public interface ISystemUserService {
   /**
    * 修改本人资料(昵称/邮箱/手机号/性别), 成功后失效本人会话缓存
    *
-   * @param userId       本人用户ID
-   * @param profilePatch 资料补丁(只取昵称/邮箱/手机号/性别)
+   * @param userId    本人用户ID
+   * @param modifyReq 个人资料修改请求
    * @return 结果
    */
-  long updateMyProfile(Long userId, SysUser profilePatch);
+  long updateMyProfile(Long userId, SysUserProfileModifyReq modifyReq);
 
   /**
    * 修改用户头像
@@ -177,13 +177,13 @@ public interface ISystemUserService {
   boolean updateMyAvatar(Long userId, String userName, String avatar);
 
   /**
-   * 重置用户密码(内部已完成操作权限/数据权限检查)
+   * 重置用户密码(内部已完成操作权限/数据权限检查与加密)
    *
-   * @param context 操作上下文, 含有当前用户信息
-   * @param user    用户信息(密码需已加密)
+   * @param context     操作上下文, 含有当前用户信息
+   * @param resetPwdReq 用户ID与新密码(明文)
    * @return 结果
    */
-  long resetPwd(final ActionContext context, SysUser user);
+  long resetPwd(final ActionContext context, SysUserResetPwdReq resetPwdReq);
 
   /**
    * 重置用户密码

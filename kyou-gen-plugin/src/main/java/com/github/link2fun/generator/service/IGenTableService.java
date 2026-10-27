@@ -2,6 +2,8 @@ package com.github.link2fun.generator.service;
 
 
 import com.github.link2fun.generator.domain.GenTable;
+import com.github.link2fun.generator.domain.req.GenTableModifyReq;
+import com.github.link2fun.generator.domain.req.GenTableSearchReq;
 import com.github.link2fun.support.core.page.Page;
 
 import java.util.List;
@@ -20,16 +22,17 @@ public interface IGenTableService {
    * @param searchReq   查询条件
    * @return 业务集合
    */
-  Page<GenTable> selectGenTableList(final Page<GenTable> pageRequest, GenTable searchReq);
+  Page<GenTable> selectGenTableList(final Page<GenTable> pageRequest, GenTableSearchReq searchReq);
 
   /**
    * 查询据库列表
    *
-   * @param pageRequest 分页对象
-   * @param searchReq   查询条件
+   * <p>结果取自数据库元数据而非业务表, 不分页: 返回全部匹配表, total 记为条数。
+   *
+   * @param searchReq 查询条件
    * @return 数据库表集合
    */
-  Page<GenTable> selectDbTableList(final Page<GenTable> pageRequest, GenTable searchReq);
+  Page<GenTable> selectDbTableList(GenTableSearchReq searchReq);
 
   /**
    * 查询据库列表
@@ -57,9 +60,9 @@ public interface IGenTableService {
   /**
    * 修改业务
    *
-   * @param genTable 业务信息
+   * @param modifyReq 修改业务请求
    */
-  void updateGenTable(GenTable genTable);
+  void updateGenTable(GenTableModifyReq modifyReq);
 
   /**
    * 删除业务信息
@@ -74,6 +77,13 @@ public interface IGenTableService {
    * @param tableList 导入表列表
    */
   void importGenTable(List<GenTable> tableList);
+
+  /**
+   * 按表名导入表结构: 读取库表元数据并写入生成配置, 两步在同一事务内
+   *
+   * @param tableNames 要导入的表名
+   */
+  void importGenTableByNames(String[] tableNames);
 
   /**
    * 预览代码

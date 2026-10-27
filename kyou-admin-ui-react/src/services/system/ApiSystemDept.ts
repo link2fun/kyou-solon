@@ -1,5 +1,20 @@
 import WebConst from '@/constants/WebConst';
-import { deleteJSON, get, postJSON, putJSON } from '@/utils/request';
+import ObjectTool from '@/utils/ObjectTool';
+import {deleteJSON, get, postJSON, putJSON} from '@/utils/request';
+
+/** 新增部门请求字段, 与后端 SysDeptAddReq 对齐 */
+const ADD_FIELDS: string[] = [
+  'parentId',
+  'deptName',
+  'orderNum',
+  'leader',
+  'phone',
+  'email',
+  'status',
+];
+
+/** 修改部门请求字段; ancestors/delFlag 由服务端维护, 客户端不发 */
+const EDIT_FIELDS: string[] = ['deptId', ...ADD_FIELDS];
 
 const ApiSystemDept = {
   /**获取部门列表 */
@@ -12,10 +27,16 @@ const ApiSystemDept = {
     get(`${WebConst.API_PREFIX}/system/dept/${deptId}`),
   /** 新增部门 */
   add: (createReq: any) =>
-    postJSON(`${WebConst.API_PREFIX}/system/dept`, createReq),
+    postJSON(
+      `${WebConst.API_PREFIX}/system/dept`,
+      ObjectTool.pick(createReq, ADD_FIELDS),
+    ),
   /** 修改部门 */
   edit: (updateReq: any) =>
-    putJSON(`${WebConst.API_PREFIX}/system/dept`, updateReq),
+    putJSON(
+      `${WebConst.API_PREFIX}/system/dept`,
+      ObjectTool.pick(updateReq, EDIT_FIELDS),
+    ),
   /** 删除部门 */
   remove: (deptId: number) =>
     deleteJSON(`${WebConst.API_PREFIX}/system/dept/${deptId}`),

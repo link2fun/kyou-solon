@@ -73,7 +73,6 @@ public class ISystemUserServiceIT {
     user.setPassword("password");
     user.setRoleIds(new ArrayList<>());
     user.setPostIds(new ArrayList<>());
-    user.setCreateBy("creator");
     user.setRemark("remark");
 
     Long userId = userService.insertUser(user);

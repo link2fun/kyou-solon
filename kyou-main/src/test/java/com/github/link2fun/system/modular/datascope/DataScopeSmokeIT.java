@@ -4,15 +4,16 @@ import com.github.link2fun.KyouApp;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
-import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
-import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.model.SessionUser;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.exception.ServiceException;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptSearchReq;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
+import com.github.link2fun.system.modular.role.model.req.SysRoleSearchReq;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
+import com.github.link2fun.system.modular.user.model.req.SysUserSearchReq;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ public class DataScopeSmokeIT {
     final ActionContext context = contextOf(SUPER_ADMIN_ID, SUPER_ADMIN_DEPT_ID, 1L, "1");
     assertTrue(context.isSuperAdmin());
 
-    final Page<SysUserDTO> page = userService.selectUserList(context, Page.of(1L, 10L), new SysUser(), SysUserDTO.class);
+    final Page<SysUserDTO> page = userService.selectUserList(context, Page.of(1L, 10L), new SysUserSearchReq(), SysUserDTO.class);
     assertEquals(2, page.getRecords().size());
   }
 
@@ -92,7 +93,7 @@ public class DataScopeSmokeIT {
     final ActionContext context = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, CUSTOM_SCOPE_ROLE_ID, "2");
     assertFalse(context.isSuperAdmin());
 
-    final Page<SysUserDTO> page = userService.selectUserList(context, Page.of(1L, 10L), new SysUser(), SysUserDTO.class);
+    final Page<SysUserDTO> page = userService.selectUserList(context, Page.of(1L, 10L), new SysUserSearchReq(), SysUserDTO.class);
     assertEquals(1, page.getRecords().size(), "只有 ry(部门 105) 在 role 2 的自定义范围内");
     assertEquals("ry", page.getRecords().get(0).getUserName());
   }
@@ -102,7 +103,7 @@ public class DataScopeSmokeIT {
   public void allScopeRoleDoesNotFilterForOrdinaryUser() {
     final ActionContext context = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, 999L, "1");
 
-    final Page<SysUserDTO> page = userService.selectUserList(context, Page.of(1L, 10L), new SysUser(), SysUserDTO.class);
+    final Page<SysUserDTO> page = userService.selectUserList(context, Page.of(1L, 10L), new SysUserSearchReq(), SysUserDTO.class);
     assertEquals(2, page.getRecords().size(), "「全部数据」角色应当看全部, 修复前会拼出 AND () 报 SQL 错");
   }
 
@@ -111,7 +112,7 @@ public class DataScopeSmokeIT {
   public void selfScopeSeesOnlySelf() {
     final ActionContext context = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, 999L, "5");
 
-    final Page<SysUserDTO> page = userService.selectUserList(context, Page.of(1L, 10L), new SysUser(), SysUserDTO.class);
+    final Page<SysUserDTO> page = userService.selectUserList(context, Page.of(1L, 10L), new SysUserSearchReq(), SysUserDTO.class);
     assertEquals(1, page.getRecords().size(), "仅本人范围只看得到 ry 自己");
     assertEquals("ry", page.getRecords().get(0).getUserName());
   }
@@ -121,7 +122,7 @@ public class DataScopeSmokeIT {
   public void selfScopeSeesNoDeptOnDeptList() {
     final ActionContext context = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, 999L, "5");
 
-    assertTrue(deptService.selectDeptList(context, new SysDept()).isEmpty(), "本人轴在部门查询上给不出条件, 应过滤到空");
+    assertTrue(deptService.selectDeptList(context, new SysDeptSearchReq()).isEmpty(), "本人轴在部门查询上给不出条件, 应过滤到空");
   }
 
   @Test
@@ -141,13 +142,13 @@ public class DataScopeSmokeIT {
   public void roleListFollowsDataScope() {
     final ActionContext superAdmin = contextOf(SUPER_ADMIN_ID, SUPER_ADMIN_DEPT_ID, 1L, "1");
     assertEquals(2, roleService
-      .selectRoleList(superAdmin, Page.of(1L, 10L), new SysRole(), SysRole.class)
+      .selectRoleList(superAdmin, Page.of(1L, 10L), new SysRoleSearchReq(), SysRole.class)
       .getRecords().size(), "超管看全部两个种子角色");
 
     // 角色 2(自定义 100/101/105) 下只有 ry(部门 105)在范围内; 角色 1 下只有 admin(部门 103)不在
     final ActionContext ordinary = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, CUSTOM_SCOPE_ROLE_ID, "2");
     final Page<SysRole> visible = roleService
-      .selectRoleList(ordinary, Page.of(1L, 10L), new SysRole(), SysRole.class);
+      .selectRoleList(ordinary, Page.of(1L, 10L), new SysRoleSearchReq(), SysRole.class);
     assertEquals(1, visible.getRecords().size(), "只看得到有范围内用户的角色");
     assertEquals(CUSTOM_SCOPE_ROLE_ID, visible.getRecords().get(0).getRoleId());
   }
@@ -172,7 +173,7 @@ public class DataScopeSmokeIT {
   public void allocatedListFollowsDataScope() {
     final ActionContext ordinary = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, CUSTOM_SCOPE_ROLE_ID, "2");
 
-    final SysUser searchReq = new SysUser();
+    final SysUserSearchReq searchReq = new SysUserSearchReq();
     searchReq.setRoleId(CUSTOM_SCOPE_ROLE_ID);
     final Page<AllocatedUserDTO> page = userService.selectAllocatedList(ordinary, Page.of(1L, 10L), searchReq);
 
@@ -185,7 +186,7 @@ public class DataScopeSmokeIT {
   public void unallocatedListFollowsDataScope() {
     final ActionContext ordinary = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, CUSTOM_SCOPE_ROLE_ID, "2");
 
-    final SysUser searchReq = new SysUser();
+    final SysUserSearchReq searchReq = new SysUserSearchReq();
     searchReq.setRoleId(CUSTOM_SCOPE_ROLE_ID);
     final Page<AllocatedUserDTO> page = userService.selectUnallocatedList(ordinary, Page.of(1L, 10L), searchReq);
 
@@ -199,7 +200,7 @@ public class DataScopeSmokeIT {
     final ActionContext admin = contextOf(SUPER_ADMIN_ID, SUPER_ADMIN_DEPT_ID, 1L, "1");
 
     // roleId 保持 null, 模拟入口 GET 不带 roleId(Controller 对 roleId 无校验, null 直达 service)
-    final SysUser searchReq = new SysUser();
+    final SysUserSearchReq searchReq = new SysUserSearchReq();
     final Page<AllocatedUserDTO> page = userService.selectUnallocatedList(admin, Page.of(1L, 10L), searchReq);
 
     // 种子数据里两个用户都持有角色(sys_user_role: 1→1, 2→2), 无任何角色的用户是空集。

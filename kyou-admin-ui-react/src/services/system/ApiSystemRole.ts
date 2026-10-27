@@ -1,12 +1,22 @@
 import WebConst from '@/constants/WebConst';
-import {
-  deleteJSON,
-  downloadFile,
-  get,
-  postJSON,
-  putForm,
-  putJSON,
-} from '@/utils/request';
+import ObjectTool from '@/utils/ObjectTool';
+import {deleteJSON, downloadFile, get, postJSON, putForm, putJSON,} from '@/utils/request';
+
+/** 新增角色请求字段, 与后端 SysRoleAddReq 对齐 */
+const ADD_FIELDS: string[] = [
+  'roleName',
+  'roleKey',
+  'roleSort',
+  'dataScope',
+  'menuCheckStrictly',
+  'deptCheckStrictly',
+  'status',
+  'remark',
+  'menuIds',
+];
+
+/** 修改角色请求字段 */
+const EDIT_FIELDS: string[] = ['roleId', ...ADD_FIELDS];
 
 const ApiSystemRole = {
   /** 角色列表 */
@@ -17,18 +27,30 @@ const ApiSystemRole = {
       `${WebConst.API_PREFIX}/system/role/export`,
       params,
       '角色数据.xlsx',
-      { method: 'POST' },
+      {method: 'POST'},
     ),
   /** 根据角色编号获取详细信息 */
   detail: (roleId: string) =>
     get(`${WebConst.API_PREFIX}/system/role/${roleId}`),
   /** 新增角色 */
-  add: (data: any) => postJSON(`${WebConst.API_PREFIX}/system/role`, data),
+  add: (data: any) =>
+    postJSON(
+      `${WebConst.API_PREFIX}/system/role`,
+      ObjectTool.pick(data, ADD_FIELDS),
+    ),
   /** 修改角色 */
-  edit: (data: any) => putJSON(`${WebConst.API_PREFIX}/system/role`, data),
+  edit: (data: any) =>
+    putJSON(
+      `${WebConst.API_PREFIX}/system/role`,
+      ObjectTool.pick(data, EDIT_FIELDS),
+    ),
   /** 修改角色数据权限 */
   dataScope: (data: any) =>
-    putJSON(`${WebConst.API_PREFIX}/system/role/dataScope`, data),
+    putJSON(
+      `${WebConst.API_PREFIX}/system/role/dataScope`,
+      // 与后端 SysRoleChangeDataScopeReq 对齐
+      ObjectTool.pick(data, ['roleId', 'dataScope', 'deptIds', 'remark']),
+    ),
   /** 状态修改 */
   changeStatus: (data: any) =>
     putJSON(`${WebConst.API_PREFIX}/system/role/changeStatus`, data),

@@ -2,6 +2,7 @@ package com.github.link2fun.system.modular.operlog.service;
 
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.operlog.model.SysOperLog;
+import com.github.link2fun.system.modular.operlog.model.req.SysOperLogSearchReq;
 
 import java.util.List;
 
@@ -22,10 +23,10 @@ public interface ISystemOperLogService {
    * 查询系统操作日志集合
    *
    * @param pageRequest 分页信息
-   * @param operLog     操作日志对象
+   * @param searchReq   查询条件
    * @return 操作日志集合
    */
-  Page<SysOperLog> selectOperLogList(final Page<SysOperLog> pageRequest, SysOperLog operLog);
+  Page<SysOperLog> selectOperLogList(final Page<SysOperLog> pageRequest, SysOperLogSearchReq searchReq);
 
   /**
    * 批量删除系统操作日志

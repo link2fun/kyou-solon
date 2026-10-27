@@ -1,17 +1,20 @@
 package com.github.link2fun.system.modular.config.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
-import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.config.ConfigContext;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.system.modular.config.model.SysConfig;
 import com.github.link2fun.system.modular.config.model.proxy.SysConfigProxy;
+import com.github.link2fun.system.modular.config.model.req.SysConfigAddReq;
+import com.github.link2fun.system.modular.config.model.req.SysConfigModifyReq;
+import com.github.link2fun.system.modular.config.model.req.SysConfigSearchReq;
 import com.github.link2fun.system.modular.config.service.ISystemConfigService;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
@@ -32,14 +35,13 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
   /**
    * 查询参数配置信息
    *
-   * @param context     上下文
    * @param configId    参数配置ID
    * @param resultClass 结果类型
    * @return 参数配置信息
    */
   @Override
   @Transaction(policy = TranPolicy.supports)
-  public <T> T findOneByConfigId(ActionContext context, final Integer configId, Class<T> resultClass) {
+  public <T> T findOneByConfigId(final Integer configId, Class<T> resultClass) {
     Preconditions.checkNotNull(configId, "configId is null");
 
     return entityQuery.queryable(SysConfig.class)
@@ -77,12 +79,12 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * @return 参数配置集合
    */
   @Override
-  public <T> List<T> selectConfigList(final SysConfig searchReq, Class<T> resultClass) {
+  public <T> List<T> selectConfigList(final SysConfigSearchReq searchReq, Class<T> resultClass) {
     return buildQuery(searchReq).selectAutoInclude(resultClass).toList();
   }
 
   /** 构造参数配置列表查询 */
-  private EntityQueryable<SysConfigProxy, SysConfig> buildQuery(final SysConfig searchReq) {
+  private EntityQueryable<SysConfigProxy, SysConfig> buildQuery(final SysConfigSearchReq searchReq) {
     EntityQueryable<SysConfigProxy, SysConfig> queryable = entityQuery.queryable(SysConfig.class);
     if (Objects.isNull(searchReq)) {
       return queryable;
@@ -102,12 +104,12 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    * 根据条件查询系统配置信息并分页返回结果。
    *
    * @param pageRequest 分页适配器
-   * @param searchReq   系统配置信息
+   * @param searchReq   参数配置查询条件
    * @return 分页结果
    */
   @Override
   @Transaction(policy = TranPolicy.supports)
-  public <T> Page<T> pageSearchConfig(final ActionContext context, final Page<T> pageRequest, final SysConfig searchReq,
+  public <T> Page<T> pageSearchConfig(final Page<T> pageRequest, final SysConfigSearchReq searchReq,
                                       Class<T> resultClass) {
     return Page.of(pageRequest, buildQuery(searchReq).selectAutoInclude(resultClass)
       .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
@@ -117,12 +119,13 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
   /**
    * 新增参数配置
    *
-   * @param config 参数配置信息
+   * @param addReq 新增参数配置请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long insertConfig(final SysConfig config) {
+  public long insertConfig(final SysConfigAddReq addReq) {
+    final SysConfig config = BeanUtil.toBean(addReq, SysConfig.class);
     // 查询数据库中是否有该参数
     checkConfigKeyUnique("新增", config);
     final long row = entityQuery.insertable(config).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
@@ -135,16 +138,17 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
   /**
    * 修改参数配置
    *
-   * @param config 参数配置信息
+   * @param modifyReq 修改参数配置请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long updateConfig(final SysConfig config) {
+  public long updateConfig(final SysConfigModifyReq modifyReq) {
+    final SysConfig config = BeanUtil.toBean(modifyReq, SysConfig.class);
     checkConfigKeyUnique("修改", config);
     final SysConfig temp = entityQuery.queryable(SysConfig.class)
       .whereById(config.getConfigId()).singleOrNull();
-    final long row = entityQuery.updatable(config).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
+    final long row = entityQuery.updatable(config).setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS).executeRows();
     if (row > 0) {
       // 库成功后再动缓存: 改键名时先失效旧键
       if (ObjectUtil.isNotNull(temp)) {

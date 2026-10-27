@@ -2,6 +2,9 @@ package com.github.link2fun.system.modular.group.service;
 
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.group.model.SysGroup;
+import com.github.link2fun.system.modular.group.model.req.SysGroupAddReq;
+import com.github.link2fun.system.modular.group.model.req.SysGroupModifyReq;
+import com.github.link2fun.system.modular.group.model.req.SysGroupSearchReq;
 
 import java.util.List;
 
@@ -15,23 +18,23 @@ public interface ISystemGroupService {
    * @param searchReq   搜索条件
    * @return 分页查询结果
    */
-  Page<SysGroup> pageSearchGroup(Page<SysGroup> pageRequest, SysGroup searchReq);
+  Page<SysGroup> pageSearchGroup(Page<SysGroup> pageRequest, SysGroupSearchReq searchReq);
 
   /**
    * 新增群组(内部已完成名称唯一性检查)
    *
-   * @param group 群组信息
+   * @param addReq 新增用户组请求
    * @return 结果
    */
-  long insertGroup(SysGroup group);
+  long insertGroup(SysGroupAddReq addReq);
 
   /**
    * 修改群组(内部已完成名称唯一性检查)
    *
-   * @param group 群组信息
+   * @param modifyReq 修改用户组请求
    * @return 结果
    */
-  long updateGroup(SysGroup group);
+  long updateGroup(SysGroupModifyReq modifyReq);
 
   /**
    * 批量删除群组

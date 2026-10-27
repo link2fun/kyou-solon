@@ -10,6 +10,7 @@ import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
 import useActionControl from '@/hooks/useActionControl';
 import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
 import ApiMonitorLogininfor from '@/services/monitor/ApiMonitorLogininfor';
+import { dateRangeToRequestParams } from '@/utils/utils';
 
 const SystemLogLogininforIndex = () => {
   const actionControl = useActionControl({
@@ -26,15 +27,10 @@ const SystemLogLogininforIndex = () => {
         {...actionControl.table}
         request={async (_params: any) => {
           const { loginTime, ...rest } = _params;
-          const beginTime = loginTime ? loginTime[0] : '';
-          const endTime = loginTime ? loginTime[1] : '';
-          const params = {
+          const data = await ApiMonitorLogininfor.list({
             ...rest,
-            'params[beginTime]': beginTime,
-            'params[endTime]': endTime,
-          };
-
-          const data = await ApiMonitorLogininfor.list(params);
+            ...dateRangeToRequestParams(loginTime),
+          });
           return {
             data: data.rows,
             success: true,

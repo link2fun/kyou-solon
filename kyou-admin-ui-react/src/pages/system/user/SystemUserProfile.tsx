@@ -167,10 +167,7 @@ const SystemUserProfile = () => {
                           if (!initialState) {
                             return;
                           }
-                          await ApiSystemUserProfile.updateProfile({
-                            userId: initialState?.currentUser?.user?.userId,
-                            ...values,
-                          });
+                          await ApiSystemUserProfile.updateProfile(values);
                           message.success('修改成功');
                           // const _user: CurrentUser =
                           //   (await initialState?.fetchUserInfo?.()) as CurrentUser;
@@ -239,11 +236,7 @@ const SystemUserProfile = () => {
                         if (!initialState) {
                           return;
                         }
-                        const { oldPassword, newPassword } = values;
-                        await ApiSystemUserProfile.updatePwd(
-                          oldPassword,
-                          newPassword,
-                        );
+                        await ApiSystemUserProfile.updatePwd(values);
                         message.success('修改成功');
                       }}
                     >

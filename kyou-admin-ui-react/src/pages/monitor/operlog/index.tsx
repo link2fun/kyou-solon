@@ -6,6 +6,7 @@ import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
 import useActionControl from '@/hooks/useActionControl';
 import useProFormSelectDictRequest from '@/hooks/useProFormSelectDictRequest';
 import ApiMonitorOperlog from '@/services/monitor/ApiMonitorOperlog';
+import { dateRangeToRequestParams } from '@/utils/utils';
 
 const SystemLogOperlogIndex = () => {
   const { message } = App.useApp();
@@ -25,14 +26,10 @@ const SystemLogOperlogIndex = () => {
         {...actionControl.table}
         request={async (_params: any) => {
           const { operTime, ...rest } = _params;
-          const beginTime = operTime ? operTime[0] : '';
-          const endTime = operTime ? operTime[1] : '';
-          const params = {
+          const data = await ApiMonitorOperlog.list({
             ...rest,
-            'params[beginTime]': beginTime,
-            'params[endTime]': endTime,
-          };
-          const data = await ApiMonitorOperlog.list(params);
+            ...dateRangeToRequestParams(operTime),
+          });
           return {
             data: data.rows,
             success: true,

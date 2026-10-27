@@ -133,10 +133,11 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (values: Record<string, any>) => {
     try {
-      // 登录
+      // 登录只发后端声明的字段: type/autoLogin/mobile/captcha 是前端 UI 状态
       const msg = await ApiCommon.login({
-        ...values,
-        type,
+        username: values.username,
+        password: values.password,
+        code: values.code,
         uuid: captchaImage.uuid,
       });
       if (msg.success) {

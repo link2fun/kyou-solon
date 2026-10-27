@@ -2,12 +2,18 @@ package com.github.link2fun.framework.aop;
 
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.core.domain.entity.SysDept;
-import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.system.modular.config.api.SystemConfigController;
 import com.github.link2fun.system.modular.config.model.SysConfig;
+import com.github.link2fun.system.modular.config.model.req.SysConfigAddReq;
+import com.github.link2fun.system.modular.config.model.req.SysConfigModifyReq;
+import com.github.link2fun.system.modular.config.model.req.SysConfigSearchReq;
 import com.github.link2fun.system.modular.dept.api.SystemDeptController;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptAddReq;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptModifyReq;
 import com.github.link2fun.system.modular.user.api.SystemUserController;
 import com.github.link2fun.system.modular.user.model.req.SysUserReq;
+import com.github.link2fun.system.modular.user.model.req.SysUserResetPwdReq;
+import com.github.link2fun.system.modular.user.model.req.SysUserSearchReq;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.noear.solon.core.handle.Context;
@@ -34,7 +40,7 @@ class LogMaskerTest {
     Log addLog = add.getAnnotation(Log.class);
     assertNotNull(addLog);
     assertTrue(addLog.mask());
-    assertTrue(addLog.excludeParamNames().length == 0);
+    assertEquals(0, addLog.excludeParamNames().length);
 
     Method remove = SystemUserController.class.getMethod("remove", List.class);
     Log removeLog = remove.getAnnotation(Log.class);
@@ -45,16 +51,16 @@ class LogMaskerTest {
   @Test
   @DisplayName("入参含口令/联系方式/配置值的端点必须显式开启脱敏")
   void sensitiveEndpointsDeclareMask() throws Exception {
-    // changeStatus 的 password 由客户端任意注入、部门带 phone/email、
-    // 参数配置的 configValue 可能直接是 OSS/邮件密钥。删掉任一 mask=true 这里就会红。
-    assertMaskDeclared(SystemUserController.class.getMethod("changeStatus", SysUser.class));
-    assertMaskDeclared(SystemDeptController.class.getMethod("add", SysDept.class));
-    assertMaskDeclared(SystemDeptController.class.getMethod("edit", SysDept.class));
-    assertMaskDeclared(SystemConfigController.class.getMethod("add", SysConfig.class));
-    assertMaskDeclared(SystemConfigController.class.getMethod("edit", SysConfig.class));
+    // 部门带 phone/email、参数配置的 configValue 可能直接是 OSS/邮件密钥。
+    // 删掉任一 mask=true 这里就会红。
+    assertMaskDeclared(SystemUserController.class.getMethod("resetPwd", SysUserResetPwdReq.class));
+    assertMaskDeclared(SystemDeptController.class.getMethod("add", SysDeptAddReq.class));
+    assertMaskDeclared(SystemDeptController.class.getMethod("edit", SysDeptModifyReq.class));
+    assertMaskDeclared(SystemConfigController.class.getMethod("add", SysConfigAddReq.class));
+    assertMaskDeclared(SystemConfigController.class.getMethod("edit", SysConfigModifyReq.class));
     // 导出接口的搜索条件同样可带手机号/邮箱/configValue
-    assertMaskDeclared(SystemUserController.class.getMethod("export", Context.class, SysUser.class));
-    assertMaskDeclared(SystemConfigController.class.getMethod("export", Context.class, SysConfig.class));
+    assertMaskDeclared(SystemUserController.class.getMethod("export", Context.class, SysUserSearchReq.class));
+    assertMaskDeclared(SystemConfigController.class.getMethod("export", Context.class, SysConfigSearchReq.class));
   }
 
   private static void assertMaskDeclared(Method method) {

@@ -57,8 +57,6 @@ public class SysUserReq {
     /** 岗位组 */
     private List<Long> postIds;
 
-    private String createBy;
-
     private String remark;
   }
 

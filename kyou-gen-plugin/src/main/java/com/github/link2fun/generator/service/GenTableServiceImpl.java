@@ -1,6 +1,7 @@
 package com.github.link2fun.generator.service;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -13,13 +14,15 @@ import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.link2fun.generator.constant.GenConstants;
 import com.github.link2fun.generator.domain.GenTable;
 import com.github.link2fun.generator.domain.GenTableColumn;
 import com.github.link2fun.generator.domain.proxy.GenTableProxy;
+import com.github.link2fun.generator.domain.req.GenTableModifyReq;
+import com.github.link2fun.generator.domain.req.GenTableSearchReq;
 import com.github.link2fun.generator.util.GenUtils;
 import com.github.link2fun.generator.util.VelocityInitializer;
 import com.github.link2fun.generator.util.VelocityUtils;
-import com.github.link2fun.generator.constant.GenConstants;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.page.Page;
@@ -95,7 +98,7 @@ public class GenTableServiceImpl implements IGenTableService {
    * @return 业务集合
    */
   @Override
-  public Page<GenTable> selectGenTableList(final Page<GenTable> pageRequest, GenTable searchReq) {
+  public Page<GenTable> selectGenTableList(final Page<GenTable> pageRequest, GenTableSearchReq searchReq) {
 
 
     EasyPageResult<GenTable> pageResult = entityQuery.queryable(GenTable.class)
@@ -115,7 +118,7 @@ public class GenTableServiceImpl implements IGenTableService {
    * @return 数据库表集合
    */
   @Override
-  public Page<GenTable> selectDbTableList(final Page<GenTable> pageRequest, GenTable searchReq) {
+  public Page<GenTable> selectDbTableList(GenTableSearchReq searchReq) {
 
     String anylineServiceName = Solon.context().getWrapsOfType(DataSource.class).stream().filter(BeanWrap::typed)
       .findFirst().map(BeanWrap::name).orElse("default");
@@ -192,11 +195,12 @@ public class GenTableServiceImpl implements IGenTableService {
   /**
    * 修改业务
    *
-   * @param genTable 业务信息
+   * @param modifyReq 修改业务请求
    */
   @Override
   @Transaction
-  public void updateGenTable(GenTable genTable) {
+  public void updateGenTable(GenTableModifyReq modifyReq) {
+    final GenTable genTable = BeanUtil.toBean(modifyReq, GenTable.class);
     try {
       validateEdit(genTable);
     } catch (JsonProcessingException e) {
@@ -231,6 +235,19 @@ public class GenTableServiceImpl implements IGenTableService {
       .allowDeleteStatement(true)
       .where(tableColumn -> tableColumn.tableId().in(tableIds))
       .executeRows();
+  }
+
+  /**
+   * 按表名导入表结构: 读取库表元数据并写入生成配置, 两步在同一事务内
+   *
+   * @param tableNames 要导入的表名
+   */
+  @Override
+  @Transaction
+  public void importGenTableByNames(final String[] tableNames) {
+    // 元数据读取与写入必须同一事务: 分开做时读取在事务外, 期间表结构变更会导入不一致的配置
+    final List<GenTable> tableList = selectDbTableListByNames(tableNames);
+    importGenTable(tableList);
   }
 
   /**
@@ -411,9 +428,12 @@ public class GenTableServiceImpl implements IGenTableService {
       genTableColumnService.updateGenTableColumn(updateList);
     }
 
-    List<GenTableColumn> delColumns = tableColumns.stream().filter(column -> !dbTableColumnNames.contains(column.getColumnName())).collect(Collectors.toList());
-    if (CollectionUtil.isNotEmpty(delColumns)) {
-      genTableColumnService.deleteGenTableColumns(delColumns);
+    List<Long> delColumnIds = tableColumns.stream()
+      .filter(column -> !dbTableColumnNames.contains(column.getColumnName()))
+      .map(GenTableColumn::getColumnId)
+      .collect(Collectors.toList());
+    if (CollectionUtil.isNotEmpty(delColumnIds)) {
+      genTableColumnService.deleteGenTableColumnsByIds(delColumnIds);
     }
   }
 

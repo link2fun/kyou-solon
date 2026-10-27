@@ -1,6 +1,7 @@
 package com.github.link2fun.system.modular.role.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
@@ -14,16 +15,14 @@ import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.entity.SysRole;
+import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.uuid.IdUtils;
-import com.github.link2fun.system.modular.role.model.req.SysRoleAddReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleChangeDataScopeReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleChangeStatusReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleModifyReq;
+import com.github.link2fun.system.modular.role.model.req.*;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.system.modular.roledept.service.ISystemRoleDeptService;
 import com.github.link2fun.system.modular.rolemenu.service.ISystemRoleMenuService;
@@ -63,7 +62,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
   /** 按条件分页查询角色, 受数据范围约束 */
   @Override
-  public <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> pageRequest, final SysRole searchReq, Class<T> resultClass) {
+  public <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> pageRequest, final SysRoleSearchReq searchReq, Class<T> resultClass) {
 
     final DataScope dataScope = DataScope.of(entityQuery, context);
 
@@ -124,6 +123,21 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
     return roleList;
   }
 
+  /**
+   * 查询目标用户可持有的角色列表
+   *
+   * @param userId 目标用户ID
+   * @return 可持有的角色列表
+   */
+  @Override
+  public List<RoleDTO> selectAssignableRolesByUserId(final Long userId) {
+    final List<RoleDTO> roleList = selectRolesByUserId(userId);
+    if (SysUser.isSuperAdmin(userId)) {
+      return roleList;
+    }
+    return roleList.stream().filter(role -> !role.isSuperAdminRole()).toList();
+  }
+
 
   /**
    * 查询用户持有的启用角色标识集合(停用/软删角色不参与授权)
@@ -150,7 +164,23 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    */
   @Override
   public List<SysRole> selectRoleAll(ActionContext context) {
-    return selectRoleList(context, Page.ofAll(), new SysRole(), SysRole.class).getRecords();
+    return selectRoleList(context, Page.ofAll(), new SysRoleSearchReq(), SysRole.class).getRecords();
+  }
+
+  /**
+   * 查询可授予目标用户的角色
+   *
+   * @param context 操作上下文, 含有当前用户信息
+   * @param userId  目标用户ID
+   * @return 可分配的角色列表
+   */
+  @Override
+  public List<SysRole> selectAssignableRoles(final ActionContext context, final Long userId) {
+    final List<SysRole> roles = selectRoleAll(context);
+    if (SysUser.isSuperAdmin(userId)) {
+      return roles;
+    }
+    return roles.stream().filter(role -> !role.isSuperAdminRole()).toList();
   }
 
 
@@ -172,6 +202,19 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
     return queryable
       .selectAutoInclude(resultClass)
       .singleOrNull();
+  }
+
+  /**
+   * 按角色ID查询角色详情, 内部先做数据权限校验
+   *
+   * @param roleId      角色ID
+   * @param resultClass 返回的结果类型
+   * @return 角色对象信息
+   */
+  @Override
+  public <T> T selectRoleDetail(final Long roleId, Class<T> resultClass) {
+    checkRoleDataScope(roleId);
+    return selectRoleById(roleId, resultClass);
   }
 
   /**
@@ -219,9 +262,9 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   @Override
   public void checkRoleDataScope(final Long roleId) {
     if (!ActionContext.current().isSuperAdmin()) {
-      SysRole role = new SysRole();
-      role.setRoleId(roleId);
-      List<SysRole> roles = selectRoleList(ActionContext.current(), Page.ofLimit(1), role, SysRole.class).getRecords();
+      final SysRoleSearchReq roleSearchReq = new SysRoleSearchReq();
+      roleSearchReq.setRoleId(roleId);
+      List<SysRole> roles = selectRoleList(ActionContext.current(), Page.ofLimit(1), roleSearchReq, SysRole.class).getRecords();
       if (CollectionUtil.isEmpty(roles)) {
         throw new ServiceException("没有权限访问角色数据！");
       }
@@ -250,7 +293,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   public long insertRole(final SysRoleAddReq role) {
     checkRoleFieldUnique("新增", role.getRoleName(), role.getRoleKey(), null);
 
-    SysRole entity = role.toEntity();
+    final SysRole entity = BeanUtil.toBean(role, SysRole.class);
     long row = entityQuery.insertable(entity).executeRows(true);
     final List<Long> menuIds = role.getMenuIds();
 
@@ -262,7 +305,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   /**
    * 修改保存角色信息
    *
-   * @param modifyReq 角色信息
+   * @param modifyReq 修改角色请求
    * @return 结果
    */
   @Transaction
@@ -278,7 +321,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       .singleNotNull();
     final String oldRoleKey = role.getRoleKey();
 
-    BeanUtil.copyProperties(modifyReq, role);
+    BeanUtil.copyProperties(modifyReq, role, CopyOptions.create().ignoreNullValue());
 
     long row = entityQuery.updatable(role).executeRows();
 
@@ -291,7 +334,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   /**
    * 修改角色状态
    *
-   * @param changeStatusReq 角色信息
+   * @param changeStatusReq 角色状态变更请求
    * @return 结果
    */
   @Transaction
@@ -310,7 +353,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   /**
    * 修改数据权限信息
    *
-   * @param changeDataScopeReq 角色信息
+   * @param changeDataScopeReq 角色数据权限变更请求
    * @return 结果
    */
   @Transaction

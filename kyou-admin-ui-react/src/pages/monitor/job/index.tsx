@@ -1,10 +1,10 @@
-import { history, useModel } from '@@/exports';
 import {
   EyeOutlined,
   HistoryOutlined,
   PlayCircleOutlined,
 } from '@ant-design/icons';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { history, useModel } from '@umijs/max';
 import { App, Tooltip } from 'antd';
 import PermissionButton from '@/components/BizButtons/PermissionButton';
 import PopconfirmButton from '@/components/BizButtons/PopconfirmButton';
@@ -122,7 +122,7 @@ const MonitorJobIndex = () => {
                       actionControl.loading.begin();
                       try {
                         await ApiMonitorJob.changeStatus({
-                          ...record,
+                          jobId: record.jobId,
                           status: value,
                         });
                         message.success('操作成功');
@@ -168,7 +168,7 @@ const MonitorJobIndex = () => {
                     }}
                     onConfirm={async () => {
                       message.info('执行结果请稍后查看任务日志');
-                      await ApiMonitorJob.run(record);
+                      await ApiMonitorJob.run({ jobId: record.jobId });
                       return;
                     }}
                   />

@@ -1,17 +1,17 @@
 package com.github.link2fun.generator.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-
+import cn.hutool.core.convert.Convert;
 import com.github.link2fun.generator.domain.GenTable;
 import com.github.link2fun.generator.domain.GenTableColumn;
+import com.github.link2fun.generator.domain.req.GenTableModifyReq;
+import com.github.link2fun.generator.domain.req.GenTableSearchReq;
 import com.github.link2fun.generator.service.IGenTableColumnService;
 import com.github.link2fun.generator.service.IGenTableService;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
-import cn.hutool.core.convert.Convert;
 import com.github.link2fun.support.enums.BusinessType;
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.Context;
@@ -30,7 +30,7 @@ import java.util.Map;
  */
 @Controller
 @Mapping("/tool/gen")
-public class GenController extends BaseController {
+public class GenController {
 
   @Inject
   private IGenTableService genTableService;
@@ -43,9 +43,9 @@ public class GenController extends BaseController {
    */
   @SaCheckPermission("tool:gen:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public TableDataInfo genList(GenTable searchReq) {
+  public TableDataInfo genList(GenTableSearchReq searchReq) {
     Page<GenTable> list = genTableService.selectGenTableList(Page.ofCurrentContext(), searchReq);
-    return getDataTable(list);
+    return TableDataInfo.of(list);
   }
 
   /**
@@ -61,7 +61,7 @@ public class GenController extends BaseController {
     map.put("info", table);
     map.put("rows", tableColumnList);
     map.put("tables", tables);
-    return successData(map);
+    return AjaxResult.successData(map);
   }
 
   /**
@@ -69,9 +69,9 @@ public class GenController extends BaseController {
    */
   @SaCheckPermission("tool:gen:list")
   @Mapping(value = "/db/list", method = MethodType.GET)
-  public TableDataInfo dataList(GenTable genTable) {
-    Page<GenTable> list = genTableService.selectDbTableList(Page.ofCurrentContext(), genTable);
-    return getDataTable(list);
+  public TableDataInfo dataList(GenTableSearchReq genTable) {
+    Page<GenTable> list = genTableService.selectDbTableList(genTable);
+    return TableDataInfo.of(list);
   }
 
   /**
@@ -94,11 +94,8 @@ public class GenController extends BaseController {
   @Log(title = "代码生成", businessType = BusinessType.IMPORT)
   @Mapping(value = "/importTable", method = MethodType.POST)
   public AjaxResult importTableSave(String tables) {
-    String[] tableNames = Convert.toStrArray(tables);
-    // 查询表信息
-    List<GenTable> tableList = genTableService.selectDbTableListByNames(tableNames);
-    genTableService.importGenTable(tableList);
-    return success();
+    genTableService.importGenTableByNames(Convert.toStrArray(tables));
+    return AjaxResult.success();
   }
 
   /**
@@ -107,9 +104,9 @@ public class GenController extends BaseController {
   @SaCheckPermission("tool:gen:edit")
   @Log(title = "代码生成", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult editSave(@Validated @Body GenTable genTable) {
-    genTableService.updateGenTable(genTable);
-    return success();
+  public AjaxResult editSave(@Validated @Body GenTableModifyReq modifyReq) {
+    genTableService.updateGenTable(modifyReq);
+    return AjaxResult.success();
   }
 
   /**
@@ -120,7 +117,7 @@ public class GenController extends BaseController {
   @Mapping(value = "/{tableIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path Long[] tableIds) {
     genTableService.deleteGenTableByIds(tableIds);
-    return success();
+    return AjaxResult.success();
   }
 
   /**
@@ -130,7 +127,7 @@ public class GenController extends BaseController {
   @Mapping(value = "/preview/{tableId}", method = MethodType.GET)
   public AjaxResult preview(@Path("tableId") Long tableId) {
     Map<String, String> dataMap = genTableService.previewCode(tableId);
-    return successData(dataMap);
+    return AjaxResult.successData(dataMap);
   }
 
   /**
@@ -152,7 +149,7 @@ public class GenController extends BaseController {
   @Mapping(value = "/genCode/{tableName}", method = MethodType.GET)
   public AjaxResult genCode(@Path("tableName") String tableName) {
     genTableService.generatorCode(tableName);
-    return success();
+    return AjaxResult.success();
   }
 
   /**
@@ -163,7 +160,7 @@ public class GenController extends BaseController {
   @Mapping(value = "/synchDb/{tableName}", method = MethodType.GET)
   public AjaxResult syncDb(@Path("tableName") String tableName) {
     genTableService.syncDb(tableName);
-    return success();
+    return AjaxResult.success();
   }
 
   /**

@@ -2,7 +2,9 @@ package com.github.link2fun.system.modular.dict.service;
 
 import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.core.page.Page;
-
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataAddReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataModifyReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataSearchReq;
 
 import java.util.List;
 
@@ -15,19 +17,19 @@ public interface ISystemDictDataService {
   /**
    * 根据条件分页查询字典数据
    *
-   * @param dictData 字典数据信息
+   * @param searchReq 字典数据查询条件
    * @return 字典数据集合信息
    */
-  List<SysDictData> selectDictDataList(SysDictData dictData);
+  List<SysDictData> selectDictDataList(SysDictDataSearchReq searchReq);
 
   /**
    * 根据条件查询字典数据并分页展示。
    *
    * @param pageRequest 分页适配器
-   * @param dictData    字典数据对象
+   * @param searchReq   字典数据查询条件
    * @return 分页结果
    */
-  Page<SysDictData> pageSearch(Page<SysDictData> pageRequest, SysDictData dictData);
+  Page<SysDictData> pageSearch(Page<SysDictData> pageRequest, SysDictDataSearchReq searchReq);
 
   /**
    * 根据字典类型和字典键值查询字典数据信息
@@ -56,18 +58,18 @@ public interface ISystemDictDataService {
   /**
    * 新增保存字典数据信息
    *
-   * @param dictData 字典数据信息
+   * @param addReq 新增字典数据请求
    * @return 结果
    */
-  long insertDictData(SysDictData dictData);
+  long insertDictData(SysDictDataAddReq addReq);
 
   /**
    * 修改保存字典数据信息
    *
-   * @param dictData 字典数据信息
+   * @param modifyReq 修改字典数据请求
    * @return 结果
    */
-  long updateDictData(SysDictData dictData);
+  long updateDictData(SysDictDataModifyReq modifyReq);
 
   /**
    * 根据字典类型查询字典数据

@@ -2,14 +2,15 @@ package com.github.link2fun.system.modular.config.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
 import com.github.link2fun.system.modular.config.model.SysConfig;
+import com.github.link2fun.system.modular.config.model.req.SysConfigAddReq;
+import com.github.link2fun.system.modular.config.model.req.SysConfigModifyReq;
+import com.github.link2fun.system.modular.config.model.req.SysConfigSearchReq;
 import com.github.link2fun.system.modular.config.model.vo.SysConfigDetailVO;
 import com.github.link2fun.system.modular.config.model.vo.SysConfigPageVO;
 import com.github.link2fun.system.modular.config.service.ISystemConfigService;
@@ -24,7 +25,7 @@ import java.util.List;
 @Slf4j
 @Controller
 @Mapping("/system/config")
-public class SystemConfigController extends BaseController {
+public class SystemConfigController {
 
   @Inject
   private ISystemConfigService configService;
@@ -34,18 +35,17 @@ public class SystemConfigController extends BaseController {
    */
   @SaCheckPermission("system:config:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public TableDataInfo list(SysConfig searchReq) {
-    ActionContext context = ActionContext.current(); // 加载上下文
-    Page<SysConfigPageVO> page = configService.pageSearchConfig(context, Page.ofCurrentContext(), searchReq, SysConfigPageVO.class);
-    return getDataTable(page);
+  public TableDataInfo list(SysConfigSearchReq searchReq) {
+    Page<SysConfigPageVO> page = configService.pageSearchConfig(Page.ofCurrentContext(), searchReq, SysConfigPageVO.class);
+    return TableDataInfo.of(page);
   }
 
   // 搜索条件可带 configValue，导出接口也要脱敏
   @Log(title = "参数管理", businessType = BusinessType.EXPORT, mask = true)
   @SaCheckPermission("system:config:export")
   @Mapping(value = "/export", method = MethodType.POST)
-  public void export(Context context, SysConfig config) {
-    List<SysConfigDetailVO> list = configService.selectConfigList(config, SysConfigDetailVO.class);
+  public void export(Context context, SysConfigSearchReq searchReq) {
+    List<SysConfigDetailVO> list = configService.selectConfigList(searchReq, SysConfigDetailVO.class);
     ExcelUtil<SysConfigDetailVO> util = new ExcelUtil<>(SysConfigDetailVO.class);
     util.exportExcel(context, list, "参数数据");
   }
@@ -56,9 +56,8 @@ public class SystemConfigController extends BaseController {
   @SaCheckPermission("system:config:query")
   @Mapping(value = "/{configId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Integer configId) {
-    ActionContext context = ActionContext.current();
-    SysConfig config = configService.findOneByConfigId(context, configId, SysConfig.class);
-    return successData(config);
+    SysConfig config = configService.findOneByConfigId(configId, SysConfig.class);
+    return AjaxResult.successData(config);
   }
 
   /**
@@ -66,7 +65,7 @@ public class SystemConfigController extends BaseController {
    */
   @Mapping(value = "/configKey/{configKey}", method = MethodType.GET)
   public AjaxResult getConfigKey(@Path String configKey) {
-    return successData(configService.selectConfigByKey(configKey));
+    return AjaxResult.successData(configService.selectConfigByKey(configKey));
   }
 
   /**
@@ -75,9 +74,8 @@ public class SystemConfigController extends BaseController {
   @SaCheckPermission("system:config:add")
   @Log(title = "参数管理", businessType = BusinessType.INSERT, mask = true)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysConfig config) {
-    config.setCreateBy(getUsername());
-    return toAjax(configService.insertConfig(config));
+  public AjaxResult add(@Validated @Body SysConfigAddReq addReq) {
+    return AjaxResult.ofAffected(configService.insertConfig(addReq));
   }
 
   /**
@@ -86,9 +84,8 @@ public class SystemConfigController extends BaseController {
   @SaCheckPermission("system:config:edit")
   @Log(title = "参数管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysConfig config) {
-    config.setUpdateBy(getUsername());
-    return toAjax(configService.updateConfig(config));
+  public AjaxResult edit(@Validated @Body SysConfigModifyReq modifyReq) {
+    return AjaxResult.ofAffected(configService.updateConfig(modifyReq));
   }
 
   /**
@@ -99,7 +96,7 @@ public class SystemConfigController extends BaseController {
   @Mapping(value = "/{configIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> configIds) {
     configService.deleteConfigByIds(configIds);
-    return success();
+    return AjaxResult.success();
   }
 
   /**
@@ -110,7 +107,7 @@ public class SystemConfigController extends BaseController {
   @Mapping(value = "/refreshCache", method = MethodType.DELETE)
   public AjaxResult refreshCache() {
     configService.resetConfigCache();
-    return success();
+    return AjaxResult.success();
   }
 
 }

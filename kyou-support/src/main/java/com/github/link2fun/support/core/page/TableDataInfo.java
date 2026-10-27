@@ -1,5 +1,6 @@
 package com.github.link2fun.support.core.page;
 
+import com.github.link2fun.support.constant.HttpStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -46,6 +47,14 @@ public class TableDataInfo implements Serializable {
   public TableDataInfo(List<?> list, Long total) {
     this.rows = list;
     this.total = total;
+  }
+
+  /** 由分页结果组装: code=200, msg=查询成功, rows 与 total 取自 page */
+  public static TableDataInfo of(final Page<?> page) {
+    final TableDataInfo dataInfo = new TableDataInfo(page.getRecords(), page.getTotal());
+    dataInfo.setCode(HttpStatus.SUCCESS);
+    dataInfo.setMsg("查询成功");
+    return dataInfo;
   }
 
 }

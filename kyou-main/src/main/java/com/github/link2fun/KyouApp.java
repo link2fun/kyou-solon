@@ -1,6 +1,7 @@
 package com.github.link2fun;
 
 import com.alibaba.ttl.TransmittableThreadLocal;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.github.link2fun.context.buildinfo.BuildInfoContext;
 import com.github.link2fun.framework.aop.LogInterceptor;
 import com.github.link2fun.framework.auth.AuditSink;
@@ -11,6 +12,7 @@ import org.noear.solon.annotation.Mapping;
 import org.noear.solon.annotation.SolonMain;
 import org.noear.solon.core.Lifecycle;
 import org.noear.solon.core.convert.Converter;
+import org.noear.solon.core.event.AppLoadEndEvent;
 import org.noear.solon.scheduling.annotation.EnableScheduling;
 import org.noear.solon.serialization.jackson.JacksonStringSerializer;
 import org.noear.solon.web.staticfiles.StaticMappings;
@@ -62,6 +64,16 @@ public class KyouApp {
         // 日志与 API 响应共用同一份映射器：日期格式、Long 转换等对外呈现完全一致
         logInterceptor.setObjectMapper(jacksonSerializer.getSerializeConfig().getMapper());
       });
+
+      // 请求体只接受声明过的字段: 多传的字段一律 400, 避免客户端用 password/delFlag 这类
+      // 未声明字段改写服务端本该自己决定的列。
+      //
+      // 必须挂在 AppLoadEnd 之后: JacksonEntityConverter 的构造器会 newMapper(...) 整个替换掉
+      // 反序列化映射器, 早于它配置会被覆盖成 Solon 默认的 failOnUnknown=false
+      app.context().onEvent(AppLoadEndEvent.class, e ->
+        Solon.context().getBeanAsync(JacksonStringSerializer.class, serializer ->
+          serializer.getDeserializeConfig().getMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)));
 
       /* 提示：path 可以是目录或单文件；repository 只能是目录（表示这个 path 映射到这个 repository 里） */
 

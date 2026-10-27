@@ -1,9 +1,12 @@
 package com.github.link2fun.schedule.modular.job.service;
 
 import com.github.link2fun.schedule.modular.job.model.SysJob;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobAddReq;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobChangeStatusReq;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobModifyReq;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobSearchReq;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.exception.job.TaskException;
-
 
 import java.util.List;
 
@@ -14,10 +17,10 @@ public interface ISysJobService {
    * 获取quartz调度器的计划任务
    *
    * @param pageRequest
-   * @param searchReq   调度信息
+   * @param searchReq   调度查询条件
    * @return 调度任务集合
    */
-  Page<SysJob> selectJobList(final Page<SysJob> pageRequest, SysJob searchReq);
+  Page<SysJob> selectJobList(final Page<SysJob> pageRequest, SysJobSearchReq searchReq);
 
   /**
    * 通过调度任务ID查询调度信息
@@ -30,26 +33,26 @@ public interface ISysJobService {
   /**
    * 暂停任务
    *
-   * @param job 调度信息
+   * @param jobId 任务ID
    * @return 结果
    */
-  long pauseJob(SysJob job);
+  long pauseJob(Long jobId);
 
   /**
    * 恢复任务
    *
-   * @param job 调度信息
+   * @param jobId 任务ID
    * @return 结果
    */
-  long resumeJob(SysJob job);
+  long resumeJob(Long jobId);
 
   /**
    * 删除任务后，所对应的trigger也将被删除
    *
-   * @param job 调度信息
+   * @param jobId 任务ID
    * @return 结果
    */
-  long deleteJob(SysJob job);
+  long deleteJob(Long jobId);
 
   /**
    * 批量删除调度信息
@@ -61,34 +64,34 @@ public interface ISysJobService {
   /**
    * 任务调度状态修改
    *
-   * @param job 调度信息
+   * @param changeStatusReq 任务ID与目标状态
    * @return 结果
    */
-  long changeStatus(SysJob job);
+  long changeStatus(SysJobChangeStatusReq changeStatusReq);
 
   /**
    * 立即运行任务
    *
-   * @param job 调度信息
+   * @param jobId 任务ID
    * @return 结果
    */
-  boolean run(SysJob job) throws Throwable;
+  boolean run(Long jobId) throws Throwable;
 
   /**
    * 新增任务
    *
-   * @param job 调度信息
+   * @param addReq 新增任务请求
    * @return 结果
    */
-  long insertJob(SysJob job) throws TaskException;
+  long insertJob(SysJobAddReq addReq) throws TaskException;
 
   /**
    * 更新任务
    *
-   * @param job 调度信息
+   * @param modifyReq 修改任务请求
    * @return 结果
    */
-  long updateJob(SysJob job) throws TaskException;
+  long updateJob(SysJobModifyReq modifyReq) throws TaskException;
 
   /**
    * 校验cron表达式是否有效

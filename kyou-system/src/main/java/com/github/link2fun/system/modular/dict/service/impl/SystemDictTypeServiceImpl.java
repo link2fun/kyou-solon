@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.dict.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
@@ -15,6 +16,10 @@ import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.DictUtils;
 import com.github.link2fun.support.utils.uuid.IdUtils;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataSearchReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeAddReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeModifyReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeSearchReq;
 import com.github.link2fun.system.modular.dict.service.ISystemDictDataService;
 import com.github.link2fun.system.modular.dict.service.ISystemDictTypeService;
 import com.google.common.collect.Lists;
@@ -55,16 +60,16 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
   /**
    * 根据条件分页查询字典类型
    *
-   * @param searchReq 字典类型信息
+   * @param searchReq 字典类型查询条件
    * @return 字典类型集合信息
    */
   @Override
-  public List<SysDictType> selectDictTypeList(final SysDictType searchReq) {
+  public List<SysDictType> selectDictTypeList(final SysDictTypeSearchReq searchReq) {
     return buildQuery(searchReq).toList();
   }
 
   /** 构造字典类型列表查询 */
-  private EntityQueryable<SysDictTypeProxy, SysDictType> buildQuery(final SysDictType searchReq) {
+  private EntityQueryable<SysDictTypeProxy, SysDictType> buildQuery(final SysDictTypeSearchReq searchReq) {
     EntityQueryable<SysDictTypeProxy, SysDictType> queryable = entityQuery.queryable(SysDictType.class);
     if (Objects.isNull(searchReq)) {
       return queryable;
@@ -85,7 +90,7 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @return 字典类型分页数据
    */
   @Override
-  public Page<SysDictType> pageSearch(final Page<SysDictType> pageRequest, final SysDictType searchReq) {
+  public Page<SysDictType> pageSearch(final Page<SysDictType> pageRequest, final SysDictTypeSearchReq searchReq) {
     return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
@@ -180,9 +185,9 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
   @Override
   public void loadingDictCache() {
 
-    final SysDictData dictData = new SysDictData();
-    dictData.setStatus(UserConstants.DICT_NORMAL);
-    final List<SysDictData> dictDataList = dictDataService.selectDictDataList(dictData);
+    final SysDictDataSearchReq searchReq = new SysDictDataSearchReq();
+    searchReq.setStatus(UserConstants.DICT_NORMAL);
+    final List<SysDictData> dictDataList = dictDataService.selectDictDataList(searchReq);
     dictDataList.stream()
       .sorted(Comparator.comparing(SysDictData::getDictSort))
       .collect(Collectors.groupingBy(SysDictData::getDictType))
@@ -210,12 +215,13 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
   /**
    * 新增保存字典类型信息
    *
-   * @param dictType 字典类型信息
+   * @param addReq 新增字典类型请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long insertDictType(final SysDictType dictType) {
+  public long insertDictType(final SysDictTypeAddReq addReq) {
+    final SysDictType dictType = BeanUtil.toBean(addReq, SysDictType.class);
     checkDictTypeUnique("新增", dictType);
     // 新类型无数据, 不预写缓存, 首次读取自然回源
     return entityQuery.insertable(dictType).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
@@ -224,12 +230,13 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
   /**
    * 修改保存字典类型信息
    *
-   * @param dictTypeNew 字典类型信息
+   * @param modifyReq 修改字典类型请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long updateDictType(final SysDictType dictTypeNew) {
+  public long updateDictType(final SysDictTypeModifyReq modifyReq) {
+    final SysDictType dictTypeNew = BeanUtil.toBean(modifyReq, SysDictType.class);
     checkDictTypeUnique("修改", dictTypeNew);
 
 //    final SysDictType dictTypeOld = getBaseMapper().selectById(dictTypeNew.getDictId());

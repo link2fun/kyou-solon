@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.notice.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
@@ -7,8 +8,10 @@ import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.notice.model.SysNotice;
 import com.github.link2fun.system.modular.notice.model.proxy.SysNoticeProxy;
+import com.github.link2fun.system.modular.notice.model.req.SysNoticeAddReq;
+import com.github.link2fun.system.modular.notice.model.req.SysNoticeModifyReq;
+import com.github.link2fun.system.modular.notice.model.req.SysNoticeSearchReq;
 import com.github.link2fun.system.modular.notice.service.ISystemNoticeService;
-
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 
@@ -36,16 +39,16 @@ public class SystemNoticeServiceImpl implements ISystemNoticeService {
   /**
    * 查询公告列表
    *
-   * @param notice 公告信息
+   * @param searchReq 查询条件
    * @return 公告集合
    */
   @Override
-  public List<SysNotice> selectNoticeList(final SysNotice notice) {
-    return buildQuery(notice).toList();
+  public List<SysNotice> selectNoticeList(final SysNoticeSearchReq searchReq) {
+    return buildQuery(searchReq).toList();
   }
 
   /** 构造公告列表查询 */
-  private EntityQueryable<SysNoticeProxy, SysNotice> buildQuery(final SysNotice searchReq) {
+  private EntityQueryable<SysNoticeProxy, SysNotice> buildQuery(final SysNoticeSearchReq searchReq) {
     EntityQueryable<SysNoticeProxy, SysNotice> queryable = entityQuery.queryable(SysNotice.class);
     if (Objects.isNull(searchReq)) {
       return queryable;
@@ -65,29 +68,31 @@ public class SystemNoticeServiceImpl implements ISystemNoticeService {
    * @return 分页结果
    */
   @Override
-  public Page<SysNotice> pageSearch(final Page<SysNotice> pageRequest, final SysNotice searchReq) {
+  public Page<SysNotice> pageSearch(final Page<SysNotice> pageRequest, final SysNoticeSearchReq searchReq) {
     return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**
    * 新增公告
    *
-   * @param notice 公告信息
+   * @param addReq 新增公告请求
    * @return 结果
    */
   @Override
-  public long insertNotice(final SysNotice notice) {
+  public long insertNotice(final SysNoticeAddReq addReq) {
+    final SysNotice notice = BeanUtil.toBean(addReq, SysNotice.class);
     return entityQuery.insertable(notice).executeRows();
   }
 
   /**
    * 修改公告
    *
-   * @param notice 公告信息
+   * @param modifyReq 修改公告请求
    * @return 结果
    */
   @Override
-  public long updateNotice(final SysNotice notice) {
+  public long updateNotice(final SysNoticeModifyReq modifyReq) {
+    final SysNotice notice = BeanUtil.toBean(modifyReq, SysNotice.class);
     return entityQuery.updatable(notice).executeRows();
   }
 

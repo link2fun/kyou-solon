@@ -2,16 +2,15 @@ package com.github.link2fun.system.modular.dept.api;
 
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.enums.BusinessType;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptAddReq;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptModifyReq;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptSearchReq;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
-
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.MethodType;
 import org.noear.solon.validation.annotation.Validated;
@@ -26,7 +25,7 @@ import java.util.List;
  */
 @Controller
 @Mapping("/system/dept")
-public class SystemDeptController extends BaseController {
+public class SystemDeptController {
   @Inject
   private ISystemDeptService deptService;
 
@@ -35,12 +34,12 @@ public class SystemDeptController extends BaseController {
    */
   @SaCheckPermission("system:dept:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public AjaxResult list(SysDept dept) {
+  public AjaxResult list(SysDeptSearchReq searchReq) {
 
     final ActionContext context = ActionContext.current();
-    List<SysDept> deptList = deptService.selectDeptList(context, dept);
+    List<SysDept> deptList = deptService.selectDeptList(context, searchReq);
 
-    return successData(deptList);
+    return AjaxResult.successData(deptList);
   }
 
   /**
@@ -49,10 +48,7 @@ public class SystemDeptController extends BaseController {
   @SaCheckPermission("system:dept:list")
   @Mapping(value = "/list/exclude/{deptId}", method = MethodType.GET)
   public AjaxResult excludeChild(@Path(value = "deptId") Long deptId) {
-
-    List<SysDept> deptList = deptService.selectDeptList(ActionContext.current(), new SysDept());
-    deptList.removeIf(d -> d.getDeptId().intValue() == deptId || CollectionUtil.contains(StrUtil.split(d.getAncestors(), ","), deptId + ""));
-    return successData(deptList);
+    return AjaxResult.successData(deptService.selectDeptListExcludingSubtree(ActionContext.current(), deptId));
   }
 
   /**
@@ -62,9 +58,7 @@ public class SystemDeptController extends BaseController {
   @SaCheckPermission("system:dept:query")
   @Mapping(value = "/{deptId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long deptId) {
-    final ActionContext context = ActionContext.current();
-    deptService.checkDeptDataScope(context, deptId);
-    return successData(deptService.selectDeptById(deptId));
+    return AjaxResult.successData(deptService.selectDeptDetail(ActionContext.current(), deptId));
   }
 
   /**
@@ -73,9 +67,8 @@ public class SystemDeptController extends BaseController {
   @SaCheckPermission("system:dept:add")
   @Log(title = "部门管理", businessType = BusinessType.INSERT, mask = true)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysDept dept) {
-    dept.setCreateBy(getUsername());
-    return toAjax(deptService.insertDept(dept));
+  public AjaxResult add(@Validated @Body SysDeptAddReq addReq) {
+    return AjaxResult.ofAffected(deptService.insertDept(addReq));
   }
 
   /**
@@ -84,9 +77,8 @@ public class SystemDeptController extends BaseController {
   @SaCheckPermission("system:dept:edit")
   @Log(title = "部门管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysDept dept) {
-    dept.setUpdateBy(getUsername());
-    return toAjax(deptService.updateDept(ActionContext.current(), dept));
+  public AjaxResult edit(@Validated @Body SysDeptModifyReq modifyReq) {
+    return AjaxResult.ofAffected(deptService.updateDept(ActionContext.current(), modifyReq));
   }
 
   /**
@@ -96,6 +88,6 @@ public class SystemDeptController extends BaseController {
   @Log(title = "部门管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{deptId}", method = MethodType.DELETE)
   public AjaxResult remove(@Path Long deptId) {
-    return toAjax(deptService.deleteDeptById(ActionContext.current(), deptId));
+    return AjaxResult.ofAffected(deptService.deleteDeptById(ActionContext.current(), deptId));
   }
 }

@@ -3,6 +3,9 @@ package com.github.link2fun.system.modular.menu.service;
 import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.system.domain.vo.RouterVo;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuAddReq;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuModifyReq;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuSearchReq;
 
 import java.util.List;
 
@@ -23,11 +26,11 @@ public interface ISystemMenuService {
   /**
    * 根据用户查询系统菜单列表
    *
-   * @param menu   菜单信息
-   * @param userId 用户ID
+   * @param searchReq 查询条件
+   * @param userId    用户ID
    * @return 菜单列表
    */
-  List<SysMenu> selectMenuList(SysMenu menu, Long userId);
+  List<SysMenu> selectMenuList(SysMenuSearchReq searchReq, Long userId);
 
   /**
    * 根据角色ID查询权限
@@ -92,18 +95,18 @@ public interface ISystemMenuService {
   /**
    * 新增保存菜单信息
    *
-   * @param menu 菜单信息
+   * @param addReq 新增菜单请求
    * @return 结果
    */
-  long insertMenu(SysMenu menu);
+  long insertMenu(SysMenuAddReq addReq);
 
   /**
    * 修改保存菜单信息
    *
-   * @param menu 菜单信息
+   * @param modifyReq 修改菜单请求
    * @return 结果
    */
-  long updateMenu(SysMenu menu);
+  long updateMenu(SysMenuModifyReq modifyReq);
 
   /**
    * 删除菜单管理信息

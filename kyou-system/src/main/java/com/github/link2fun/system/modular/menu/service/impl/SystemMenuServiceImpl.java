@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.menu.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.NamingCase;
 import cn.hutool.core.util.StrUtil;
@@ -12,7 +13,6 @@ import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
-import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.TreeSelect;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.support.core.domain.entity.SysRole;
@@ -25,6 +25,9 @@ import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.domain.vo.MetaVo;
 import com.github.link2fun.system.domain.vo.RouterVo;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuAddReq;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuModifyReq;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuSearchReq;
 import com.github.link2fun.system.modular.menu.service.ISystemMenuService;
 import com.github.link2fun.system.modular.menu.util.MenuUtils;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
@@ -35,7 +38,10 @@ import org.noear.solon.annotation.Inject;
 import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.data.tran.TranPolicy;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -70,18 +76,18 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    */
   @Override
   public List<SysMenu> selectMenuList(final Long userId) {
-    return self.selectMenuList(new SysMenu(), userId);
+    return self.selectMenuList(new SysMenuSearchReq(), userId);
   }
 
   /**
    * 根据用户查询系统菜单列表
    *
-   * @param searchReq 菜单信息
+   * @param searchReq 菜单查询条件
    * @param userId    用户ID
    * @return 菜单列表
    */
   @Override
-  public List<SysMenu> selectMenuList(final SysMenu searchReq, final Long userId) {
+  public List<SysMenu> selectMenuList(final SysMenuSearchReq searchReq, final Long userId) {
     if (SysUser.isSuperAdmin(userId)) {
       // 如果是超管，返回所有菜单
       return entityQuery.queryable(SysMenu.class)
@@ -330,12 +336,13 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   /**
    * 新增保存菜单信息
    *
-   * @param menu 菜单信息
+   * @param addReq 新增菜单请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long insertMenu(final SysMenu menu) {
+  public long insertMenu(final SysMenuAddReq addReq) {
+    final SysMenu menu = BeanUtil.toBean(addReq, SysMenu.class);
     checkMenuFieldUnique("新增", menu);
     // 新菜单无角色引用, 无需失效
     return entityQuery.insertable(menu)
@@ -346,18 +353,19 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   /**
    * 修改保存菜单信息
    *
-   * @param menu 菜单信息
+   * @param modifyReq 修改菜单请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long updateMenu(final SysMenu menu) {
+  public long updateMenu(final SysMenuModifyReq modifyReq) {
+    final SysMenu menu = BeanUtil.toBean(modifyReq, SysMenu.class);
     checkMenuFieldUnique("修改", menu);
     if (menu.getMenuId().equals(menu.getParentId())) {
       throw new ServiceException("修改菜单'" + menu.getMenuName() + "'失败，上级菜单不能选择自己");
     }
     final long rows = entityQuery.updatable(menu)
-      .setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS)
+      .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
       .executeRows();
     // 权限码/状态只进入引用它的角色的缓存
     authCacheInvalidator.onMenusChanged(List.of(menu.getMenuId()));

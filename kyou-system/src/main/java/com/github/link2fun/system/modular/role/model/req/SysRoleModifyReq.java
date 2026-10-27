@@ -1,7 +1,5 @@
 package com.github.link2fun.system.modular.role.model.req;
 
-import cn.hutool.core.bean.BeanUtil;
-import com.github.link2fun.support.core.domain.entity.SysRole;
 import lombok.Data;
 import org.noear.solon.validation.annotation.Pattern;
 
@@ -17,31 +15,36 @@ import java.util.List;
 @Data
 public class SysRoleModifyReq {
 
-
   /** 角色ID */
   private Long roleId;
+
   /** 角色名称 */
   private String roleName;
+
   /** 角色权限 */
   @Pattern(value = "^[^,]*$", message = "角色权限不能包含逗号")
   private String roleKey;
+
   /** 角色排序 */
   private Integer roleSort;
+
+  /** 角色状态（0正常 1停用） */
+  private String status;
+
   /** 数据范围（1：所有数据权限；2：自定义数据权限；3：本部门数据权限；4：本部门及以下数据权限；5：仅本人数据权限） */
   private String dataScope;
+
   /** 菜单树选择项是否关联显示（ 0：父子不互相关联显示 1：父子互相关联显示） */
   private Boolean menuCheckStrictly;
+
   /** 部门树选择项是否关联显示（0：父子不互相关联显示 1：父子互相关联显示 ） */
   private Boolean deptCheckStrictly;
+
   /** 备注 */
   private String remark;
 
-
+  /** 菜单组 */
   @SuppressWarnings("EasyQueryFieldMissMatch")
   private List<Long> menuIds;
 
-
-  public SysRole toEntity() {
-    return BeanUtil.toBean(this, SysRole.class);
-  }
 }

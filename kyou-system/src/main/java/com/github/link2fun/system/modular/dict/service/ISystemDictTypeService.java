@@ -3,7 +3,9 @@ package com.github.link2fun.system.modular.dict.service;
 import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.core.domain.entity.SysDictType;
 import com.github.link2fun.support.core.page.Page;
-
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeAddReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeModifyReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeSearchReq;
 
 import java.util.List;
 
@@ -16,10 +18,10 @@ public interface ISystemDictTypeService {
   /**
    * 根据条件分页查询字典类型
    *
-   * @param dictType 字典类型信息
+   * @param searchReq 字典类型查询条件
    * @return 字典类型集合信息
    */
-  List<SysDictType> selectDictTypeList(SysDictType dictType);
+  List<SysDictType> selectDictTypeList(SysDictTypeSearchReq searchReq);
 
   /**
    * 根据条件分页查询字典类型
@@ -28,7 +30,7 @@ public interface ISystemDictTypeService {
    * @param searchReq   查询条件
    * @return 字典类型分页数据
    */
-  Page<SysDictType> pageSearch(Page<SysDictType> pageRequest, SysDictType searchReq);
+  Page<SysDictType> pageSearch(Page<SysDictType> pageRequest, SysDictTypeSearchReq searchReq);
 
   /**
    * 根据所有字典类型
@@ -86,17 +88,17 @@ public interface ISystemDictTypeService {
   /**
    * 新增保存字典类型信息
    *
-   * @param dictType 字典类型信息
+   * @param addReq 新增字典类型请求
    * @return 结果
    */
-  long insertDictType(SysDictType dictType);
+  long insertDictType(SysDictTypeAddReq addReq);
 
   /**
    * 修改保存字典类型信息
    *
-   * @param dictType 字典类型信息
+   * @param modifyReq 修改字典类型请求
    * @return 结果
    */
-  long updateDictType(SysDictType dictType);
+  long updateDictType(SysDictTypeModifyReq modifyReq);
 
 }

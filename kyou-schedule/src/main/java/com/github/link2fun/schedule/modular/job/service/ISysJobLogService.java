@@ -1,8 +1,8 @@
 package com.github.link2fun.schedule.modular.job.service;
 
 import com.github.link2fun.schedule.modular.job.model.SysJobLog;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobLogSearchReq;
 import com.github.link2fun.support.core.page.Page;
-
 
 import java.util.List;
 
@@ -11,10 +11,10 @@ public interface ISysJobLogService {
   /**
    * 获取quartz调度器日志的计划任务
    *
-   * @param jobLog 调度日志信息
+   * @param searchReq 调度日志查询条件
    * @return 调度任务日志集合
    */
-  List<SysJobLog> selectJobLogList(SysJobLog jobLog);
+  List<SysJobLog> selectJobLogList(SysJobLogSearchReq searchReq);
 
   /**
    * 通过调度任务日志ID查询调度信息
@@ -52,5 +52,5 @@ public interface ISysJobLogService {
    */
   void cleanJobLog();
 
-  Page<SysJobLog> pageSearchJobLog(Page<SysJobLog> pageRequest, SysJobLog jobLog);
+  Page<SysJobLog> pageSearchJobLog(Page<SysJobLog> pageRequest, SysJobLogSearchReq searchReq);
 }

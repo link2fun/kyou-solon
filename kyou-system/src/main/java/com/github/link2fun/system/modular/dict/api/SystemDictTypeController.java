@@ -2,13 +2,15 @@ package com.github.link2fun.system.modular.dict.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.entity.SysDictType;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeAddReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeModifyReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictTypeSearchReq;
 import com.github.link2fun.system.modular.dict.service.ISystemDictTypeService;
 
 import org.noear.solon.annotation.*;
@@ -25,23 +27,23 @@ import java.util.List;
  */
 @Controller
 @Mapping("/system/dict/type")
-public class SystemDictTypeController extends BaseController {
+public class SystemDictTypeController {
   @Inject
   private ISystemDictTypeService dictTypeService;
 
   @SaCheckPermission("system:dict:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public TableDataInfo list(SysDictType searchReq) {
+  public TableDataInfo list(SysDictTypeSearchReq searchReq) {
 
     Page<SysDictType> list = dictTypeService.pageSearch(Page.ofCurrentContext(), searchReq);
-    return getDataTable(list);
+    return TableDataInfo.of(list);
   }
 
   @Log(title = "字典类型", businessType = BusinessType.EXPORT)
   @SaCheckPermission("system:dict:export")
   @Mapping(value = "/export", method = MethodType.POST)
-  public void export(Context response, SysDictType dictType) {
-    List<SysDictType> list = dictTypeService.selectDictTypeList(dictType);
+  public void export(Context response, SysDictTypeSearchReq searchReq) {
+    List<SysDictType> list = dictTypeService.selectDictTypeList(searchReq);
     ExcelUtil<SysDictType> util = new ExcelUtil<>(SysDictType.class);
     util.exportExcel(response, list, "字典类型");
   }
@@ -52,7 +54,7 @@ public class SystemDictTypeController extends BaseController {
   @SaCheckPermission("system:dict:query")
   @Mapping(value = "/{dictId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long dictId) {
-    return successData(dictTypeService.selectDictTypeById(dictId));
+    return AjaxResult.successData(dictTypeService.selectDictTypeById(dictId));
   }
 
   /**
@@ -61,9 +63,8 @@ public class SystemDictTypeController extends BaseController {
   @SaCheckPermission("system:dict:add")
   @Log(title = "字典类型", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysDictType dict) {
-    dict.setCreateBy(getUsername());
-    return toAjax(dictTypeService.insertDictType(dict));
+  public AjaxResult add(@Validated @Body SysDictTypeAddReq addReq) {
+    return AjaxResult.ofAffected(dictTypeService.insertDictType(addReq));
   }
 
   /**
@@ -72,9 +73,8 @@ public class SystemDictTypeController extends BaseController {
   @SaCheckPermission("system:dict:edit")
   @Log(title = "字典类型", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysDictType dict) {
-    dict.setUpdateBy(getUsername());
-    return toAjax(dictTypeService.updateDictType(dict));
+  public AjaxResult edit(@Validated @Body SysDictTypeModifyReq modifyReq) {
+    return AjaxResult.ofAffected(dictTypeService.updateDictType(modifyReq));
   }
 
   /**
@@ -85,7 +85,7 @@ public class SystemDictTypeController extends BaseController {
   @Mapping(value = "/{dictIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> dictIds) {
     dictTypeService.deleteDictTypeByIds(dictIds);
-    return success();
+    return AjaxResult.success();
   }
 
   /**
@@ -96,7 +96,7 @@ public class SystemDictTypeController extends BaseController {
   @Mapping(value = "/refreshCache", method = MethodType.DELETE)
   public AjaxResult refreshCache() {
     dictTypeService.resetDictCache();
-    return success();
+    return AjaxResult.success();
   }
 
   /**
@@ -105,6 +105,6 @@ public class SystemDictTypeController extends BaseController {
   @Mapping(value = "/optionselect", method = MethodType.GET)
   public AjaxResult optionselect() {
     List<SysDictType> dictTypes = dictTypeService.selectDictTypeAll();
-    return successData(dictTypes);
+    return AjaxResult.successData(dictTypes);
   }
 }

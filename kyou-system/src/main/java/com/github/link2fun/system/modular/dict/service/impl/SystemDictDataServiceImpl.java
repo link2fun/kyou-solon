@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.dict.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
@@ -11,8 +12,10 @@ import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDictDataProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.utils.DictUtils;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataAddReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataModifyReq;
+import com.github.link2fun.system.modular.dict.model.req.SysDictDataSearchReq;
 import com.github.link2fun.system.modular.dict.service.ISystemDictDataService;
-
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 
@@ -30,16 +33,16 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
   /**
    * 根据条件分页查询字典数据
    *
-   * @param searchReq 字典数据信息
+   * @param searchReq 字典数据查询条件
    * @return 字典数据集合信息
    */
   @Override
-  public List<SysDictData> selectDictDataList(final SysDictData searchReq) {
+  public List<SysDictData> selectDictDataList(final SysDictDataSearchReq searchReq) {
     return buildQuery(searchReq).toList();
   }
 
   /** 构造字典数据列表查询 */
-  private EntityQueryable<SysDictDataProxy, SysDictData> buildQuery(final SysDictData searchReq) {
+  private EntityQueryable<SysDictDataProxy, SysDictData> buildQuery(final SysDictDataSearchReq searchReq) {
     EntityQueryable<SysDictDataProxy, SysDictData> queryable = entityQuery.queryable(SysDictData.class);
     if (Objects.isNull(searchReq)) {
       return queryable;
@@ -58,12 +61,12 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
    * 根据条件查询字典数据并分页展示。
    *
    * @param pageRequest 分页适配器
-   * @param dictData    字典数据对象
+   * @param searchReq   查询条件
    * @return 分页结果
    */
   @Override
-  public Page<SysDictData> pageSearch(final Page<SysDictData> pageRequest, final SysDictData dictData) {
-    return Page.of(pageRequest, buildQuery(dictData).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
+  public Page<SysDictData> pageSearch(final Page<SysDictData> pageRequest, final SysDictDataSearchReq searchReq) {
+    return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**
@@ -136,11 +139,12 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
   /**
    * 新增保存字典数据信息
    *
-   * @param dictData 字典数据信息
+   * @param addReq 新增字典数据请求
    * @return 结果
    */
   @Override
-  public long insertDictData(final SysDictData dictData) {
+  public long insertDictData(final SysDictDataAddReq addReq) {
+    final SysDictData dictData = BeanUtil.toBean(addReq, SysDictData.class);
     final long row = entityQuery.insertable(dictData).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
     if (row > 0) {
       // 回查按读路径口径(仅正常状态), 与缓存回填一致
@@ -152,12 +156,13 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
   /**
    * 修改保存字典数据信息
    *
-   * @param dictData 字典数据信息
+   * @param modifyReq 修改字典数据请求
    * @return 结果
    */
   @Override
-  public long updateDictData(final SysDictData dictData) {
-    final long row = entityQuery.updatable(dictData).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
+  public long updateDictData(final SysDictDataModifyReq modifyReq) {
+    final SysDictData dictData = BeanUtil.toBean(modifyReq, SysDictData.class);
+    final long row = entityQuery.updatable(dictData).setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS).executeRows();
     if (row > 0) {
       // 回查按读路径口径(仅正常状态), 与缓存回填一致
       DictUtils.setDictCache(dictData.getDictType(), selectDictDataByType(dictData.getDictType()));

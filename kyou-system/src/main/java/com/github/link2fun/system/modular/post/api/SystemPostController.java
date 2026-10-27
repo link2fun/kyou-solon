@@ -2,15 +2,16 @@ package com.github.link2fun.system.modular.post.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.entity.SysPost;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
-import com.github.link2fun.support.core.domain.entity.SysPost;
+import com.github.link2fun.system.modular.post.model.req.SysPostAddReq;
+import com.github.link2fun.system.modular.post.model.req.SysPostModifyReq;
+import com.github.link2fun.system.modular.post.model.req.SysPostSearchReq;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
-
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.Context;
 import org.noear.solon.core.handle.MethodType;
@@ -25,7 +26,7 @@ import java.util.List;
  */
 @Controller
 @Mapping("/system/post")
-public class SystemPostController extends BaseController {
+public class SystemPostController {
   @Inject
   private ISystemPostService postService;
 
@@ -34,16 +35,16 @@ public class SystemPostController extends BaseController {
    */
   @SaCheckPermission("system:post:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public TableDataInfo list(SysPost searchReq) {
+  public TableDataInfo list(SysPostSearchReq searchReq) {
     final Page<SysPost> list = postService.pageSearch(Page.ofCurrentContext(), searchReq);
-    return getDataTable(list);
+    return TableDataInfo.of(list);
   }
 
   @Log(title = "岗位管理", businessType = BusinessType.EXPORT)
   @SaCheckPermission("system:post:export")
   @Mapping(value = "/export", method = MethodType.POST)
-  public void export(Context response, SysPost post) {
-    List<SysPost> list = postService.selectPostList(post);
+  public void export(Context response, SysPostSearchReq searchReq) {
+    List<SysPost> list = postService.selectPostList(searchReq);
     ExcelUtil<SysPost> util = new ExcelUtil<>(SysPost.class);
     util.exportExcel(response, list, "岗位数据");
   }
@@ -54,7 +55,7 @@ public class SystemPostController extends BaseController {
   @SaCheckPermission("system:post:query")
   @Mapping(value = "/{postId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long postId) {
-    return successData(postService.selectPostById(postId));
+    return AjaxResult.successData(postService.selectPostById(postId));
   }
 
   /**
@@ -63,9 +64,8 @@ public class SystemPostController extends BaseController {
   @SaCheckPermission("system:post:add")
   @Log(title = "岗位管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysPost post) {
-    post.setCreateBy(getUsername());
-    return toAjax(postService.insertPost(post));
+  public AjaxResult add(@Validated @Body SysPostAddReq addReq) {
+    return AjaxResult.ofAffected(postService.insertPost(addReq));
   }
 
   /**
@@ -74,9 +74,8 @@ public class SystemPostController extends BaseController {
   @SaCheckPermission("system:post:edit")
   @Log(title = "岗位管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysPost post) {
-    post.setUpdateBy(getUsername());
-    return toAjax(postService.updatePost(post));
+  public AjaxResult edit(@Validated @Body SysPostModifyReq modifyReq) {
+    return AjaxResult.ofAffected(postService.updatePost(modifyReq));
   }
 
   /**
@@ -86,7 +85,7 @@ public class SystemPostController extends BaseController {
   @Log(title = "岗位管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{postIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> postIds) {
-    return toAjax(postService.deletePostByIds(postIds));
+    return AjaxResult.ofAffected(postService.deletePostByIds(postIds));
   }
 
   /**
@@ -95,6 +94,6 @@ public class SystemPostController extends BaseController {
   @Mapping(value = "/optionselect", method = MethodType.GET)
   public AjaxResult optionselect() {
     List<SysPost> posts = postService.selectPostAll();
-    return successData(posts);
+    return AjaxResult.successData(posts);
   }
 }

@@ -5,22 +5,22 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
-import com.github.link2fun.support.core.domain.entity.SysDept;
-import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.support.utils.PasswordUtils;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptSearchReq;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
+import com.github.link2fun.system.modular.user.model.req.SysUserChangeStatusReq;
 import com.github.link2fun.system.modular.user.model.req.SysUserReq;
+import com.github.link2fun.system.modular.user.model.req.SysUserResetPwdReq;
+import com.github.link2fun.system.modular.user.model.req.SysUserSearchReq;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.Context;
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  */
 @Controller
 @Mapping("/system/user")
-public class SystemUserController extends BaseController {
+public class SystemUserController {
   @Inject
   private ISystemUserService userService;
 
@@ -56,18 +56,18 @@ public class SystemUserController extends BaseController {
    */
   @SaCheckPermission("system:user:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public TableDataInfo list(SysUser searchReq) {
+  public TableDataInfo list(SysUserSearchReq searchReq) {
     final ActionContext context = ActionContext.current();
 
     Page<SysUserDTO> list = userService.selectUserList(context, Page.ofCurrentContext(), searchReq, SysUserDTO.class);
-    return getDataTable(list);
+    return TableDataInfo.of(list);
   }
 
   // 搜索条件可带手机号/邮箱，导出接口也要脱敏，否则查询参数会明文进操作日志
   @Log(title = "用户管理", businessType = BusinessType.EXPORT, mask = true)
   @SaCheckPermission("system:user:export")
   @Mapping(value = "/export", method = MethodType.POST)
-  public void export(Context response, SysUser user) {
+  public void export(Context response, SysUserSearchReq user) {
     Page<SysUserDTO> pageData = userService.selectUserList(ActionContext.current(), Page.ofAll(), user, SysUserDTO.class);
     List<SysUserDTO> dataList = pageData.getRecords();
 
@@ -84,9 +84,9 @@ public class SystemUserController extends BaseController {
     final ActionContext context = ActionContext.current();
     ExcelUtil<SysUserDTO> util = new ExcelUtil<>(SysUserDTO.class);
     List<SysUserDTO> userList = util.importExcel(file.getContent());
-    String operName = getUsername();
+    String operName = ActionContext.current().getUsername();
     String message = userService.importUser(context, userList, updateSupport, operName);
-    return successMessage(message);
+    return AjaxResult.successMessage(message);
   }
 
   @Mapping(value = "/importTemplate", method = MethodType.POST)
@@ -104,9 +104,8 @@ public class SystemUserController extends BaseController {
     ActionContext context = ActionContext.current();
     userService.checkUserDataScope(context, userId);
     AjaxResult ajax = AjaxResult.success();
-    List<SysRole> roles = roleService.selectRoleAll(context);
-    ajax.put("roles",
-      SysUser.isSuperAdmin(userId) ? roles : roles.stream().filter(r -> !r.isSuperAdminRole()).collect(Collectors.toList()));
+    // 可分配角色已剔除超管角色(非超管用户不能持有), 拼接由 Controller 负责
+    ajax.put("roles", roleService.selectAssignableRoles(context, userId));
     ajax.put("posts", postService.selectPostAll());
     if (ObjectUtil.isNotNull(userId)) {
       SysUserDTO sysUser = userService.selectUserById(userId);
@@ -130,7 +129,6 @@ public class SystemUserController extends BaseController {
   @Log(title = "用户管理", businessType = BusinessType.INSERT, mask = true)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysUserReq.AddReq addReq) {
-    addReq.setCreateBy(getUsername());
     Long userId = userService.insertUser(addReq);
     return AjaxResult.successData(userId);
   }
@@ -142,8 +140,7 @@ public class SystemUserController extends BaseController {
   @Log(title = "用户管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysUserReq.UpdateReq user) {
-    user.setUpdateBy(getUsername());
-    return toAjax(userService.updateUser(ActionContext.current(), user));
+    return AjaxResult.ofAffected(userService.updateUser(ActionContext.current(), user));
   }
 
   /**
@@ -154,7 +151,7 @@ public class SystemUserController extends BaseController {
   @Mapping(value = "/{userIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> userIds) {
     ActionContext context = ActionContext.current();
-    return toAjax(userService.deleteUserByIds(context, userIds));
+    return AjaxResult.ofAffected(userService.deleteUserByIds(context, userIds));
   }
 
   /**
@@ -163,10 +160,8 @@ public class SystemUserController extends BaseController {
   @SaCheckPermission("system:user:resetPwd")
   @Log(title = "用户管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(value = "/resetPwd", method = MethodType.PUT)
-  public AjaxResult resetPwd(@Body SysUser user) {
-    user.setPassword(PasswordUtils.encryptPassword(user.getPassword()));
-    user.setUpdateBy(getUsername());
-    return toAjax(userService.resetPwd(ActionContext.current(), user));
+  public AjaxResult resetPwd(@Validated @Body SysUserResetPwdReq resetPwdReq) {
+    return AjaxResult.ofAffected(userService.resetPwd(ActionContext.current(), resetPwdReq));
   }
 
   /**
@@ -175,9 +170,8 @@ public class SystemUserController extends BaseController {
   @SaCheckPermission("system:user:edit")
   @Log(title = "用户管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(value = "/changeStatus", method = MethodType.PUT)
-  public AjaxResult changeStatus(@Body SysUser user) {
-    user.setUpdateBy(getUsername());
-    return toAjax(userService.updateUserStatus(ActionContext.current(), user));
+  public AjaxResult changeStatus(@Validated @Body SysUserChangeStatusReq changeStatusReq) {
+    return AjaxResult.ofAffected(userService.updateUserStatus(ActionContext.current(), changeStatusReq));
   }
 
   /**
@@ -188,10 +182,8 @@ public class SystemUserController extends BaseController {
   public AjaxResult authRole(@Path("userId") Long userId) {
     AjaxResult ajax = AjaxResult.success();
     SysUserDTO user = userService.selectUserById(userId);
-    List<RoleDTO> roles = roleService.selectRolesByUserId(userId);
     ajax.put("user", user);
-    ajax.put("roles",
-      SysUser.isSuperAdmin(userId) ? roles : roles.stream().filter(r -> !r.isSuperAdminRole()).collect(Collectors.toList()));
+    ajax.put("roles", roleService.selectAssignableRolesByUserId(userId));
     return ajax;
   }
 
@@ -203,7 +195,7 @@ public class SystemUserController extends BaseController {
   @Mapping(value = "/authRole", method = MethodType.PUT)
   public AjaxResult insertAuthRole(Long userId, List<Long> roleIds) {
     userService.insertUserAuth(ActionContext.current(), userId, roleIds);
-    return success();
+    return AjaxResult.success();
   }
 
   /**
@@ -211,8 +203,7 @@ public class SystemUserController extends BaseController {
    */
   @SaCheckPermission("system:user:list")
   @Mapping(value = "/deptTree", method = MethodType.GET)
-  public AjaxResult deptTree(SysDept dept) {
-
-    return successData(deptService.selectDeptTreeList(ActionContext.current(), dept));
+  public AjaxResult deptTree(SysDeptSearchReq searchReq) {
+    return AjaxResult.successData(deptService.selectDeptTreeList(ActionContext.current(), searchReq));
   }
 }

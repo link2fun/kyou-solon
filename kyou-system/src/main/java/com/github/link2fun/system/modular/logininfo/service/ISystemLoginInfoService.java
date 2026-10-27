@@ -2,7 +2,7 @@ package com.github.link2fun.system.modular.logininfo.service;
 
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.logininfo.model.SysLoginInfo;
-
+import com.github.link2fun.system.modular.logininfo.model.req.SysLoginInfoSearchReq;
 
 import java.util.List;
 
@@ -23,10 +23,10 @@ public interface ISystemLoginInfoService {
    * 查询系统登录日志集合
    *
    * @param pageRequest 分页适配器
-   * @param searchReq   访问日志对象
+   * @param searchReq   登录日志查询条件
    * @return 登录记录集合
    */
-  Page<SysLoginInfo> selectLoginInfoList(final Page<SysLoginInfo> pageRequest, SysLoginInfo searchReq);
+  Page<SysLoginInfo> selectLoginInfoList(final Page<SysLoginInfo> pageRequest, SysLoginInfoSearchReq searchReq);
 
   /**
    * 批量删除系统登录日志

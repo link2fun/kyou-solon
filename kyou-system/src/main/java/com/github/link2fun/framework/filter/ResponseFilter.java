@@ -5,6 +5,7 @@ import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.exception.SaTokenException;
 import com.easy.query.core.exception.EasyQuerySQLCommandException;
 import com.easy.query.core.exception.EasyQuerySQLStatementException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.github.link2fun.support.constant.HttpStatus;
 import com.github.link2fun.support.core.domain.R;
 import com.github.link2fun.support.exception.DemoModeException;
@@ -12,6 +13,7 @@ import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.exception.base.BaseException;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
+import org.noear.solon.core.exception.StatusException;
 import org.noear.solon.core.handle.Context;
 import org.noear.solon.core.handle.Filter;
 import org.noear.solon.core.handle.FilterChain;
@@ -87,6 +89,21 @@ public class ResponseFilter implements Filter {
         log.error("异常信息:{}", exp.getMessage(), exp);
       }
       ctx.render(R.fail(HttpStatus.ERROR, "SQL语句异常"));
+    } catch (StatusException e) {
+      // Solon 把参数绑定失败包成 StatusException(400), 真正原因在 cause 里
+      final Throwable cause = e.getCause();
+      if (cause instanceof JsonMappingException jsonError) {
+        // 请求体与接口契约不符(未知字段、类型不匹配): 调用方的问题, 不是系统故障
+        log.warn("请求体解析失败: {} {}", ctx.path(), jsonError.getOriginalMessage());
+        ctx.render(R.fail(HttpStatus.BAD_REQUEST, "请求参数不正确: " + jsonError.getOriginalMessage()));
+      } else {
+        log.warn("参数绑定失败: {} {}", ctx.path(), e.getMessage());
+        ctx.render(R.fail(e.getCode(), "请求参数不正确"));
+      }
+    } catch (JsonMappingException e) {
+      // 请求体与接口契约不符(未知字段、类型不匹配): 这是调用方的问题, 不是系统故障
+      log.warn("请求体解析失败: {} {}", ctx.path(), e.getOriginalMessage());
+      ctx.render(R.fail(HttpStatus.BAD_REQUEST, "请求参数不正确: " + e.getOriginalMessage()));
     } catch (Throwable e) {
       log.error("系统异常", e);
       ctx.render(R.fail(500, "系统异常"));

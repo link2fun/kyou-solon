@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.dept.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
@@ -19,6 +20,9 @@ import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.uuid.IdUtils;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptAddReq;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptModifyReq;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptSearchReq;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
@@ -70,11 +74,11 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * 查询部门管理数据
    *
    * @param context   上下文
-   * @param searchReq 部门信息
+   * @param searchReq 部门查询条件
    * @return 部门信息集合
    */
   @Override
-  public List<SysDept> selectDeptList(final ActionContext context, final SysDept searchReq) {
+  public List<SysDept> selectDeptList(final ActionContext context, final SysDeptSearchReq searchReq) {
 
     final DataScope dataScope = DataScope.of(entityQuery, context);
     return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
@@ -94,14 +98,29 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   /**
    * 查询部门树结构信息
    *
-   * @param context 上下文
-   * @param dept    部门信息
+   * @param context   上下文
+   * @param searchReq 查询条件
    * @return 部门树信息集合
    */
   @Override
-  public List<TreeSelect> selectDeptTreeList(final ActionContext context, final SysDept dept) {
-    final List<SysDept> deptList = selectDeptList(context, dept);
+  public List<TreeSelect> selectDeptTreeList(final ActionContext context, final SysDeptSearchReq searchReq) {
+    final List<SysDept> deptList = selectDeptList(context, searchReq);
     return self.buildDeptTreeSelect(deptList);
+  }
+
+  /**
+   * 查询部门列表, 并排除指定部门及其所有后代
+   *
+   * @param context 上下文
+   * @param deptId  要排除的部门ID
+   * @return 可选的部门列表
+   */
+  @Override
+  public List<SysDept> selectDeptListExcludingSubtree(final ActionContext context, final Long deptId) {
+    final List<SysDept> deptList = selectDeptList(context, new SysDeptSearchReq());
+    // 自身 + ancestors 链中含该部门的即为子孙
+    deptList.removeIf(dept -> deptId.equals(dept.getDeptId()) || containsAncestor(dept.getAncestors(), deptId));
+    return deptList;
   }
 
   /**
@@ -166,6 +185,19 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
     return entityQuery.queryable(SysDept.class)
       .whereById(deptId)
       .singleOrNull();
+  }
+
+  /**
+   * 按部门ID查询部门信息, 内部先做数据权限校验
+   *
+   * @param context 操作上下文, 含有当前用户信息
+   * @param deptId  部门ID
+   * @return 部门信息
+   */
+  @Override
+  public SysDept selectDeptDetail(final ActionContext context, final Long deptId) {
+    checkDeptDataScope(context, deptId);
+    return selectDeptById(deptId);
   }
 
   /**
@@ -243,12 +275,13 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   /**
    * 新增保存部门信息
    *
-   * @param dept 部门信息
+   * @param addReq 新增部门请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long insertDept(final SysDept dept) {
+  public long insertDept(final SysDeptAddReq addReq) {
+    final SysDept dept = BeanUtil.toBean(addReq, SysDept.class);
     checkDeptNameUnique("新增", dept);
 
     final SysDept parentDept = self.selectDeptById(dept.getParentId());
@@ -267,13 +300,14 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   /**
    * 修改保存部门信息
    *
-   * @param context 操作上下文, 含有当前用户信息
-   * @param dept    部门信息
+   * @param context   操作上下文, 含有当前用户信息
+   * @param modifyReq 修改部门请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long updateDept(final ActionContext context, final SysDept dept) {
+  public long updateDept(final ActionContext context, final SysDeptModifyReq modifyReq) {
+    final SysDept dept = BeanUtil.toBean(modifyReq, SysDept.class);
     final Long deptId = dept.getDeptId();
     checkDeptDataScope(context, deptId);
     checkDeptNameUnique("修改", dept);
@@ -295,7 +329,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
       if (ObjectUtil.isNotNull(oldDept)) {
         updateDeptChildren(deptId, "0", oldDept.getAncestors());
       }
-      return entityQuery.updatable(dept).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
+      return entityQuery.updatable(dept).setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS).executeRows();
     }
 
     SysDept newParentDept = self.selectDeptById(dept.getParentId());
@@ -313,11 +347,11 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
       dept.setAncestors(newAncestors);
       updateDeptChildren(dept.getDeptId(), newAncestors, oldAncestors);
     }
-    long result = entityQuery.updatable(dept).setSQLStrategy(SQLExecuteStrategyEnum.ALL_COLUMNS).executeRows();
+    long result = entityQuery.updatable(dept).setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS).executeRows();
     if (UserConstants.DEPT_NORMAL.equals(dept.getStatus()) && StrUtil.isNotBlank(dept.getAncestors())
       && !StrUtil.equals("0", dept.getAncestors())) {
       // 如果该部门是启用状态，则启用该部门的所有上级部门
-      updateParentDeptStatusNormal(dept);
+      updateParentDeptStatusNormal(dept.getAncestors());
     }
     return result;
   }
@@ -344,10 +378,10 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   /**
    * 修改该部门的父级部门状态
    *
-   * @param dept 当前部门
+   * @param ancestors 当前部门的上级链, 形如 "0,100,101"
    */
-  private void updateParentDeptStatusNormal(SysDept dept) {
-    List<Long> deptIds = StrUtil.split(dept.getAncestors(), ',').stream()
+  private void updateParentDeptStatusNormal(final String ancestors) {
+    List<Long> deptIds = StrUtil.split(ancestors, ',').stream()
       .filter(StrUtil::isNotBlank)
       .map(Long::valueOf)
       .toList();

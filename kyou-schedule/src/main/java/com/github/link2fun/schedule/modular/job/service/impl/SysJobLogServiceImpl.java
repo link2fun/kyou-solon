@@ -5,6 +5,7 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.schedule.modular.job.model.SysJobLog;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobLogSearchReq;
 import com.github.link2fun.schedule.modular.job.service.ISysJobLogService;
 import com.github.link2fun.support.core.page.Page;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +24,11 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
   /**
    * 获取quartz调度器日志的计划任务
    *
-   * @param searchReq 调度日志信息
+   * @param searchReq 调度日志查询条件
    * @return 调度任务日志集合
    */
   @Override
-  public List<SysJobLog> selectJobLogList(SysJobLog searchReq) {
+  public List<SysJobLog> selectJobLogList(SysJobLogSearchReq searchReq) {
 
     return entityQuery.queryable(SysJobLog.class)
       .where(jobLog -> {
@@ -103,7 +104,7 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
   }
 
   @Override
-  public Page<SysJobLog> pageSearchJobLog(final Page<SysJobLog> pageRequest, final SysJobLog searchReq) {
+  public Page<SysJobLog> pageSearchJobLog(final Page<SysJobLog> pageRequest, final SysJobLogSearchReq searchReq) {
 
     EasyPageResult<SysJobLog> pageResult = entityQuery.queryable(SysJobLog.class)
       .where(jobLogQuery -> {

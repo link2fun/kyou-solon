@@ -3,10 +3,13 @@ package com.github.link2fun.system.modular.menu.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.convert.Convert;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.controller.BaseController;
+import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.AjaxResult;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.support.enums.BusinessType;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuAddReq;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuModifyReq;
+import com.github.link2fun.system.modular.menu.model.req.SysMenuSearchReq;
 import com.github.link2fun.system.modular.menu.service.ISystemMenuService;
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.MethodType;
@@ -23,7 +26,7 @@ import java.util.stream.Collectors;
  */
 @Controller
 @Mapping("/system/menu")
-public class SystemMenuController extends BaseController {
+public class SystemMenuController {
   @Inject
   private ISystemMenuService menuService;
 
@@ -32,9 +35,9 @@ public class SystemMenuController extends BaseController {
    */
   @SaCheckPermission("system:menu:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public AjaxResult list(SysMenu menu) {
-    List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());
-    return successData(menus);
+  public AjaxResult list(SysMenuSearchReq searchReq) {
+    List<SysMenu> menus = menuService.selectMenuList(searchReq, ActionContext.current().getUserId());
+    return AjaxResult.successData(menus);
   }
 
   /**
@@ -43,16 +46,16 @@ public class SystemMenuController extends BaseController {
   @SaCheckPermission("system:menu:query")
   @Mapping(value = "/{menuId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long menuId) {
-    return successData(menuService.selectMenuById(menuId));
+    return AjaxResult.successData(menuService.selectMenuById(menuId));
   }
 
   /**
    * 获取菜单下拉树列表
    */
   @Mapping(value = "/treeselect", method = MethodType.GET)
-  public AjaxResult treeselect(SysMenu menu) {
-    List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());
-    return successData(menuService.buildMenuTreeSelect(menus));
+  public AjaxResult treeselect(SysMenuSearchReq searchReq) {
+    List<SysMenu> menus = menuService.selectMenuList(searchReq, ActionContext.current().getUserId());
+    return AjaxResult.successData(menuService.buildMenuTreeSelect(menus));
   }
 
   /**
@@ -60,7 +63,7 @@ public class SystemMenuController extends BaseController {
    */
   @Mapping(value = "/roleMenuTreeselect/{roleId}", method = MethodType.GET)
   public AjaxResult roleMenuTreeselect(@Path("roleId") Long roleId) {
-    List<SysMenu> menus = menuService.selectMenuList(getUserId());
+    List<SysMenu> menus = menuService.selectMenuList(ActionContext.current().getUserId());
     AjaxResult ajax = AjaxResult.success();
     ajax.put("checkedKeys", menuService.selectMenuListByRoleId(roleId).stream().map(Convert::toStr).collect(Collectors.toList()));
     ajax.put("menus", menuService.buildMenuTreeSelect(menus));
@@ -73,9 +76,8 @@ public class SystemMenuController extends BaseController {
   @SaCheckPermission("system:menu:add")
   @Log(title = "菜单管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysMenu menu) {
-    menu.setCreateBy(getUsername());
-    return toAjax(menuService.insertMenu(menu));
+  public AjaxResult add(@Validated @Body SysMenuAddReq addReq) {
+    return AjaxResult.ofAffected(menuService.insertMenu(addReq));
   }
 
   /**
@@ -84,9 +86,8 @@ public class SystemMenuController extends BaseController {
   @SaCheckPermission("system:menu:edit")
   @Log(title = "菜单管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysMenu menu) {
-    menu.setUpdateBy(getUsername());
-    return toAjax(menuService.updateMenu(menu));
+  public AjaxResult edit(@Validated @Body SysMenuModifyReq modifyReq) {
+    return AjaxResult.ofAffected(menuService.updateMenu(modifyReq));
   }
 
   /**
@@ -96,6 +97,6 @@ public class SystemMenuController extends BaseController {
   @Log(title = "菜单管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{menuId}", method = MethodType.DELETE)
   public AjaxResult remove(@Path("menuId") Long menuId) {
-    return toAjax(menuService.deleteMenuById(menuId));
+    return AjaxResult.ofAffected(menuService.deleteMenuById(menuId));
   }
 }

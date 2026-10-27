@@ -4,10 +4,7 @@ import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.page.Page;
-import com.github.link2fun.system.modular.role.model.req.SysRoleAddReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleChangeDataScopeReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleChangeStatusReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleModifyReq;
+import com.github.link2fun.system.modular.role.model.req.*;
 
 import java.util.List;
 
@@ -21,11 +18,11 @@ public interface ISystemRoleService {
    * 根据条件分页查询角色数据
    *
    * @param pageRequest 分页信息
-   * @param searchReq   角色信息
+   * @param searchReq   角色查询条件
    * @param resultClass
    * @return 角色数据集合信息
    */
-  <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> pageRequest, SysRole searchReq, Class<T> resultClass);
+  <T> Page<T> selectRoleList(ActionContext context, Page<SysRole> pageRequest, SysRoleSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 根据用户ID查询角色列表
@@ -34,6 +31,16 @@ public interface ISystemRoleService {
    * @return 角色列表
    */
   List<RoleDTO> selectRolesByUserId(Long userId);
+
+  /**
+   * 查询目标用户可持有的角色列表
+   *
+   * <p>非超管用户不能持有超管角色, 因此目标用户不是超管时结果里会剔除超管角色。
+   *
+   * @param userId 目标用户ID
+   * @return 可持有的角色列表
+   */
+  List<RoleDTO> selectAssignableRolesByUserId(Long userId);
 
   /**
    * 查询用户持有的启用角色标识集合(停用/软删角色不参与授权)
@@ -50,6 +57,18 @@ public interface ISystemRoleService {
    */
   List<SysRole> selectRoleAll(ActionContext context);
 
+  /**
+   * 查询可授予目标用户的角色
+   *
+   * <p>非超管用户不能持有超管角色, 因此目标用户不是超管时结果里会剔除超管角色。
+   * 该规则属于授权语义, 不放在调用方拼接。
+   *
+   * @param context 操作上下文, 含有当前用户信息
+   * @param userId  目标用户ID
+   * @return 可分配的角色列表
+   */
+  List<SysRole> selectAssignableRoles(ActionContext context, Long userId);
+
 
   /**
    * 通过角色ID查询角色
@@ -59,6 +78,18 @@ public interface ISystemRoleService {
    * @return 角色对象信息
    */
   <T> T selectRoleById(Long roleId, Class<T> resultClass);
+
+  /**
+   * 按角色ID查询角色详情, 内部先做数据权限校验
+   *
+   * <p>面向「按 id 取单条」的接口, 越权校验与查询在同一次调用内完成;
+   * 供其它 service 内部按 id 取实体时用 {@link #selectRoleById}, 那里不做权限判定。
+   *
+   * @param roleId      角色ID
+   * @param resultClass 返回结果类型
+   * @return 角色对象信息
+   */
+  <T> T selectRoleDetail(Long roleId, Class<T> resultClass);
 
   /**
    * 校验角色是否有数据权限
@@ -87,7 +118,7 @@ public interface ISystemRoleService {
   /**
    * 修改保存角色信息(内部已完成操作权限/数据权限/唯一性检查)
    *
-   * @param modifyReq 角色信息
+   * @param modifyReq 修改角色请求
    * @return 结果
    */
   long updateRole(SysRoleModifyReq modifyReq);
@@ -95,7 +126,7 @@ public interface ISystemRoleService {
   /**
    * 修改角色状态(内部已完成操作权限/数据权限检查)
    *
-   * @param changeStatusReq 角色信息
+   * @param changeStatusReq 角色状态变更请求
    * @return 结果
    */
   long changeRoleStatus(SysRoleChangeStatusReq changeStatusReq);

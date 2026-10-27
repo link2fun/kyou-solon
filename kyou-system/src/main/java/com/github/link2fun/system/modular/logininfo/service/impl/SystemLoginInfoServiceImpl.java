@@ -6,8 +6,8 @@ import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.logininfo.model.SysLoginInfo;
+import com.github.link2fun.system.modular.logininfo.model.req.SysLoginInfoSearchReq;
 import com.github.link2fun.system.modular.logininfo.service.ISystemLoginInfoService;
-
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 
@@ -35,11 +35,11 @@ public class SystemLoginInfoServiceImpl implements ISystemLoginInfoService {
    * 查询系统登录日志集合
    *
    * @param pageRequest 分页适配器
-   * @param searchReq   访问日志对象
+   * @param searchReq   登录日志查询条件
    * @return 登录记录集合
    */
   @Override
-  public Page<SysLoginInfo> selectLoginInfoList(final Page<SysLoginInfo> pageRequest, final SysLoginInfo searchReq) {
+  public Page<SysLoginInfo> selectLoginInfoList(final Page<SysLoginInfo> pageRequest, final SysLoginInfoSearchReq searchReq) {
 
     EasyPageResult<SysLoginInfo> pageResult = entityQuery.queryable(SysLoginInfo.class)
       .where(s -> {

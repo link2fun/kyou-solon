@@ -2,7 +2,6 @@ package com.github.link2fun.system.modular.user.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
@@ -36,7 +35,7 @@ import com.github.link2fun.system.modular.post.service.ISystemPostService;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
 import com.github.link2fun.system.modular.user.model.dto.proxy.AllocatedUserDTOProxy;
-import com.github.link2fun.system.modular.user.model.req.SysUserReq;
+import com.github.link2fun.system.modular.user.model.req.*;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import com.github.link2fun.system.modular.usergroup.service.ISystemUserGroupService;
 import com.github.link2fun.system.modular.userpost.service.ISystemUserPostService;
@@ -48,7 +47,6 @@ import org.noear.solon.annotation.Inject;
 import org.noear.solon.data.annotation.Transaction;
 import org.noear.solon.data.tran.TranPolicy;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -90,11 +88,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
    *
    * @param context     操作上下文, 含有当前用户信息
    * @param pageRequest 分页信息
-   * @param searchReq   用户信息
+   * @param searchReq   用户查询条件
    * @return 用户信息集合信息
    */
   @Override
-  public <T> Page<T> selectUserList(final ActionContext context, final Page<T> pageRequest, final SysUser searchReq, final Class<T> resultClass) {
+  public <T> Page<T> selectUserList(final ActionContext context, final Page<T> pageRequest, final SysUserSearchReq searchReq, final Class<T> resultClass) {
 
     final DataScope dataScope = DataScope.of(entityQuery, context);
 
@@ -131,11 +129,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * 根据条件分页查询已分配用户角色列表
    *
    * @param context   操作上下文, 含有当前用户信息
-   * @param searchReq 用户信息
+   * @param searchReq 已分配角色用户的查询条件
    * @return 用户信息集合信息
    */
   @Override
-  public Page<AllocatedUserDTO> selectAllocatedList(final ActionContext context, final Page<AllocatedUserDTO> pageRequest, final SysUser searchReq) {
+  public Page<AllocatedUserDTO> selectAllocatedList(final ActionContext context, final Page<AllocatedUserDTO> pageRequest, final SysUserSearchReq searchReq) {
     final DataScope dataScope = DataScope.of(entityQuery, context);
 
     EasyPageResult<AllocatedUserDTO> pageResult = entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)
@@ -167,11 +165,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * 根据条件分页查询未分配用户角色列表
    *
    * @param context   操作上下文, 含有当前用户信息
-   * @param searchReq 用户信息
+   * @param searchReq 未分配角色用户的查询条件
    * @return 用户信息集合信息
    */
   @Override
-  public Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, final Page<AllocatedUserDTO> pageRequest, final SysUser searchReq) {
+  public Page<AllocatedUserDTO> selectUnallocatedList(final ActionContext context, final Page<AllocatedUserDTO> pageRequest, final SysUserSearchReq searchReq) {
     final DataScope dataScope = DataScope.of(entityQuery, context);
 //    return getBaseMapper().selectUnallocatedList(pageRequest, searchReq);
     EasyPageResult<AllocatedUserDTO> pageResult = entityQuery.queryable(SysUser.class).asAlias(SysUser.TABLE_ALIAS)
@@ -365,7 +363,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 新增用户信息
    *
-   * @param addReq 用户信息
+   * @param addReq 新增用户请求
    * @return 结果
    */
   @Transaction
@@ -380,9 +378,6 @@ public class SystemUserServiceImpl implements ISystemUserService {
     user.setDelFlag(UserConstants.NORMAL); // 删除状态为未删除
     user.setLoginIp("");
     user.setLoginDate(null);
-    user.setCreateTime(LocalDateTimeUtil.of(new Date()));
-    user.setUpdateBy(user.getCreateBy());
-    user.setUpdateTime(LocalDateTimeUtil.of(new Date()));
 
 
 //    getBaseMapper().insert(user);
@@ -474,23 +469,25 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 修改用户状态
    *
-   * @param context 操作上下文, 含有当前用户信息
-   * @param user    用户信息
+   * @param context         操作上下文, 含有当前用户信息
+   * @param changeStatusReq 修改用户状态请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long updateUserStatus(final ActionContext context, final SysUser user) {
-    checkUserAllowed(user.getUserId());
-    checkUserDataScope(context, user.getUserId());
-//    return getBaseMapper().updateById(user);
-    final long rows = entityQuery.updatable(user)
-      .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
+  public long updateUserStatus(final ActionContext context, final SysUserChangeStatusReq changeStatusReq) {
+    final Long userId = changeStatusReq.getUserId();
+    final String status = changeStatusReq.getStatus();
+    checkUserAllowed(userId);
+    checkUserDataScope(context, userId);
+    final long rows = entityQuery.updatable(SysUser.class)
+      .where(user -> user.userId().eq(userId))
+      .setColumns(user -> user.status().set(status))
       .executeRows();
-    if (UserConstants.USER_DISABLE.equals(user.getStatus())) {
-      authCacheInvalidator.onUsersKicked(List.of(user.getUserId()));
+    if (UserConstants.USER_DISABLE.equals(status)) {
+      authCacheInvalidator.onUsersKicked(List.of(userId));
     } else {
-      authCacheInvalidator.onUsersChanged(List.of(user.getUserId()));
+      authCacheInvalidator.onUsersChanged(List.of(userId));
     }
     return rows;
   }
@@ -516,12 +513,12 @@ public class SystemUserServiceImpl implements ISystemUserService {
    */
   @Transaction
   @Override
-  public long updateMyProfile(final Long userId, final SysUser profilePatch) {
+  public long updateMyProfile(final Long userId, final SysUserProfileModifyReq modifyReq) {
     final SysUser user = getByIdNotNull(userId);
-    user.setNickName(profilePatch.getNickName());
-    user.setEmail(profilePatch.getEmail());
-    user.setPhonenumber(profilePatch.getPhonenumber());
-    user.setSex(profilePatch.getSex());
+    user.setNickName(modifyReq.getNickName());
+    user.setEmail(modifyReq.getEmail());
+    user.setPhonenumber(modifyReq.getPhonenumber());
+    user.setSex(modifyReq.getSex());
     final long rows = updateUserProfile(user);
     authCacheInvalidator.onUsersChanged(List.of(userId));
     return rows;
@@ -556,21 +553,22 @@ public class SystemUserServiceImpl implements ISystemUserService {
   /**
    * 重置用户密码
    *
-   * @param context 操作上下文, 含有当前用户信息
-   * @param user    用户信息(密码需已加密)
+   * @param context     操作上下文, 含有当前用户信息
+   * @param resetPwdReq 重置密码请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long resetPwd(final ActionContext context, final SysUser user) {
-    checkUserAllowed(user.getUserId());
-    checkUserDataScope(context, user.getUserId());
+  public long resetPwd(final ActionContext context, final SysUserResetPwdReq resetPwdReq) {
+    final Long userId = resetPwdReq.getUserId();
+    checkUserAllowed(userId);
+    checkUserDataScope(context, userId);
     final long rows = entityQuery.updatable(SysUser.class)
-      .where(userProxy -> userProxy.userId().eq(user.getUserId()))
-      .setColumns(userProxy -> userProxy.password().set(user.getPassword()))
+      .where(userProxy -> userProxy.userId().eq(userId))
+      .setColumns(userProxy -> userProxy.password().set(PasswordUtils.encryptPassword(resetPwdReq.getPassword())))
       // TODO 用户管理应该加上乐观锁
       .executeRows();
-    authCacheInvalidator.onUsersKicked(List.of(user.getUserId()));
+    authCacheInvalidator.onUsersKicked(List.of(userId));
     return rows;
   }
 

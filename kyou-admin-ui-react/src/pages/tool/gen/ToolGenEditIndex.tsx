@@ -74,7 +74,7 @@ const ToolGenEditIndex = () => {
 
   // state
   const [rowDataSource, setRowDataSource] = useState<any[]>([]);
-  const [baseInfo, setBaseInfo] = useState({});
+  const [baseInfo, setBaseInfo] = useState<Record<string, any>>({});
 
   // 预览模态框
   const previewModal = useToolGenPreview(loadingState);
@@ -130,20 +130,53 @@ const ToolGenEditIndex = () => {
     await loadingState.wrap({
       action: async () => {
         const formattedRows = rowDataSource.map(
-          ({ isInsert, isEdit, isList, isQuery, isRequired, ...rest }) => ({
-            ...rest,
+          ({
+            isInsert,
+            isEdit,
+            isList,
+            isQuery,
+            isRequired,
+            dictFormat,
+            ...rest
+          }) => ({
+            columnId: rest.columnId,
+            tableId: rest.tableId,
+            columnName: rest.columnName,
+            columnComment: rest.columnComment,
+            columnType: rest.columnType,
+            javaType: rest.javaType,
+            javaField: rest.javaField,
+            isPk: rest.isPk,
+            isIncrement: rest.isIncrement,
             isInsert: Convert.toBooleanStr1or0(isInsert),
             isEdit: Convert.toBooleanStr1or0(isEdit),
             isList: Convert.toBooleanStr1or0(isList),
             isQuery: Convert.toBooleanStr1or0(isQuery),
             isRequired: Convert.toBooleanStr1or0(isRequired),
+            queryType: rest.queryType,
+            htmlType: rest.htmlType,
+            dictType: rest.dictType,
+            sort: rest.sort,
           }),
         );
 
+        // 只发后端声明的字段: baseInfo 里还有 createTime/options 等库内列, dictFormat 是纯 UI 状态
         await ApiToolGen.edit({
           tableId,
-          ...baseInfo,
-          ...genInfo,
+          tableComment: genInfo?.tableComment ?? baseInfo.tableComment,
+          className: genInfo?.className ?? baseInfo.className,
+          tplCategory: genInfo?.tplCategory ?? baseInfo.tplCategory,
+          tplWebType: genInfo?.tplWebType ?? baseInfo.tplWebType,
+          packageName: genInfo?.packageName ?? baseInfo.packageName,
+          moduleName: genInfo?.moduleName ?? baseInfo.moduleName,
+          businessName: genInfo?.businessName ?? baseInfo.businessName,
+          functionName: genInfo?.functionName ?? baseInfo.functionName,
+          functionAuthor: genInfo?.functionAuthor ?? baseInfo.functionAuthor,
+          genType: genInfo?.genType ?? baseInfo.genType,
+          genPath: genInfo?.genPath ?? baseInfo.genPath,
+          remark: genInfo?.remark ?? baseInfo.remark,
+          subTableName: baseInfo.subTableName,
+          subTableFkName: baseInfo.subTableFkName,
           columns: formattedRows,
           params: {
             parentMenuId: genInfo?.parentMenuId,

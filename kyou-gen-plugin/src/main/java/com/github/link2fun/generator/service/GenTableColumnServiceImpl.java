@@ -1,11 +1,11 @@
 package com.github.link2fun.generator.service;
 
 
+import cn.hutool.core.convert.Convert;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.generator.domain.GenTableColumn;
-import cn.hutool.core.convert.Convert;
 import org.noear.solon.annotation.Component;
 
 import java.util.List;
@@ -96,11 +96,12 @@ public class GenTableColumnServiceImpl implements IGenTableColumnService {
 
   }
 
+  /** 按ID批量删除业务字段 */
   @Override
-  public void deleteGenTableColumns(List<GenTableColumn> delColumns) {
+  public void deleteGenTableColumnsByIds(List<Long> columnIds) {
     entityQuery.deletable(GenTableColumn.class)
       .allowDeleteStatement(true)
-      .where(tableColumn -> tableColumn.columnId().in(delColumns.stream().map(GenTableColumn::getColumnId).toList()))
+      .where(tableColumn -> tableColumn.columnId().in(columnIds))
       .executeRows();
   }
 }

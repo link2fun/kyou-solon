@@ -7,6 +7,7 @@ import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.operlog.model.SysOperLog;
+import com.github.link2fun.system.modular.operlog.model.req.SysOperLogSearchReq;
 import com.github.link2fun.system.modular.operlog.service.ISystemOperLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
@@ -35,11 +36,11 @@ public class SystemOperLogServiceImpl implements ISystemOperLogService {
    * 查询系统操作日志集合
    *
    * @param pageRequest 分页对象
-   * @param searchReq   操作日志对象
+   * @param searchReq   操作日志查询条件
    * @return 操作日志集合
    */
   @Override
-  public Page<SysOperLog> selectOperLogList(final Page<SysOperLog> pageRequest, final SysOperLog searchReq) {
+  public Page<SysOperLog> selectOperLogList(final Page<SysOperLog> pageRequest, final SysOperLogSearchReq searchReq) {
 
     EasyPageResult<SysOperLog> pageResult = entityQuery.queryable(SysOperLog.class)
       .where(operLog -> {

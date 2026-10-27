@@ -2,6 +2,9 @@ package com.github.link2fun.system.modular.post.service;
 
 import com.github.link2fun.support.core.domain.entity.SysPost;
 import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.system.modular.post.model.req.SysPostAddReq;
+import com.github.link2fun.system.modular.post.model.req.SysPostModifyReq;
+import com.github.link2fun.system.modular.post.model.req.SysPostSearchReq;
 
 import java.util.List;
 
@@ -14,10 +17,10 @@ public interface ISystemPostService {
   /**
    * 查询岗位信息集合
    *
-   * @param post 岗位信息
+   * @param searchReq 查询条件
    * @return 岗位列表
    */
-  List<SysPost> selectPostList(SysPost post);
+  List<SysPost> selectPostList(SysPostSearchReq searchReq);
 
   /**
    * 根据搜索条件进行分页查询岗位信息。
@@ -26,7 +29,7 @@ public interface ISystemPostService {
    * @param searchReq   搜索条件
    * @return 分页结果
    */
-  Page<SysPost> pageSearch(Page<SysPost> pageRequest, SysPost searchReq);
+  Page<SysPost> pageSearch(Page<SysPost> pageRequest, SysPostSearchReq searchReq);
 
   /**
    * 查询所有岗位
@@ -62,18 +65,18 @@ public interface ISystemPostService {
   /**
    * 新增保存岗位信息
    *
-   * @param post 岗位信息
+   * @param addReq 新增岗位请求
    * @return 结果
    */
-  long insertPost(SysPost post);
+  long insertPost(SysPostAddReq addReq);
 
   /**
    * 修改保存岗位信息
    *
-   * @param post 岗位信息
+   * @param modifyReq 修改岗位请求
    * @return 结果
    */
-  long updatePost(SysPost post);
+  long updatePost(SysPostModifyReq modifyReq);
 
   List<SysPost> listByIds(List<Long> postIdList);
 }

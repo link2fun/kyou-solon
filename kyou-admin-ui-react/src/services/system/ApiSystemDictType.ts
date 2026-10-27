@@ -1,5 +1,12 @@
 import WebConst from '@/constants/WebConst';
+import ObjectTool from '@/utils/ObjectTool';
 import {deleteJSON, downloadFile, get, postJSON, putJSON,} from '@/utils/request';
+
+/** 新增字典类型请求字段, 与后端 SysDictTypeAddReq 对齐 */
+const ADD_FIELDS: string[] = ['dictName', 'dictType', 'status', 'remark'];
+
+/** 修改字典类型请求字段 */
+const EDIT_FIELDS: string[] = ['dictId', ...ADD_FIELDS];
 
 const ApiSystemDictType = {
   /** 分页查询字典类型 */
@@ -17,9 +24,17 @@ const ApiSystemDictType = {
   detail: (dictId: number) =>
     get(`${WebConst.API_PREFIX}/system/dict/type/${dictId}`),
   /** 新增字典类型 */
-  add: (data: any) => postJSON(`${WebConst.API_PREFIX}/system/dict/type`, data),
+  add: (data: any) =>
+    postJSON(
+      `${WebConst.API_PREFIX}/system/dict/type`,
+      ObjectTool.pick(data, ADD_FIELDS),
+    ),
   /** 修改字典类型 */
-  edit: (data: any) => putJSON(`${WebConst.API_PREFIX}/system/dict/type`, data),
+  edit: (data: any) =>
+    putJSON(
+      `${WebConst.API_PREFIX}/system/dict/type`,
+      ObjectTool.pick(data, EDIT_FIELDS),
+    ),
   /** 删除字典类型 */
   remove: (dictId: number | number[]) =>
     deleteJSON(`${WebConst.API_PREFIX}/system/dict/type/${dictId}`),

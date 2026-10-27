@@ -3,26 +3,21 @@ package com.github.link2fun.system.modular.role.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.core.controller.BaseController;
 import com.github.link2fun.support.core.domain.AjaxResult;
-import com.github.link2fun.support.core.domain.entity.SysDept;
-import com.github.link2fun.support.core.domain.entity.SysRole;
-import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
+import com.github.link2fun.system.modular.dept.model.req.SysDeptSearchReq;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 import com.github.link2fun.system.modular.role.model.dto.SysRoleDetailDTO;
 import com.github.link2fun.system.modular.role.model.dto.SysRoleExcelDTO;
 import com.github.link2fun.system.modular.role.model.dto.SysRolePageDTO;
-import com.github.link2fun.system.modular.role.model.req.SysRoleAddReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleChangeDataScopeReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleChangeStatusReq;
-import com.github.link2fun.system.modular.role.model.req.SysRoleModifyReq;
+import com.github.link2fun.system.modular.role.model.req.*;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
+import com.github.link2fun.system.modular.user.model.req.SysUserSearchReq;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
 import org.noear.solon.annotation.*;
 import org.noear.solon.core.handle.Context;
@@ -38,7 +33,7 @@ import java.util.List;
  */
 @Controller
 @Mapping("/system/role")
-public class SystemRoleController extends BaseController {
+public class SystemRoleController {
   @Inject
   private ISystemRoleService roleService;
 
@@ -51,16 +46,16 @@ public class SystemRoleController extends BaseController {
 
   @SaCheckPermission("system:role:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public TableDataInfo list(SysRole searchReq) {
+  public TableDataInfo list(SysRoleSearchReq searchReq) {
     ActionContext context = ActionContext.current();
     Page<SysRolePageDTO> page = roleService.selectRoleList(context, Page.ofCurrentContext(), searchReq, SysRolePageDTO.class);
-    return getDataTable(page);
+    return TableDataInfo.of(page);
   }
 
   @Log(title = "角色管理", businessType = BusinessType.EXPORT)
   @SaCheckPermission("system:role:export")
   @Mapping(value = "/export", method = MethodType.POST)
-  public void export(Context response, SysRole searchReq) {
+  public void export(Context response, SysRoleSearchReq searchReq) {
     ActionContext context = ActionContext.current();
     Page<SysRoleExcelDTO> list = roleService.selectRoleList(context, Page.ofAll(), searchReq, SysRoleExcelDTO.class);
     ExcelUtil<SysRoleExcelDTO> util = new ExcelUtil<>(SysRoleExcelDTO.class);
@@ -73,9 +68,8 @@ public class SystemRoleController extends BaseController {
   @SaCheckPermission("system:role:query")
   @Mapping(value = "/{roleId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long roleId) {
-    roleService.checkRoleDataScope(roleId);
-    SysRoleDetailDTO role = roleService.selectRoleById(roleId, SysRoleDetailDTO.class);
-    return successData(role);
+    SysRoleDetailDTO role = roleService.selectRoleDetail(roleId, SysRoleDetailDTO.class);
+    return AjaxResult.successData(role);
   }
 
   /**
@@ -85,7 +79,7 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
   public AjaxResult add(@Validated @Body SysRoleAddReq addReq) {
-    return toAjax(roleService.insertRole(addReq));
+    return AjaxResult.ofAffected(roleService.insertRole(addReq));
 
   }
 
@@ -96,7 +90,7 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysRoleModifyReq modifyReq) {
-    return toAjax(roleService.updateRole(modifyReq));
+    return AjaxResult.ofAffected(roleService.updateRole(modifyReq));
   }
 
   /**
@@ -106,7 +100,7 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/dataScope", method = MethodType.PUT)
   public AjaxResult dataScope(@Validated @Body SysRoleChangeDataScopeReq changeDataScopeReq) {
-    return toAjax(roleService.authDataScope(changeDataScopeReq));
+    return AjaxResult.ofAffected(roleService.authDataScope(changeDataScopeReq));
   }
 
   /**
@@ -116,7 +110,7 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/changeStatus", method = MethodType.PUT)
   public AjaxResult changeStatus(@Validated @Body SysRoleChangeStatusReq changeStatusReq) {
-    return toAjax(roleService.changeRoleStatus(changeStatusReq));
+    return AjaxResult.ofAffected(roleService.changeRoleStatus(changeStatusReq));
   }
 
   /**
@@ -126,7 +120,7 @@ public class SystemRoleController extends BaseController {
   @Log(title = "角色管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{roleIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> roleIds) {
-    return toAjax(roleService.deleteRoleByIds(roleIds));
+    return AjaxResult.ofAffected(roleService.deleteRoleByIds(roleIds));
   }
 
   /**
@@ -136,7 +130,7 @@ public class SystemRoleController extends BaseController {
   @Mapping(value = "/optionselect", method = MethodType.GET)
   public AjaxResult optionselect() {
     ActionContext context = ActionContext.current();
-    return successData(roleService.selectRoleAll(context));
+    return AjaxResult.successData(roleService.selectRoleAll(context));
   }
 
   /**
@@ -144,11 +138,11 @@ public class SystemRoleController extends BaseController {
    */
   @SaCheckPermission("system:role:list")
   @Mapping(value = "/authUser/allocatedList", method = MethodType.GET)
-  public TableDataInfo allocatedList(SysUser user) {
+  public TableDataInfo allocatedList(SysUserSearchReq user) {
     final ActionContext context = ActionContext.current();
 
     Page<AllocatedUserDTO> list = userService.selectAllocatedList(context, Page.ofCurrentContext(), user);
-    return getDataTable(list);
+    return TableDataInfo.of(list);
   }
 
   /**
@@ -156,11 +150,11 @@ public class SystemRoleController extends BaseController {
    */
   @SaCheckPermission("system:role:list")
   @Mapping(value = "/authUser/unallocatedList", method = MethodType.GET)
-  public TableDataInfo unallocatedList(SysUser user) {
+  public TableDataInfo unallocatedList(SysUserSearchReq user) {
 
     final ActionContext context = ActionContext.current();
     Page<AllocatedUserDTO> list = userService.selectUnallocatedList(context, Page.ofCurrentContext(), user);
-    return getDataTable(list);
+    return TableDataInfo.of(list);
   }
 
   /**
@@ -205,7 +199,7 @@ public class SystemRoleController extends BaseController {
     final ActionContext context = ActionContext.current();
     AjaxResult ajax = AjaxResult.success();
     ajax.put("checkedKeys", deptService.selectDeptListByRoleId(roleId));
-    ajax.put("depts", deptService.selectDeptTreeList(context, new SysDept()));
+    ajax.put("depts", deptService.selectDeptTreeList(context, new SysDeptSearchReq()));
     return ajax;
   }
 }

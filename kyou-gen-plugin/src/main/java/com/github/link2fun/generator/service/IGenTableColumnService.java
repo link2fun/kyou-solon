@@ -45,6 +45,11 @@ public interface IGenTableColumnService {
 
   List<GenTableColumn> selectDbTableColumnsByName(String tableName);
 
-  void deleteGenTableColumns(List<GenTableColumn> delColumns);
+  /**
+   * 按ID批量删除业务字段
+   *
+   * @param columnIds 需要删除的字段ID
+   */
+  void deleteGenTableColumnsByIds(List<Long> columnIds);
 
 }

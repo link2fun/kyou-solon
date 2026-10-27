@@ -2,40 +2,36 @@ package com.github.link2fun.web.controller.common;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import cn.hutool.core.util.StrUtil;
-import com.github.link2fun.framework.config.ServerConfig;
-import com.github.link2fun.support.config.KyouProperties;
-import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.core.domain.AjaxResult;
-import com.github.link2fun.support.utils.file.FileUploadUtils;
-import com.github.link2fun.support.utils.file.FileUtils;
-import lombok.extern.slf4j.Slf4j;
+import com.github.link2fun.system.modular.file.model.vo.FileUploadVO;
+import com.github.link2fun.system.modular.file.service.IFileService;
 import org.noear.solon.annotation.Controller;
 import org.noear.solon.annotation.Inject;
 import org.noear.solon.annotation.Mapping;
 import org.noear.solon.core.handle.Context;
 import org.noear.solon.core.handle.MethodType;
 import org.noear.solon.core.handle.UploadedFile;
-import org.smartboot.http.common.utils.StringUtils;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 通用请求处理
  *
  * @author ruoyi
  */
-@Slf4j
 @Controller
 @Mapping("/common")
 public class CommonController {
 
   @Inject
-  private ServerConfig serverConfig;
-  @Inject
-  private KyouProperties kyouProperties;
+  private IFileService fileService;
 
+  /** 多文件上传结果的字段分隔符 */
   private static final String FILE_DELIMITER = ",";
 
   /**
@@ -46,23 +42,9 @@ public class CommonController {
    */
   @SaCheckLogin
   @Mapping(value = "/download", method = MethodType.GET)
-  public void fileDownload(String fileName, Boolean delete, Context context) {
-    try {
-      if (!FileUtils.checkAllowDownload(fileName)) {
-        throw new Exception(StrUtil.format("文件名称({})非法，不允许下载。 ", fileName));
-      }
-      String realFileName = System.currentTimeMillis() + fileName.substring(fileName.indexOf("_") + 1);
-      String filePath = kyouProperties.getDownloadPath() + fileName;
-
-      context.contentType("application/octet-stream");
-      FileUtils.setAttachmentResponseHeader(realFileName);
-      FileUtils.writeBytes(filePath, context.outputStream());
-      if (delete) {
-        FileUtils.deleteFile(filePath);
-      }
-    } catch (Exception e) {
-      log.error("下载文件失败", e);
-    }
+  public void fileDownload(String fileName, Boolean delete, Context context) throws IOException {
+    context.contentType("application/octet-stream");
+    fileService.downloadFile(fileName, Boolean.TRUE.equals(delete), in -> copyTo(in, context));
   }
 
   /**
@@ -71,22 +53,14 @@ public class CommonController {
   @SaCheckLogin
   @SaCheckPermission("common:upload")
   @Mapping(value = "/upload", method = MethodType.POST)
-  public AjaxResult uploadFile(UploadedFile file) {
-    try {
-      // 上传文件路径
-      String filePath = kyouProperties.getUploadPath();
-      // 上传并返回新文件名称
-      String fileName = FileUploadUtils.upload(filePath, file);
-      String url = serverConfig.getUrl() + fileName;
-      AjaxResult ajax = AjaxResult.success();
-      ajax.put("url", url);
-      ajax.put("fileName", fileName);
-      ajax.put("newFileName", FileUtils.getName(fileName));
-      ajax.put("originalFilename", file.getName());
-      return ajax;
-    } catch (Exception e) {
-      return AjaxResult.error(e.getMessage());
-    }
+  public AjaxResult uploadFile(UploadedFile file) throws IOException {
+    final FileUploadVO result = fileService.uploadFile(file);
+    AjaxResult ajax = AjaxResult.success();
+    ajax.put("url", result.getUrl());
+    ajax.put("fileName", result.getFileName());
+    ajax.put("newFileName", result.getNewFileName());
+    ajax.put("originalFilename", result.getOriginalFilename());
+    return ajax;
   }
 
   /**
@@ -95,32 +69,14 @@ public class CommonController {
   @SaCheckLogin
   @SaCheckPermission("common:upload")
   @Mapping(value = "/uploads", method = MethodType.POST)
-  public AjaxResult uploadFiles(List<UploadedFile> files) {
-    try {
-      // 上传文件路径
-      String filePath = kyouProperties.getUploadPath();
-      List<String> urls = new ArrayList<>();
-      List<String> fileNames = new ArrayList<>();
-      List<String> newFileNames = new ArrayList<>();
-      List<String> originalFilenames = new ArrayList<>();
-      for (UploadedFile file : files) {
-        // 上传并返回新文件名称
-        String fileName = FileUploadUtils.upload(filePath, file);
-        String url = serverConfig.getUrl() + fileName;
-        urls.add(url);
-        fileNames.add(fileName);
-        newFileNames.add(FileUtils.getName(fileName));
-        originalFilenames.add(file.getName());
-      }
-      AjaxResult ajax = AjaxResult.success();
-      ajax.put("urls", StrUtil.join(FILE_DELIMITER, urls));
-      ajax.put("fileNames", StrUtil.join(FILE_DELIMITER, fileNames));
-      ajax.put("newFileNames", StrUtil.join(FILE_DELIMITER, newFileNames));
-      ajax.put("originalFilenames", StrUtil.join(FILE_DELIMITER, originalFilenames));
-      return ajax;
-    } catch (Exception e) {
-      return AjaxResult.error(e.getMessage());
-    }
+  public AjaxResult uploadFiles(List<UploadedFile> files) throws IOException {
+    final List<FileUploadVO> results = fileService.uploadFiles(files);
+    AjaxResult ajax = AjaxResult.success();
+    ajax.put("urls", join(results, FileUploadVO::getUrl));
+    ajax.put("fileNames", join(results, FileUploadVO::getFileName));
+    ajax.put("newFileNames", join(results, FileUploadVO::getNewFileName));
+    ajax.put("originalFilenames", join(results, FileUploadVO::getOriginalFilename));
+    return ajax;
   }
 
   /**
@@ -128,22 +84,27 @@ public class CommonController {
    */
   @SaCheckLogin
   @Mapping(value = "/download/resource", method = MethodType.GET)
-  public void resourceDownload(String resource, Context context) {
+  public void resourceDownload(String resource, Context context) throws IOException {
+    context.contentType("application/octet-stream");
+    fileService.downloadResource(resource, in -> copyTo(in, context));
+  }
+
+  /**
+   * 把文件内容写进响应
+   *
+   * <p>响应流由容器管理, 这里只写不关; 文件流由 service 关闭。
+   */
+  private static void copyTo(final InputStream in, final Context context) {
     try {
-      if (!FileUtils.checkAllowDownload(resource)) {
-        throw new Exception(StrUtil.format("资源文件({})非法，不允许下载。 ", resource));
-      }
-      // 本地资源路径
-      String localPath = kyouProperties.getProfile();
-      // 数据库资源地址
-      String downloadPath = localPath + StringUtils.substringAfter(resource, Constants.RESOURCE_PREFIX);
-      // 下载名称
-      String downloadName = StringUtils.substringAfter(downloadPath, "/");
-      context.contentType("application/octet-stream");
-      FileUtils.setAttachmentResponseHeader(downloadName);
-      FileUtils.writeBytes(downloadPath, context.outputStream());
-    } catch (Exception e) {
-      log.error("下载文件失败", e);
+      in.transferTo(context.outputStream());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
+  }
+
+  /** 按字段拼接为逗号分隔的字符串 */
+  private static String join(final List<FileUploadVO> results,
+                             final Function<FileUploadVO, String> field) {
+    return results.stream().map(field).collect(Collectors.joining(FILE_DELIMITER));
   }
 }

@@ -160,6 +160,26 @@ public class AjaxResult extends HashMap<String, Object> {
   }
 
   /**
+   * 按写入影响的行数返回结果
+   *
+   * @param rows 影响行数, 0 视为未生效
+   * @return 成功或失败消息
+   */
+  public static AjaxResult ofAffected(final long rows) {
+    return rows != 0 ? AjaxResult.success() : AjaxResult.error();
+  }
+
+  /**
+   * 按写入是否生效返回结果
+   *
+   * @param affected 是否生效
+   * @return 成功或失败消息
+   */
+  public static AjaxResult ofAffected(final boolean affected) {
+    return affected ? AjaxResult.success() : AjaxResult.error();
+  }
+
+  /**
    * 是否为成功消息
    *
    * @return 结果

@@ -1,6 +1,37 @@
 import WebConst from '@/constants/WebConst';
 import {ErrorShowType} from '@/requestConfig';
+import ObjectTool from '@/utils/ObjectTool';
 import {deleteJSON, downloadFile, get, postFile, postJSON, putForm, putJSON,} from '@/utils/request';
+
+/** 新增用户请求字段, 与后端 SysUserReq.AddReq 对齐 */
+const ADD_FIELDS: string[] = [
+  'deptId',
+  'userName',
+  'nickName',
+  'email',
+  'phonenumber',
+  'sex',
+  'avatar',
+  'password',
+  'roleIds',
+  'postIds',
+  'remark',
+];
+
+/** 修改用户请求字段 */
+const EDIT_FIELDS: string[] = [
+  'userId',
+  'userName',
+  'nickName',
+  'phonenumber',
+  'email',
+  'sex',
+  'status',
+  'deptId',
+  'roleIds',
+  'postIds',
+  'remark',
+];
 
 const ApiSystemUser = {
   /** 获取用户列表 */
@@ -37,10 +68,18 @@ const ApiSystemUser = {
   detail: (userId: number) =>
     get(`${WebConst.API_PREFIX}/system/user/${userId}`),
   /** 添加用户 */
-  add: (data: any) => postJSON(`${WebConst.API_PREFIX}/system/user`, data),
+  add: (data: any) =>
+    postJSON(
+      `${WebConst.API_PREFIX}/system/user`,
+      ObjectTool.pick(data, ADD_FIELDS),
+    ),
 
   /** 修改用户 */
-  edit: (data: any) => putJSON(`${WebConst.API_PREFIX}/system/user`, data),
+  edit: (data: any) =>
+    putJSON(
+      `${WebConst.API_PREFIX}/system/user`,
+      ObjectTool.pick(data, EDIT_FIELDS),
+    ),
   /** 删除用户 */
   remove: (userId: number | number[]) =>
     deleteJSON(`${WebConst.API_PREFIX}/system/user/${userId}`),

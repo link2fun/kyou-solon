@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.group.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
@@ -11,9 +12,11 @@ import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.group.model.SysGroup;
+import com.github.link2fun.system.modular.group.model.req.SysGroupAddReq;
+import com.github.link2fun.system.modular.group.model.req.SysGroupModifyReq;
+import com.github.link2fun.system.modular.group.model.req.SysGroupSearchReq;
 import com.github.link2fun.system.modular.group.service.ISystemGroupService;
 import com.github.link2fun.system.modular.usergroup.service.ISystemUserGroupService;
-
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -39,7 +42,7 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
    * 根据搜索条件分页查询系统群组信息。
    */
   @Override
-  public Page<SysGroup> pageSearchGroup(Page<SysGroup> pageRequest, SysGroup searchReq) {
+  public Page<SysGroup> pageSearchGroup(Page<SysGroup> pageRequest, SysGroupSearchReq searchReq) {
 
     EasyPageResult<SysGroup> pageResult = entityQuery.queryable(SysGroup.class)
       .where(group -> group.groupName().like(StrUtil.isNotBlank(searchReq.getGroupName()), searchReq.getGroupName()))
@@ -68,7 +71,8 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
    */
   @Transaction
   @Override
-  public long insertGroup(final SysGroup group) {
+  public long insertGroup(final SysGroupAddReq addReq) {
+    final SysGroup group = BeanUtil.toBean(addReq, SysGroup.class);
     checkGroupNameUnique("新增", group);
     return entityQuery.insertable(group).executeRows();
   }
@@ -78,7 +82,8 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
    */
   @Transaction
   @Override
-  public long updateGroup(final SysGroup group) {
+  public long updateGroup(final SysGroupModifyReq modifyReq) {
+    final SysGroup group = BeanUtil.toBean(modifyReq, SysGroup.class);
     checkGroupNameUnique("修改", group);
     return entityQuery.updatable(group)
       .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS).executeRows();

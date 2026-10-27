@@ -1,5 +1,6 @@
 package com.github.link2fun.system.modular.post.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.api.proxy.entity.select.EntityQueryable;
@@ -11,6 +12,9 @@ import com.github.link2fun.support.core.domain.entity.proxy.SysPostProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.utils.uuid.IdUtils;
+import com.github.link2fun.system.modular.post.model.req.SysPostAddReq;
+import com.github.link2fun.system.modular.post.model.req.SysPostModifyReq;
+import com.github.link2fun.system.modular.post.model.req.SysPostSearchReq;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
 import com.github.link2fun.system.modular.userpost.service.ISystemUserPostService;
 import lombok.extern.slf4j.Slf4j;
@@ -38,16 +42,16 @@ public class SystemPostServiceImpl implements ISystemPostService {
   /**
    * 查询岗位信息集合
    *
-   * @param searchReq 岗位信息
+   * @param searchReq 岗位查询条件
    * @return 岗位列表
    */
   @Override
-  public List<SysPost> selectPostList(final SysPost searchReq) {
+  public List<SysPost> selectPostList(final SysPostSearchReq searchReq) {
     return buildQuery(searchReq).toList();
   }
 
   /** 构造岗位列表查询 */
-  private EntityQueryable<SysPostProxy, SysPost> buildQuery(final SysPost searchReq) {
+  private EntityQueryable<SysPostProxy, SysPost> buildQuery(final SysPostSearchReq searchReq) {
     EntityQueryable<SysPostProxy, SysPost> queryable = entityQuery.queryable(SysPost.class);
     if (Objects.isNull(searchReq)) {
       return queryable;
@@ -67,7 +71,7 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @return 分页结果
    */
   @Override
-  public Page<SysPost> pageSearch(final Page<SysPost> pageRequest, final SysPost searchReq) {
+  public Page<SysPost> pageSearch(final Page<SysPost> pageRequest, final SysPostSearchReq searchReq) {
     return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
@@ -150,12 +154,13 @@ public class SystemPostServiceImpl implements ISystemPostService {
   /**
    * 新增保存岗位信息
    *
-   * @param post 岗位信息
+   * @param addReq 新增岗位请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long insertPost(final SysPost post) {
+  public long insertPost(final SysPostAddReq addReq) {
+    final SysPost post = BeanUtil.toBean(addReq, SysPost.class);
     checkPostFieldUnique("新增", post);
     return entityQuery.insertable(post)
       .executeRows();
@@ -164,12 +169,13 @@ public class SystemPostServiceImpl implements ISystemPostService {
   /**
    * 修改保存岗位信息
    *
-   * @param post 岗位信息
+   * @param modifyReq 修改岗位请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long updatePost(final SysPost post) {
+  public long updatePost(final SysPostModifyReq modifyReq) {
+    final SysPost post = BeanUtil.toBean(modifyReq, SysPost.class);
     checkPostFieldUnique("修改", post);
     return entityQuery.updatable(post)
       .executeRows();

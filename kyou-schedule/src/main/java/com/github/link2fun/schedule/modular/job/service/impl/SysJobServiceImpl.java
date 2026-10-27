@@ -1,18 +1,26 @@
 package com.github.link2fun.schedule.modular.job.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.schedule.constant.ScheduleConstants;
 import com.github.link2fun.schedule.modular.job.model.SysJob;
 import com.github.link2fun.schedule.modular.job.model.SysJobLog;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobAddReq;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobChangeStatusReq;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobModifyReq;
+import com.github.link2fun.schedule.modular.job.model.req.SysJobSearchReq;
 import com.github.link2fun.schedule.modular.job.service.ISysJobLogService;
-import com.github.link2fun.schedule.constant.ScheduleConstants;
 import com.github.link2fun.schedule.modular.job.service.ISysJobService;
 import com.github.link2fun.schedule.util.JobInvokeUtil;
+import com.github.link2fun.schedule.util.ScheduleUtils;
+import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.support.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.java_cron.CronUtils;
 import org.noear.solon.Solon;
@@ -84,11 +92,11 @@ public class SysJobServiceImpl implements ISysJobService {
    * 获取quartz调度器的计划任务列表
    *
    * @param pageRequest 分页对象
-   * @param searchReq   调度信息
+   * @param searchReq   调度查询条件
    * @return 调度任务集合
    */
   @Override
-  public Page<SysJob> selectJobList(final Page<SysJob> pageRequest, SysJob searchReq) {
+  public Page<SysJob> selectJobList(final Page<SysJob> pageRequest, SysJobSearchReq searchReq) {
     EasyPageResult<SysJob> pageResult = entityQuery.queryable(SysJob.class)
       .where(job -> {
         job.jobName().like(StrUtil.isNotBlank(searchReq.getJobName()), searchReq.getJobName());
@@ -116,16 +124,19 @@ public class SysJobServiceImpl implements ISysJobService {
   /**
    * 暂停任务
    *
-   * @param job 调度信息
+   * @param jobId 任务ID
    */
   @Override
   @Transaction
-  public long pauseJob(SysJob job) {
-    job.setStatus(ScheduleConstants.Status.PAUSE.getValue());
+  public long pauseJob(Long jobId) {
+    final SysJob job = selectJobById(jobId);
+    if (job == null) {
+      throw new ServiceException("任务不存在或已过期");
+    }
 //    int rows = getBaseMapper().updateById(job);
     long rows = entityQuery.updatable(SysJob.class)
-      .where(s -> s.jobId().eq(job.getJobId()))
-      .setColumns(s -> s.status().set(job.getStatus()))
+      .where(s -> s.jobId().eq(jobId))
+      .setColumns(s -> s.status().set(ScheduleConstants.Status.PAUSE.getValue()))
       .executeRows();
 
     if (rows > 0) {
@@ -137,15 +148,18 @@ public class SysJobServiceImpl implements ISysJobService {
   /**
    * 恢复任务
    *
-   * @param job 调度信息
+   * @param jobId 任务ID
    */
   @Override
   @Transaction
-  public long resumeJob(SysJob job) {
-    job.setStatus(ScheduleConstants.Status.NORMAL.getValue());
+  public long resumeJob(Long jobId) {
+    final SysJob job = selectJobById(jobId);
+    if (job == null) {
+      throw new ServiceException("任务不存在或已过期");
+    }
     long rows = entityQuery.updatable(SysJob.class)
-      .where(s -> s.jobId().eq(job.getJobId()))
-      .setColumns(s -> s.status().set(job.getStatus()))
+      .where(s -> s.jobId().eq(jobId))
+      .setColumns(s -> s.status().set(ScheduleConstants.Status.NORMAL.getValue()))
       .executeRows();
     if (rows > 0) {
       final String beanName = JobInvokeUtil.getBeanName(job.getInvokeTarget());
@@ -162,14 +176,21 @@ public class SysJobServiceImpl implements ISysJobService {
   }
 
   /**
-   * 删除任务后，所对应的trigger也将被删除
+   * 删除任务, 同时移除调度器中的触发器
    *
-   * @param job 调度信息
+   * <p>只停止后续调度, 不中断已经开始的那一次执行: 调度器用 {@code Future.cancel(false)} 取消定时器,
+   * 已在跑的 handler 会自然跑完, 期间仍会访问数据库与业务资源。
+   * 需要「等执行结束再删」属于运行态准入, 本方法不做该判定。
+   *
+   * @param jobId 任务ID
    */
   @Override
   @Transaction
-  public long deleteJob(SysJob job) {
-    Long jobId = job.getJobId();
+  public long deleteJob(Long jobId) {
+    final SysJob job = selectJobById(jobId);
+    if (job == null) {
+      return 0;
+    }
     long rows = entityQuery.deletable(SysJob.class)
       .where(s -> s.jobId().eq(jobId))
       .allowDeleteStatement(true)
@@ -190,42 +211,46 @@ public class SysJobServiceImpl implements ISysJobService {
   @Transaction
   public void deleteJobByIds(List<Long> jobIds) {
     for (Long jobId : jobIds) {
-      entityQuery.queryable(SysJob.class)
-        .where(s -> s.jobId().eq(jobId))
-        .singleOptional()
-        .ifPresent(self::deleteJob);
+      deleteJob(jobId);
     }
   }
 
   /**
    * 任务调度状态修改
    *
-   * @param job 调度信息
+   * <p>暂停与恢复各自按 jobId 取任务, 恢复还需要 invokeTarget 等完整字段。
+   *
+   * @param changeStatusReq 任务ID与目标状态
    */
   @Override
   @Transaction
-  public long changeStatus(SysJob job) {
-    long rows = 0;
-    String status = job.getStatus();
+  public long changeStatus(SysJobChangeStatusReq changeStatusReq) {
+    final Long jobId = changeStatusReq.getJobId();
+    final String status = changeStatusReq.getStatus();
     if (ScheduleConstants.Status.NORMAL.getValue().equals(status)) {
-      rows = resumeJob(job);
-    } else if (ScheduleConstants.Status.PAUSE.getValue().equals(status)) {
-      rows = pauseJob(job);
+      return resumeJob(jobId);
     }
-    return rows;
+    if (ScheduleConstants.Status.PAUSE.getValue().equals(status)) {
+      return pauseJob(jobId);
+    }
+    // 状态值非法时任务也必须存在, 与既有语义一致
+    if (selectJobById(jobId) == null) {
+      throw new ServiceException("任务不存在或已过期");
+    }
+    return 0;
   }
 
   /**
    * 立即运行任务
    *
-   * @param job 调度信息
+   * @param jobId 任务ID
    */
   @Override
   @Transaction
-  public boolean run(SysJob job) throws Throwable {
+  public boolean run(Long jobId) throws Throwable {
 //    final SysJob sysJob = getBaseMapper().selectById(job.getJobId());
     final SysJob sysJob = entityQuery.queryable(SysJob.class)
-      .where(s -> s.jobId().eq(job.getJobId()))
+      .where(s -> s.jobId().eq(jobId))
       .singleNotNull();
 
     final String jobName = sysJob.getJobName();
@@ -267,11 +292,13 @@ public class SysJobServiceImpl implements ISysJobService {
   /**
    * 新增任务
    *
-   * @param job 调度信息 调度信息
+   * @param addReq 新增任务请求
    */
   @Override
   @Transaction
-  public long insertJob(SysJob job) {
+  public long insertJob(SysJobAddReq addReq) {
+    final SysJob job = BeanUtil.toBean(addReq, SysJob.class);
+    checkJobFields("新增", job);
     job.setStatus(ScheduleConstants.Status.PAUSE.getValue());
 //    int rows = getBaseMapper().insert(job);
     long rows = entityQuery.insertable(job).executeRows();
@@ -288,11 +315,13 @@ public class SysJobServiceImpl implements ISysJobService {
   /**
    * 更新任务的时间表达式
    *
-   * @param job 调度信息
+   * @param modifyReq 修改任务请求
    */
   @Override
   @Transaction
-  public long updateJob(SysJob job) {
+  public long updateJob(SysJobModifyReq modifyReq) {
+    final SysJob job = BeanUtil.toBean(modifyReq, SysJob.class);
+    checkJobFields("修改", job);
     long rows = entityQuery.updatable(job).executeRows();
     if (rows > 0) {
       updateSchedulerJob(job);
@@ -327,6 +356,36 @@ public class SysJobServiceImpl implements ISysJobService {
   @Override
   public boolean checkCronExpressionIsValid(String cronExpression) {
     return CronUtils.isValid(cronExpression);
+  }
+
+  /**
+   * 校验 Cron 表达式与调用目标字符串, 不合法时抛业务异常
+   *
+   * <p>调用目标能被反射执行任意 Bean 方法, 因此除白名单外还要逐条拦掉协议前缀,
+   * 避免用 rmi/ldap/http 把定时任务变成出站通道。
+   */
+  private void checkJobFields(final String action, final SysJob job) {
+    final String prefix = action + "任务'" + job.getJobName() + "'失败，";
+    final String cronExpression = job.getCronExpression();
+    final String invokeTarget = job.getInvokeTarget();
+    if (!CronUtils.isValid(cronExpression)) {
+      throw new ServiceException(prefix + "Cron表达式不正确");
+    }
+    if (StrUtil.containsIgnoreCase(invokeTarget, ScheduleConstants.LOOKUP_RMI)) {
+      throw new ServiceException(prefix + "目标字符串不允许'rmi'调用");
+    }
+    if (StrUtil.containsAnyIgnoreCase(invokeTarget, ScheduleConstants.LOOKUP_LDAP, ScheduleConstants.LOOKUP_LDAPS)) {
+      throw new ServiceException(prefix + "目标字符串不允许'ldap(s)'调用");
+    }
+    if (StrUtil.containsAnyIgnoreCase(invokeTarget, Constants.HTTP, Constants.HTTPS)) {
+      throw new ServiceException(prefix + "目标字符串不允许'http(s)'调用");
+    }
+    if (StrUtil.containsAnyIgnoreCase(invokeTarget, ScheduleConstants.JOB_ERROR_STR)) {
+      throw new ServiceException(prefix + "目标字符串存在违规");
+    }
+    if (!ScheduleUtils.whiteList(invokeTarget)) {
+      throw new ServiceException(prefix + "目标字符串不在白名单内");
+    }
   }
 
   /**
