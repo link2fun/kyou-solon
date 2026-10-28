@@ -31,7 +31,7 @@ import com.github.link2fun.system.modular.menu.model.req.SysMenuSearchReq;
 import com.github.link2fun.system.modular.menu.service.ISystemMenuService;
 import com.github.link2fun.system.modular.menu.util.MenuUtils;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
-import com.github.link2fun.system.modular.rolemenu.service.ISystemRoleMenuService;
+import com.github.link2fun.system.modular.rolemenu.RoleMenuRelation;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -53,7 +53,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
   private ISystemMenuService self;
 
   @Inject
-  private ISystemRoleMenuService roleMenuService;
+  private RoleMenuRelation roleMenuRelation;
 
   @Inject
   private ISystemRoleService roleService;
@@ -302,7 +302,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @return 结果 true 存在 false 不存在
    */
   private boolean checkMenuExistRole(final Long menuId) {
-    return roleMenuService.countByMenuId(menuId) > 0L;
+    return roleMenuRelation.countByMenuId(menuId) > 0L;
   }
 
   /**

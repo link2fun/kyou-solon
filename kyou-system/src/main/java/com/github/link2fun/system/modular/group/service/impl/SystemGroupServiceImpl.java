@@ -16,7 +16,7 @@ import com.github.link2fun.system.modular.group.model.req.SysGroupAddReq;
 import com.github.link2fun.system.modular.group.model.req.SysGroupModifyReq;
 import com.github.link2fun.system.modular.group.model.req.SysGroupSearchReq;
 import com.github.link2fun.system.modular.group.service.ISystemGroupService;
-import com.github.link2fun.system.modular.usergroup.service.ISystemUserGroupService;
+import com.github.link2fun.system.modular.usergroup.UserGroupRelation;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -30,7 +30,7 @@ import java.util.List;
 public class SystemGroupServiceImpl implements ISystemGroupService {
 
   @Inject
-  private ISystemUserGroupService userGroupService;
+  private UserGroupRelation userGroupRelation;
 
   @Inject
   private AggregateDeleter aggregateDeleter;
@@ -97,7 +97,7 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
   public long deleteGroupByIds(final List<Long> groupIds) {
     return aggregateDeleter.delete(AggregateDeletePlan.of(groupIds)
       // 删除群组与用户关联
-      .unlink(userGroupService::removeByGroupIds)
+      .unlink(userGroupRelation::removeByGroupIds)
       .delete(ids -> entityQuery.deletable(SysGroup.class)
         .allowDeleteStatement(true)
         .where(group -> group.groupId().in(ids)).executeRows()));

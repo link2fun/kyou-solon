@@ -167,6 +167,11 @@ public class MappingSyncTest {
     private final List<List<Long>> unlinked = new ArrayList<>();
     private final List<Long> unlinkedAllOwners = new ArrayList<>();
 
+    @Override
+    public String relationName() {
+      return "测试关联";
+    }
+
     /** 返回预置的现有目标 ID */
     @Override
     public List<Long> findTargetIds(final Long ownerId) {

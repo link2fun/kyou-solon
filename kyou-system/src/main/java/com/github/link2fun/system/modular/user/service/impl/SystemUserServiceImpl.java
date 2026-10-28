@@ -13,6 +13,7 @@ import com.easy.query.core.proxy.columns.types.SQLStringTypeColumn;
 import com.easy.query.core.proxy.columns.types.impl.SQLStringTypeColumnImpl;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.framework.auth.AuthCacheInvalidator;
+import com.github.link2fun.framework.auth.DataScopeRowGuard;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
@@ -37,9 +38,9 @@ import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
 import com.github.link2fun.system.modular.user.model.dto.proxy.AllocatedUserDTOProxy;
 import com.github.link2fun.system.modular.user.model.req.*;
 import com.github.link2fun.system.modular.user.service.ISystemUserService;
-import com.github.link2fun.system.modular.usergroup.service.ISystemUserGroupService;
-import com.github.link2fun.system.modular.userpost.service.ISystemUserPostService;
-import com.github.link2fun.system.modular.userrole.service.ISystemUserRoleService;
+import com.github.link2fun.system.modular.usergroup.UserGroupRelation;
+import com.github.link2fun.system.modular.userpost.UserPostRelation;
+import com.github.link2fun.system.modular.userrole.UserRoleRelation;
 import com.github.link2fun.system.tool.SystemConfigContext;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
@@ -66,13 +67,16 @@ public class SystemUserServiceImpl implements ISystemUserService {
   private ISystemPostService postService;
 
   @Inject
-  private ISystemUserRoleService userRoleService;
+  private DataScopeRowGuard dataScopeRowGuard;
 
   @Inject
-  private ISystemUserPostService userPostService;
+  private UserRoleRelation userRoleRelation;
 
   @Inject
-  private ISystemUserGroupService userGroupService;
+  private UserPostRelation userPostRelation;
+
+  @Inject
+  private UserGroupRelation userGroupRelation;
 
   @Inject
   private AggregateDeleter aggregateDeleter;
@@ -203,7 +207,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public SysUserDTO selectUserByUserName(final String userName) {
 
-    return self.getSysUserDTOQuery(user -> {
+    return getSysUserDTOQuery(user -> {
       user.userName().eq(userName);
       user.delFlag().eq(UserConstants.NORMAL);
     }).singleOrNull();
@@ -211,8 +215,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
 
   /** 构造已预加载部门与角色的用户 DTO 查询(角色仅取启用状态) */
-  @Override
-  public Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression1<SysUserProxy> whereExpression) {
+  private Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression1<SysUserProxy> whereExpression) {
     return entityQuery.queryable(SysUser.class)
       .where(whereExpression)
       .include(SysUserProxy::dept)
@@ -233,7 +236,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   public SysUserDTO selectUserById(final Long userId) {
 
 //    return getBaseMapper().selectUserByUserId(userId);
-    return self.getSysUserDTOQuery(user -> {
+    return getSysUserDTOQuery(user -> {
       user.userId().eq(userId);
       user.delFlag().eq(UserConstants.NORMAL);
     }).singleNotNull();
@@ -254,7 +257,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 //      .map(SysUser::getUserId).orElse(-1L);
     final Long userId = requireUserIdByUserName(userName);
 
-    List<Long> roleIdList = userRoleService.findRoleIdsByUserId(userId);
+    List<Long> roleIdList = userRoleRelation.findRoleIdsByUserId(userId);
 
     if (CollectionUtil.isEmpty(roleIdList)) {
       return StrUtil.EMPTY;
@@ -272,7 +275,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public String selectUserPostGroup(final String userName) {
     final Long userId = requireUserIdByUserName(userName);
-    final List<Long> postIdList = userPostService.findPostIdsByUserId(userId);
+    final List<Long> postIdList = userPostRelation.findPostIdsByUserId(userId);
     if (CollectionUtil.isEmpty(postIdList)) {
       return StrUtil.EMPTY;
     }
@@ -281,7 +284,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
   /** 按用户名取用户ID, 查无此人或已软删时抛业务异常 */
   private Long requireUserIdByUserName(final String userName) {
-    final Long userId = self.findUserIdByUserName(userName);
+    final Long userId = findUserIdByUserName(userName);
     if (ObjectUtil.isNull(userId)) {
       throw new ServiceException("用户不存在");
     }
@@ -303,43 +306,6 @@ public class SystemUserServiceImpl implements ISystemUserService {
       })
       .selectColumn(SysUserProxy::userId)
       .toList();
-  }
-
-
-  /**
-   * 校验用户是否允许操作
-   *
-   * @param userId 用户信息
-   */
-  private void checkUserAllowed(final Long userId) {
-    if (ObjectUtil.isNotNull(userId) && SysUser.isSuperAdmin(userId)) {
-      throw new ServiceException("不允许操作超级管理员用户");
-    }
-  }
-
-  /**
-   * 校验用户是否有数据权限
-   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成。
-   * 取目标用户的部门后按数据范围点查, 不再借道用户列表查询</p>
-   *
-   * @param context 操作上下文, 含有当前用户信息
-   * @param userId  用户id
-   */
-  @Override
-  public void checkUserDataScope(final ActionContext context, final Long userId) {
-    if (context.isSuperAdmin()) {
-      return;
-    }
-    final Long targetDeptId = entityQuery.queryable(SysUser.class)
-      .where(user -> {
-        user.delFlag().eq(UserConstants.NORMAL);
-        user.userId().eq(userId);
-      })
-      .selectColumn(SysUserProxy::deptId)
-      .firstOrNull();
-    if (!DataScope.of(entityQuery, context).containsUser(userId, targetDeptId)) {
-      throw new ServiceException("没有权限访问用户数据！");
-    }
   }
 
 
@@ -385,8 +351,8 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .executeRows(true);
     Long userId = user.getUserId();
 
-    userPostService.reassignPosts(userId, addReq.getPostIds());
-    userRoleService.reassignRoles(userId, addReq.getRoleIds());
+    userPostRelation.reassignPosts(userId, addReq.getPostIds());
+    userRoleRelation.reassignRoles(userId, addReq.getRoleIds());
     return userId;
   }
 
@@ -414,8 +380,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public long updateUser(final ActionContext context, final SysUserReq.UpdateReq updateReq) {
     Long userId = updateReq.getUserId();
-    checkUserAllowed(userId);
-    checkUserDataScope(context, userId);
+    dataScopeRowGuard.assertUserOperable(context, userId);
     checkUserFieldUnique("修改", updateReq.getUserName(), updateReq.getPhonenumber(), updateReq.getEmail(), userId);
 
     // 整行编辑提交, 状态与部门为必填, 缺失视为非法请求
@@ -434,11 +399,11 @@ public class SystemUserServiceImpl implements ISystemUserService {
 
     // null 表示本次未提交角色/岗位信息, 跳过重分配; 空集合表示显式清空
     if (ObjectUtil.isNotNull(updateReq.getRoleIds())) {
-      userRoleService.reassignRoles(userId, updateReq.getRoleIds());
+      userRoleRelation.reassignRoles(userId, updateReq.getRoleIds());
     }
 
     if (ObjectUtil.isNotNull(updateReq.getPostIds())) {
-      userPostService.reassignPosts(userId, updateReq.getPostIds());
+      userPostRelation.reassignPosts(userId, updateReq.getPostIds());
     }
 
     BeanUtil.copyProperties(updateReq, sysUser);
@@ -461,8 +426,8 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Transaction(policy = TranPolicy.required)
   @Override
   public void insertUserAuth(final ActionContext context, final Long userId, final List<Long> roleIds) {
-    checkUserDataScope(context, userId);
-    userRoleService.reassignRoles(userId, roleIds);
+    dataScopeRowGuard.assertUserVisible(context, userId);
+    userRoleRelation.reassignRoles(userId, roleIds);
     authCacheInvalidator.onUsersChanged(List.of(userId));
   }
 
@@ -478,8 +443,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   public long updateUserStatus(final ActionContext context, final SysUserChangeStatusReq changeStatusReq) {
     final Long userId = changeStatusReq.getUserId();
     final String status = changeStatusReq.getStatus();
-    checkUserAllowed(userId);
-    checkUserDataScope(context, userId);
+    dataScopeRowGuard.assertUserOperable(context, userId);
     final long rows = entityQuery.updatable(SysUser.class)
       .where(user -> user.userId().eq(userId))
       .setColumns(user -> user.status().set(status))
@@ -524,15 +488,8 @@ public class SystemUserServiceImpl implements ISystemUserService {
     return rows;
   }
 
-  /**
-   * 修改用户头像
-   *
-   * @param userName 用户名
-   * @param avatar   头像地址
-   * @return 结果
-   */
-  @Override
-  public boolean updateUserAvatar(final String userName, final String avatar) {
+  /** 修改用户头像 */
+  private boolean updateUserAvatar(final String userName, final String avatar) {
 
     return entityQuery.updatable(SysUser.class)
       .setColumns(user -> user.avatar().set(avatar))
@@ -561,8 +518,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
   @Override
   public long resetPwd(final ActionContext context, final SysUserResetPwdReq resetPwdReq) {
     final Long userId = resetPwdReq.getUserId();
-    checkUserAllowed(userId);
-    checkUserDataScope(context, userId);
+    dataScopeRowGuard.assertUserOperable(context, userId);
     final long rows = entityQuery.updatable(SysUser.class)
       .where(userProxy -> userProxy.userId().eq(userId))
       .setColumns(userProxy -> userProxy.password().set(PasswordUtils.encryptPassword(resetPwdReq.getPassword())))
@@ -586,7 +542,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
       .where(user -> user.userName().eq(userName))
       .executeRows() > 0;
     // 查无有效用户(如已软删)时无从强退会话
-    final Long userId = self.findUserIdByUserName(userName);
+    final Long userId = findUserIdByUserName(userName);
     if (ObjectUtil.isNotNull(userId)) {
       authCacheInvalidator.onUsersKicked(List.of(userId));
     }
@@ -610,16 +566,13 @@ public class SystemUserServiceImpl implements ISystemUserService {
           throw new ServiceException("当前用户不能删除");
         }
       })
-      .guardPerId(userId -> {
-        checkUserAllowed(userId);
-        checkUserDataScope(context, userId);
-      })
+      .guardPerId(userId -> dataScopeRowGuard.assertUserOperable(context, userId))
       // 删除用户与角色关联
-      .unlink(userRoleService::removeByUserIds)
+      .unlink(userRoleRelation::removeByUserIds)
       // 删除用户与岗位关联
-      .unlink(userPostService::removeByUserIds)
+      .unlink(userPostRelation::removeByUserIds)
       // 删除用户与群组关联
-      .unlink(userGroupService::removeByUserIds)
+      .unlink(userGroupRelation::removeByUserIds)
       // 软删: 置删除标记
       .delete(ids -> entityQuery.updatable(SysUser.class)
         .setColumns(user -> user.delFlag().set(UserConstants.DELETED))
@@ -665,8 +618,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
           successMsg.append("<br/>").append(successNum).append("、账号 ").append(user.getUserName()).append(" 导入成功");
         } else if (isUpdateSupport) {
           BeanValidators.validateWithException(user);
-          checkUserAllowed(u.getUserId());
-          checkUserDataScope(context, u.getUserId());
+          dataScopeRowGuard.assertUserOperable(context, u.getUserId());
           user.setUserId(u.getUserId());
           user.setUpdateBy(operName);
 //          getBaseMapper().updateById(user);
@@ -726,8 +678,7 @@ public class SystemUserServiceImpl implements ISystemUserService {
    * @param userName 用户名称
    * @return 用户ID; 查无此人或已软删时返回 {@code null}, 同名多行视为数据错误直接抛出
    */
-  @Override
-  public Long findUserIdByUserName(final String userName) {
+  private Long findUserIdByUserName(final String userName) {
 //    return lambdaQuery().select(SysUser::getUserId)
 //      .eq(SysUser::getUserName, userName)
 //      .oneOpt().map(SysUser::getUserId)

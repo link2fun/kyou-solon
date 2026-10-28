@@ -16,7 +16,7 @@ import com.github.link2fun.system.modular.post.model.req.SysPostAddReq;
 import com.github.link2fun.system.modular.post.model.req.SysPostModifyReq;
 import com.github.link2fun.system.modular.post.model.req.SysPostSearchReq;
 import com.github.link2fun.system.modular.post.service.ISystemPostService;
-import com.github.link2fun.system.modular.userpost.service.ISystemUserPostService;
+import com.github.link2fun.system.modular.userpost.UserPostRelation;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -31,7 +31,7 @@ import java.util.Objects;
 public class SystemPostServiceImpl implements ISystemPostService {
 
   @Inject
-  private ISystemUserPostService userPostService;
+  private UserPostRelation userPostRelation;
 
   @Inject
   private AggregateDeleter aggregateDeleter;
@@ -143,7 +143,7 @@ public class SystemPostServiceImpl implements ISystemPostService {
   public long deletePostByIds(final List<Long> postIds) {
     return aggregateDeleter.delete(AggregateDeletePlan.of(postIds)
       // 删除岗位与用户关联
-      .unlink(userPostService::removeByPostIds)
+      .unlink(userPostRelation::removeByPostIds)
       .delete(ids -> entityQuery.deletable(SysPost.class)
         .where(post -> post.postId().in(ids))
         .allowDeleteStatement(true)

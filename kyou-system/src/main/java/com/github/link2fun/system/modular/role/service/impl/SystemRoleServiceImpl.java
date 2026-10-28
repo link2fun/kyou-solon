@@ -9,6 +9,7 @@ import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.api.pagination.EasyPageResult;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.framework.auth.AuthCacheInvalidator;
+import com.github.link2fun.framework.auth.DataScopeRowGuard;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
@@ -24,9 +25,9 @@ import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.uuid.IdUtils;
 import com.github.link2fun.system.modular.role.model.req.*;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
-import com.github.link2fun.system.modular.roledept.service.ISystemRoleDeptService;
-import com.github.link2fun.system.modular.rolemenu.service.ISystemRoleMenuService;
-import com.github.link2fun.system.modular.userrole.service.ISystemUserRoleService;
+import com.github.link2fun.system.modular.roledept.RoleDeptRelation;
+import com.github.link2fun.system.modular.rolemenu.RoleMenuRelation;
+import com.github.link2fun.system.modular.userrole.UserRoleRelation;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -43,13 +44,16 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   private ISystemRoleService self;
 
   @Inject
-  private ISystemUserRoleService userRoleService;
+  private DataScopeRowGuard dataScopeRowGuard;
 
   @Inject
-  private ISystemRoleMenuService roleMenuService;
+  private UserRoleRelation userRoleRelation;
 
   @Inject
-  private ISystemRoleDeptService roleDeptService;
+  private RoleMenuRelation roleMenuRelation;
+
+  @Inject
+  private RoleDeptRelation roleDeptRelation;
 
   @Inject
   private AggregateDeleter aggregateDeleter;
@@ -113,7 +117,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       .selectAutoInclude(RoleDTO.class)
       .toList();
 
-    final List<Long> userRoleIdList = userRoleService.findRoleIdsByUserId(userId);
+    final List<Long> userRoleIdList = userRoleRelation.findRoleIdsByUserId(userId);
     roleList.forEach(r -> {
       if (userRoleIdList.contains(r.getRoleId())) {
         r.setFlag(true);
@@ -205,27 +209,17 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   }
 
   /**
-   * 按角色ID查询角色详情, 内部先做数据权限校验
+   * 按角色ID查询角色详情, 内部先做行准入校验
    *
+   * @param context     操作上下文, 含有当前用户信息
    * @param roleId      角色ID
    * @param resultClass 返回的结果类型
    * @return 角色对象信息
    */
   @Override
-  public <T> T selectRoleDetail(final Long roleId, Class<T> resultClass) {
-    checkRoleDataScope(roleId);
+  public <T> T selectRoleDetail(final ActionContext context, final Long roleId, Class<T> resultClass) {
+    dataScopeRowGuard.assertRoleVisible(context, roleId);
     return selectRoleById(roleId, resultClass);
-  }
-
-  /**
-   * 校验角色是否允许操作
-   *
-   * @param roleId 角色ID
-   */
-  private void checkRoleAllowed(final Long roleId) {
-    if (Objects.nonNull(roleId) && SysRole.isSuperAdminRole(roleId)) {
-      throw new ServiceException(StrUtil.format("不允许操作超级管理员角色"));
-    }
   }
 
   /**
@@ -255,23 +249,6 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   }
 
   /**
-   * 校验角色是否有数据权限
-   *
-   * @param roleId 角色id
-   */
-  @Override
-  public void checkRoleDataScope(final Long roleId) {
-    if (!ActionContext.current().isSuperAdmin()) {
-      final SysRoleSearchReq roleSearchReq = new SysRoleSearchReq();
-      roleSearchReq.setRoleId(roleId);
-      List<SysRole> roles = selectRoleList(ActionContext.current(), Page.ofLimit(1), roleSearchReq, SysRole.class).getRecords();
-      if (CollectionUtil.isEmpty(roles)) {
-        throw new ServiceException("没有权限访问角色数据！");
-      }
-    }
-  }
-
-  /**
    * 通过角色ID查询角色使用数量
    *
    * @param roleId 角色ID
@@ -279,7 +256,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    */
   @Override
   public long countUserRoleByRoleId(final Long roleId) {
-    return userRoleService.countByRoleId(roleId);
+    return userRoleRelation.countByRoleId(roleId);
   }
 
   /**
@@ -297,7 +274,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
     long row = entityQuery.insertable(entity).executeRows(true);
     final List<Long> menuIds = role.getMenuIds();
 
-    roleMenuService.reassignMenus(entity.getRoleId(), menuIds);
+    roleMenuRelation.reassignMenus(entity.getRoleId(), menuIds);
 
     return row;
   }
@@ -305,15 +282,15 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   /**
    * 修改保存角色信息
    *
+   * @param context   操作上下文, 含有当前用户信息
    * @param modifyReq 修改角色请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long updateRole(final SysRoleModifyReq modifyReq) {
+  public long updateRole(final ActionContext context, final SysRoleModifyReq modifyReq) {
     Long roleId = modifyReq.getRoleId();
-    checkRoleAllowed(roleId);
-    checkRoleDataScope(roleId);
+    dataScopeRowGuard.assertRoleOperable(context, roleId);
     checkRoleFieldUnique("修改", modifyReq.getRoleName(), modifyReq.getRoleKey(), roleId);
 
     SysRole role = entityQuery.queryable(SysRole.class)
@@ -325,7 +302,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
 
     long row = entityQuery.updatable(role).executeRows();
 
-    roleMenuService.reassignMenus(roleId, modifyReq.getMenuIds());
+    roleMenuRelation.reassignMenus(roleId, modifyReq.getMenuIds());
 
     authCacheInvalidator.onRolesChanged(List.of(roleId), List.of(oldRoleKey));
     return row;
@@ -334,14 +311,14 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   /**
    * 修改角色状态
    *
+   * @param context         操作上下文, 含有当前用户信息
    * @param changeStatusReq 角色状态变更请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long changeRoleStatus(final SysRoleChangeStatusReq changeStatusReq) {
-    checkRoleAllowed(changeStatusReq.getRoleId());
-    checkRoleDataScope(changeStatusReq.getRoleId());
+  public long changeRoleStatus(final ActionContext context, final SysRoleChangeStatusReq changeStatusReq) {
+    dataScopeRowGuard.assertRoleOperable(context, changeStatusReq.getRoleId());
     final long rows = entityQuery.updatable(SysRole.class)
       .whereById(changeStatusReq.getRoleId())
       .setColumns(r -> r.status().set(changeStatusReq.getStatus()))
@@ -353,14 +330,14 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   /**
    * 修改数据权限信息
    *
+   * @param context            操作上下文, 含有当前用户信息
    * @param changeDataScopeReq 角色数据权限变更请求
    * @return 结果
    */
   @Transaction
   @Override
-  public long authDataScope(final SysRoleChangeDataScopeReq changeDataScopeReq) {
-    checkRoleAllowed(changeDataScopeReq.getRoleId());
-    checkRoleDataScope(changeDataScopeReq.getRoleId());
+  public long authDataScope(final ActionContext context, final SysRoleChangeDataScopeReq changeDataScopeReq) {
+    dataScopeRowGuard.assertRoleOperable(context, changeDataScopeReq.getRoleId());
 
     long executeRows = entityQuery.updatable(SysRole.class)
       .whereById(changeDataScopeReq.getRoleId())
@@ -370,7 +347,7 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
       })
       .executeRows();
 
-    roleDeptService.reassignDepts(changeDataScopeReq.getRoleId(), changeDataScopeReq.getDeptIds());
+    roleDeptRelation.reassignDepts(changeDataScopeReq.getRoleId(), changeDataScopeReq.getDeptIds());
 
     authCacheInvalidator.onRolesChanged(List.of(changeDataScopeReq.getRoleId()), List.of());
     return executeRows;
@@ -380,27 +357,25 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   /**
    * 批量删除角色信息
    *
+   * @param context 操作上下文, 含有当前用户信息
    * @param roleIds 需要删除的角色ID
    * @return 结果
    */
   @Transaction
   @Override
-  public long deleteRoleByIds(final List<Long> roleIds) {
+  public long deleteRoleByIds(final ActionContext context, final List<Long> roleIds) {
     final List<String> roleKeys = entityQuery.queryable(SysRole.class)
       .whereByIds(roleIds)
       .selectColumn(SysRoleProxy::roleKey)
       .toList();
 
     final long rows = aggregateDeleter.delete(AggregateDeletePlan.of(roleIds)
-      .guardPerId(id -> {
-        checkRoleAllowed(id);
-        checkRoleDataScope(id);
-      })
+      .guardPerId(id -> dataScopeRowGuard.assertRoleOperable(context, id))
       .guardPerId(this::assertRoleUnused)
       // 删除角色与菜单关联
-      .unlink(roleMenuService::removeByRoleIds)
+      .unlink(roleMenuRelation::removeByRoleIds)
       // 删除角色与部门关联
-      .unlink(roleDeptService::removeByRoleIds)
+      .unlink(roleDeptRelation::removeByRoleIds)
       .delete(ids -> entityQuery.deletable(SysRole.class)
         .allowDeleteStatement(true)
         .whereByIds(ids)
@@ -424,8 +399,8 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
   @Transaction
   @Override
   public void unassignUser(final Long roleId, final Long userId) {
-    userRoleService.unassignUser(roleId, userId);
     if (Objects.nonNull(userId)) {
+      userRoleRelation.unassignUsers(roleId, List.of(userId));
       authCacheInvalidator.onUsersChanged(List.of(userId));
     }
   }
@@ -437,16 +412,16 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
     if (CollectionUtil.isEmpty(userIds)) {
       return;
     }
-    userRoleService.unassignUsers(roleId, userIds);
+    userRoleRelation.unassignUsers(roleId, userIds);
     authCacheInvalidator.onUsersChanged(userIds);
   }
 
   /** 批量为角色授权用户 */
   @Transaction
   @Override
-  public void assignUsers(final Long roleId, final List<Long> userIds) {
-    checkRoleDataScope(roleId);
-    userRoleService.assignUsers(roleId, userIds);
+  public void assignUsers(final ActionContext context, final Long roleId, final List<Long> userIds) {
+    dataScopeRowGuard.assertRoleVisible(context, roleId);
+    userRoleRelation.assignUsers(roleId, userIds);
     authCacheInvalidator.onUsersChanged(userIds);
   }
 

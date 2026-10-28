@@ -68,7 +68,7 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:query")
   @Mapping(value = "/{roleId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path Long roleId) {
-    SysRoleDetailDTO role = roleService.selectRoleDetail(roleId, SysRoleDetailDTO.class);
+    SysRoleDetailDTO role = roleService.selectRoleDetail(ActionContext.current(), roleId, SysRoleDetailDTO.class);
     return AjaxResult.successData(role);
   }
 
@@ -90,7 +90,7 @@ public class SystemRoleController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
   public AjaxResult edit(@Validated @Body SysRoleModifyReq modifyReq) {
-    return AjaxResult.ofAffected(roleService.updateRole(modifyReq));
+    return AjaxResult.ofAffected(roleService.updateRole(ActionContext.current(), modifyReq));
   }
 
   /**
@@ -100,7 +100,7 @@ public class SystemRoleController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/dataScope", method = MethodType.PUT)
   public AjaxResult dataScope(@Validated @Body SysRoleChangeDataScopeReq changeDataScopeReq) {
-    return AjaxResult.ofAffected(roleService.authDataScope(changeDataScopeReq));
+    return AjaxResult.ofAffected(roleService.authDataScope(ActionContext.current(), changeDataScopeReq));
   }
 
   /**
@@ -110,7 +110,7 @@ public class SystemRoleController {
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/changeStatus", method = MethodType.PUT)
   public AjaxResult changeStatus(@Validated @Body SysRoleChangeStatusReq changeStatusReq) {
-    return AjaxResult.ofAffected(roleService.changeRoleStatus(changeStatusReq));
+    return AjaxResult.ofAffected(roleService.changeRoleStatus(ActionContext.current(), changeStatusReq));
   }
 
   /**
@@ -120,7 +120,7 @@ public class SystemRoleController {
   @Log(title = "角色管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{roleIds}", method = MethodType.DELETE)
   public AjaxResult remove(@Path List<Long> roleIds) {
-    return AjaxResult.ofAffected(roleService.deleteRoleByIds(roleIds));
+    return AjaxResult.ofAffected(roleService.deleteRoleByIds(ActionContext.current(), roleIds));
   }
 
   /**
@@ -186,7 +186,7 @@ public class SystemRoleController {
   @Log(title = "角色管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authUser/selectAll", method = MethodType.PUT)
   public AjaxResult selectAuthUserAll(Long roleId, List<Long> userIds) {
-    roleService.assignUsers(roleId, userIds);
+    roleService.assignUsers(ActionContext.current(), roleId, userIds);
     return AjaxResult.success();
   }
 

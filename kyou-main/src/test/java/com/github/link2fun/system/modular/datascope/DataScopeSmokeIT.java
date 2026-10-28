@@ -1,6 +1,7 @@
 package com.github.link2fun.system.modular.datascope;
 
 import com.github.link2fun.KyouApp;
+import com.github.link2fun.framework.auth.DataScopeRowGuard;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
@@ -57,6 +58,9 @@ public class DataScopeSmokeIT {
 
   @Inject
   private ISystemRoleService roleService;
+
+  @Inject
+  private DataScopeRowGuard dataScopeRowGuard;
 
   /** 造一个持有指定数据范围角色的操作上下文 */
   private static ActionContext contextOf(final Long userId, final Long deptId, final Long roleId, final String dataScope) {
@@ -126,15 +130,16 @@ public class DataScopeSmokeIT {
   }
 
   @Test
-  @DisplayName("部门越权检查: 超管放行, 自定义范围外的部门拒绝")
-  public void deptPermissionFollowsDataScope() {
+  @DisplayName("部门行准入: 超管放行, 自定义范围外的部门拒绝")
+  public void deptVisibleFollowsDataScope() {
     final ActionContext superAdmin = contextOf(SUPER_ADMIN_ID, SUPER_ADMIN_DEPT_ID, 1L, "1");
-    assertTrue(deptService.hasDeptPermission(superAdmin, OUT_OF_SCOPE_DEPT_ID), "超管不受部门限制");
-    assertTrue(deptService.hasDeptPermission(superAdmin, ORDINARY_USER_DEPT_ID), "超管不受部门限制");
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertDeptVisible(superAdmin, OUT_OF_SCOPE_DEPT_ID), "超管不受部门限制");
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertDeptVisible(superAdmin, ORDINARY_USER_DEPT_ID), "超管不受部门限制");
 
     final ActionContext ordinary = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, CUSTOM_SCOPE_ROLE_ID, "2");
-    assertTrue(deptService.hasDeptPermission(ordinary, ORDINARY_USER_DEPT_ID), "范围内部门应放行");
-    assertFalse(deptService.hasDeptPermission(ordinary, OUT_OF_SCOPE_DEPT_ID), "范围外部门应拒绝");
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertDeptVisible(ordinary, ORDINARY_USER_DEPT_ID), "范围内部门应放行");
+    assertThrows(ServiceException.class, () -> dataScopeRowGuard.assertDeptVisible(ordinary, OUT_OF_SCOPE_DEPT_ID),
+      "范围外部门应拒绝");
   }
 
   @Test
@@ -154,18 +159,48 @@ public class DataScopeSmokeIT {
   }
 
   @Test
-  @DisplayName("用户越权检查: 点查路径走通, 范围内用户放行、范围外用户报无权限")
-  public void checkUserDataScopeFollowsDataScope() {
+  @DisplayName("用户行准入: 点查路径走通; 可见不等于可改, 超管用户只可见")
+  public void userRowVisibilityAndOperability() {
     final ActionContext ordinary = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, CUSTOM_SCOPE_ROLE_ID, "2");
 
-    assertDoesNotThrow(() -> userService.checkUserDataScope(ordinary, ORDINARY_USER_ID),
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertUserVisible(ordinary, ORDINARY_USER_ID),
       "ry(部门 105) 在角色 2 的自定义范围内");
-    assertThrows(ServiceException.class, () -> userService.checkUserDataScope(ordinary, SUPER_ADMIN_ID),
-      "admin(部门 103) 不在范围内, 应报没有权限访问用户数据");
+    assertThrows(ServiceException.class, () -> dataScopeRowGuard.assertUserVisible(ordinary, 999999L),
+      "不在范围内的用户应报没有权限访问用户数据");
+    assertThrows(ServiceException.class, () -> dataScopeRowGuard.assertUserVisible(ordinary, SUPER_ADMIN_ID),
+      "admin(部门 103) 不在普通用户的自定义范围内");
+
+    // 可改: 超管用户受保护, 即便操作者是超管也不能改
+    final ActionContext superAdmin = contextOf(SUPER_ADMIN_ID, SUPER_ADMIN_DEPT_ID, 1L, "1");
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertUserVisible(superAdmin, SUPER_ADMIN_ID),
+      "超管上下文不过滤, 看自己是放行的");
+    final ServiceException protectedError = assertThrows(ServiceException.class,
+      () -> dataScopeRowGuard.assertUserOperable(superAdmin, SUPER_ADMIN_ID));
+    assertEquals("不允许操作超级管理员用户", protectedError.getMessage());
 
     // 仅本人范围查自己也应放行(本人轴救场, 与部门无关)
     final ActionContext selfOnly = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, 999L, "5");
-    assertDoesNotThrow(() -> userService.checkUserDataScope(selfOnly, ORDINARY_USER_ID));
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertUserVisible(selfOnly, ORDINARY_USER_ID));
+  }
+
+  @Test
+  @DisplayName("角色行准入: 点查与角色列表同口径; 超管角色只可见不可改")
+  public void roleRowVisibilityAndOperability() {
+    final ActionContext superAdmin = contextOf(SUPER_ADMIN_ID, SUPER_ADMIN_DEPT_ID, 1L, "1");
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertRoleVisible(superAdmin, CUSTOM_SCOPE_ROLE_ID));
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertRoleVisible(superAdmin, 1L), "超管看超管角色: 可见性放行");
+
+    final ActionContext ordinary = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, CUSTOM_SCOPE_ROLE_ID, "2");
+    assertDoesNotThrow(() -> dataScopeRowGuard.assertRoleVisible(ordinary, CUSTOM_SCOPE_ROLE_ID),
+      "角色 2 下有范围内用户 ry");
+    assertThrows(ServiceException.class, () -> dataScopeRowGuard.assertRoleVisible(ordinary, 999999L),
+      "不存在的角色不可见");
+    assertThrows(ServiceException.class, () -> dataScopeRowGuard.assertRoleVisible(ordinary, 1L),
+      "角色 1 下只有 admin(部门 103), 不在范围内");
+
+    final ServiceException protectedError = assertThrows(ServiceException.class,
+      () -> dataScopeRowGuard.assertRoleOperable(superAdmin, 1L));
+    assertEquals("不允许操作超级管理员角色", protectedError.getMessage());
   }
 
   @Test

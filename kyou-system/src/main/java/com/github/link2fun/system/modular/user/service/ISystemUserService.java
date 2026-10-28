@@ -1,11 +1,8 @@
 package com.github.link2fun.system.modular.user.service;
 
-import com.easy.query.core.basic.api.select.Query;
-import com.easy.query.core.expression.lambda.SQLActionExpression1;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysUser;
-import com.github.link2fun.support.core.domain.entity.proxy.SysUserProxy;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
 import com.github.link2fun.system.modular.user.model.req.*;
@@ -57,9 +54,6 @@ public interface ISystemUserService {
   SysUserDTO selectUserByUserName(String userName);
 
 
-  /** 构造已预加载部门与角色的用户 DTO 查询 */
-  Query<SysUserDTO> getSysUserDTOQuery(SQLActionExpression1<SysUserProxy> whereExpression);
-
   /**
    * 通过用户ID查询用户
    *
@@ -87,15 +81,6 @@ public interface ISystemUserService {
   /** 判断登录账号是否未被占用(空值视为可用), 供注册等外部流程探测 */
   boolean isUserNameAvailable(String userName);
 
-
-  /**
-   * 校验用户是否有数据权限
-   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成</p>
-   *
-   * @param context
-   * @param userId  用户id
-   */
-  void checkUserDataScope(final ActionContext context, Long userId);
 
   /**
    * 新增用户信息(内部已完成唯一性检查)
@@ -158,15 +143,6 @@ public interface ISystemUserService {
   long updateMyProfile(Long userId, SysUserProfileModifyReq modifyReq);
 
   /**
-   * 修改用户头像
-   *
-   * @param userName 用户名
-   * @param avatar   头像地址
-   * @return 结果
-   */
-  boolean updateUserAvatar(String userName, String avatar);
-
-  /**
    * 修改本人头像, 成功后失效本人会话缓存
    *
    * @param userId   本人用户ID
@@ -221,14 +197,6 @@ public interface ISystemUserService {
    * @return 结果
    */
   boolean checkDeptExistUser(Long deptId);
-
-  /**
-   * 根据用户名称查询用户ID
-   *
-   * @param userName 用户名称
-   * @return 用户ID; 查无此人或已软删时返回 {@code null}, 同名多行视为数据错误直接抛出
-   */
-  Long findUserIdByUserName(String userName);
 
   /** 根据用户ID查询用户 */
   SysUser getByIdNotNull(long userId);

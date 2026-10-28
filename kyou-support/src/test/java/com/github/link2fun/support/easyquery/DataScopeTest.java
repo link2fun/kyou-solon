@@ -96,4 +96,14 @@ public class DataScopeTest {
   public void nullDeptScopeRejected() {
     assertThrows(NullPointerException.class, () -> new DataScope(null, null));
   }
+
+  @Test
+  @DisplayName("ScopeType: code 与展示标签一一对应")
+  public void scopeTypeLabelsFollowCodes() {
+    assertEquals("全部数据", DataScope.ScopeType.ALL.getLabel());
+    assertEquals("自定义数据", DataScope.ScopeType.CUSTOM.getLabel());
+    assertEquals("本部门数据", DataScope.ScopeType.DEPT.getLabel());
+    assertEquals("本部门及以下数据", DataScope.ScopeType.DEPT_AND_CHILD.getLabel());
+    assertEquals("仅本人数据", DataScope.ScopeType.SELF.getLabel());
+  }
 }

@@ -41,7 +41,7 @@ public class MappingSync {
 
     if (desired.isEmpty()) {
       if (!existing.isEmpty()) {
-        log.debug("[关联表同步] 目标集合为空, 清空全部关联, ownerId={}", ownerId);
+        log.debug("[关联表同步] {} 目标集合为空, 清空全部关联, ownerId={}", ops.relationName(), ownerId);
         ops.unlinkAll(List.of(ownerId));
       }
       return;
@@ -49,13 +49,13 @@ public class MappingSync {
 
     final Set<Long> toLink = difference(desired, existing);
     if (!toLink.isEmpty()) {
-      log.debug("[关联表同步] 建立关联, ownerId={}, targetIds={}", ownerId, toLink);
+      log.debug("[关联表同步] {} 建立关联, ownerId={}, targetIds={}", ops.relationName(), ownerId, toLink);
       ops.link(ownerId, toLink);
     }
 
     final Set<Long> toUnlink = difference(existing, desired);
     if (!toUnlink.isEmpty()) {
-      log.debug("[关联表同步] 解除关联, ownerId={}, targetIds={}", ownerId, toUnlink);
+      log.debug("[关联表同步] {} 解除关联, ownerId={}, targetIds={}", ops.relationName(), ownerId, toUnlink);
       ops.unlink(ownerId, toUnlink);
     }
   }
@@ -78,7 +78,7 @@ public class MappingSync {
 
     final Set<Long> toLink = difference(desired, currentTargets(ops, ownerId));
     if (!toLink.isEmpty()) {
-      log.debug("[关联表同步] 追加关联, ownerId={}, targetIds={}", ownerId, toLink);
+      log.debug("[关联表同步] {} 追加关联, ownerId={}, targetIds={}", ops.relationName(), ownerId, toLink);
       ops.link(ownerId, toLink);
     }
   }

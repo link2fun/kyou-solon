@@ -3,6 +3,7 @@ package com.github.link2fun.system.modular.user.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
+import com.github.link2fun.framework.auth.DataScopeRowGuard;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.AjaxResult;
@@ -47,6 +48,9 @@ public class SystemUserController {
 
   @Inject
   private ISystemDeptService deptService;
+
+  @Inject
+  private DataScopeRowGuard dataScopeRowGuard;
 
   @Inject
   private ISystemPostService postService;
@@ -102,7 +106,7 @@ public class SystemUserController {
   @Mapping(value = "/{userId}", method = MethodType.GET)
   public AjaxResult getInfo(@Path(value = "userId") Long userId) {
     ActionContext context = ActionContext.current();
-    userService.checkUserDataScope(context, userId);
+    dataScopeRowGuard.assertUserVisible(context, userId);
     AjaxResult ajax = AjaxResult.success();
     // 可分配角色已剔除超管角色(非超管用户不能持有), 拼接由 Controller 负责
     ajax.put("roles", roleService.selectAssignableRoles(context, userId));

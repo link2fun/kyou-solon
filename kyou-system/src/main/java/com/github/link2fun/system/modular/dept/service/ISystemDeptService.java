@@ -16,9 +16,6 @@ import java.util.List;
  */
 public interface ISystemDeptService {
 
-  /** 判断当前用户是否有某个部门的操作权限 */
-  boolean hasDeptPermission(final ActionContext context, Long deptId);
-
   /**
    * 查询部门管理数据
    *
@@ -92,15 +89,6 @@ public interface ISystemDeptService {
    * @return 部门信息
    */
   SysDept selectDeptDetail(ActionContext context, Long deptId);
-
-  /**
-   * 校验部门是否有数据权限
-   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成</p>
-   *
-   * @param context
-   * @param deptId  部门id
-   */
-  void checkDeptDataScope(final ActionContext context, Long deptId);
 
   /**
    * 新增保存部门信息(内部已完成部门名称唯一性检查)

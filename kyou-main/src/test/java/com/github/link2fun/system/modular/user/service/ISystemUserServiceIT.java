@@ -131,18 +131,6 @@ public class ISystemUserServiceIT {
     assertThrows(EasyQuerySingleMoreElementException.class, () -> userService.selectUserByUserName(userName));
   }
 
-  /** 同名多行时按用户名查ID同样抛异常暴露脏数据 */
-  @Rollback
-  @Test
-  public void findUserIdByUserNameThrowsOnDuplicateUserName() {
-    final String userName = "dup-user-990004";
-    insertSynthUser(userName, "同名一号");
-    insertSynthUser(userName, "同名二号");
-    assertEquals(2, idsOfUserName(userName).size(), "前置: 库中已有两行同名账号");
-
-    assertThrows(EasyQuerySingleMoreElementException.class, () -> userService.findUserIdByUserName(userName));
-  }
-
   /** 同名多行时角色组查询同样抛异常暴露脏数据 */
   @Rollback
   @Test

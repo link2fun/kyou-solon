@@ -7,6 +7,7 @@ import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.basic.api.select.Query;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
+import com.github.link2fun.framework.auth.DataScopeRowGuard;
 import com.github.link2fun.support.aggregatedelete.AggregateDeletePlan;
 import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
@@ -58,17 +59,12 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   @Inject
   private AggregateDeleter aggregateDeleter;
 
+  @Inject
+  private DataScopeRowGuard dataScopeRowGuard;
+
   @Db
   private EasyEntityQuery entityQuery;
 
-
-  /**
-   * 判断当前用户是否有某个部门的操作权限
-   */
-  @Override
-  public boolean hasDeptPermission(final ActionContext context, final Long deptId) {
-    return DataScope.of(entityQuery, context).containsDept(deptId);
-  }
 
   /**
    * 查询部门管理数据
@@ -188,7 +184,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   }
 
   /**
-   * 按部门ID查询部门信息, 内部先做数据权限校验
+   * 按部门ID查询部门信息, 内部先做行准入校验
    *
    * @param context 操作上下文, 含有当前用户信息
    * @param deptId  部门ID
@@ -196,7 +192,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    */
   @Override
   public SysDept selectDeptDetail(final ActionContext context, final Long deptId) {
-    checkDeptDataScope(context, deptId);
+    dataScopeRowGuard.assertDeptVisible(context, deptId);
     return selectDeptById(deptId);
   }
 
@@ -257,22 +253,6 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   }
 
   /**
-   * 校验部门是否有数据权限
-   *
-   * @param context 数据权限上下文
-   * @param deptId  部门id
-   */
-  @Override
-  public void checkDeptDataScope(final ActionContext context, final Long deptId) {
-
-    if (self.hasDeptPermission(context, deptId)) {
-      return;
-    }
-    throw new ServiceException("没有权限访问部门数据！");
-
-  }
-
-  /**
    * 新增保存部门信息
    *
    * @param addReq 新增部门请求
@@ -309,7 +289,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
   public long updateDept(final ActionContext context, final SysDeptModifyReq modifyReq) {
     final SysDept dept = BeanUtil.toBean(modifyReq, SysDept.class);
     final Long deptId = dept.getDeptId();
-    checkDeptDataScope(context, deptId);
+    dataScopeRowGuard.assertDeptVisible(context, deptId);
     checkDeptNameUnique("修改", dept);
     if (dept.getParentId() == null) {
       throw new ServiceException("修改部门'" + dept.getDeptName() + "'失败，上级部门不能为空");
@@ -446,7 +426,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
         if (checkDeptExistUser(id)) {
           throw new ServiceException("部门存在用户,不允许删除");
         }
-        checkDeptDataScope(context, id);
+        dataScopeRowGuard.assertDeptVisible(context, id);
       })
       // 软删: 置删除标记
       .delete(ids -> entityQuery.updatable(SysDept.class)

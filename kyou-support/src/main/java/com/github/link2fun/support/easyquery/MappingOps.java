@@ -10,6 +10,9 @@ import java.util.List;
  */
 public interface MappingOps {
 
+  /** 关联关系名, 用于日志, 形如「用户→角色」 */
+  String relationName();
+
   /**
    * 查询宿主当前关联的全部目标 ID
    *

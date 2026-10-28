@@ -11,6 +11,7 @@ import com.github.link2fun.support.core.domain.entity.SysRoleDept;
 import com.github.link2fun.support.core.domain.entity.SysUser;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
 import com.github.link2fun.support.core.domain.entity.proxy.SysRoleDeptProxy;
+import com.github.link2fun.support.enums.LabelEnum;
 
 import java.io.Serializable;
 import java.util.LinkedHashSet;
@@ -22,33 +23,46 @@ import java.util.Set;
 public final class DataScope implements Serializable {
 
   /** 角色上的数据范围类型, 与 sys_role.data_scope 取值一一对应 */
-  private enum ScopeType {
+  enum ScopeType implements LabelEnum<String> {
     /** 全部数据 */
-    ALL("1"),
+    ALL("1", "全部数据"),
     /** 自定义数据 */
-    CUSTOM("2"),
+    CUSTOM("2", "自定义数据"),
     /** 本部门数据 */
-    DEPT("3"),
+    DEPT("3", "本部门数据"),
     /** 本部门及以下数据 */
-    DEPT_AND_CHILD("4"),
+    DEPT_AND_CHILD("4", "本部门及以下数据"),
     /** 仅本人数据 */
-    SELF("5");
+    SELF("5", "仅本人数据");
 
-    private final String code;
+    private final String value;
 
-    /** 绑定数据范围取值 */
-    ScopeType(final String code) {
-      this.code = code;
+    private final String label;
+
+    /** 绑定数据范围取值与展示标签 */
+    ScopeType(final String value, final String label) {
+      this.value = value;
+      this.label = label;
     }
 
     /** 按 sys_role.data_scope 的取值找类型, 未知取值返回 null */
-    private static ScopeType ofCode(final String code) {
+    private static ScopeType ofValue(final String value) {
       for (final ScopeType type : values()) {
-        if (type.code.equals(code)) {
+        if (type.value.equals(value)) {
           return type;
         }
       }
       return null;
+    }
+
+    @Override
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String getLabel() {
+      return label;
     }
   }
 
@@ -104,7 +118,7 @@ public final class DataScope implements Serializable {
     boolean selfScope = false;
     if (CollectionUtil.isNotEmpty(roles)) {
       for (final RoleDTO role : roles) {
-        final ScopeType scopeType = ScopeType.ofCode(role.getDataScope());
+        final ScopeType scopeType = ScopeType.ofValue(role.getDataScope());
         if (Objects.isNull(scopeType)) {
           // 未知取值给不出授权, 该角色视同不授权
           continue;

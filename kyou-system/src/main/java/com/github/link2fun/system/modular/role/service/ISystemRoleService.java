@@ -80,24 +80,17 @@ public interface ISystemRoleService {
   <T> T selectRoleById(Long roleId, Class<T> resultClass);
 
   /**
-   * 按角色ID查询角色详情, 内部先做数据权限校验
+   * 按角色ID查询角色详情, 内部先做行准入校验
    *
    * <p>面向「按 id 取单条」的接口, 越权校验与查询在同一次调用内完成;
    * 供其它 service 内部按 id 取实体时用 {@link #selectRoleById}, 那里不做权限判定。
    *
+   * @param context     操作上下文, 含有当前用户信息
    * @param roleId      角色ID
    * @param resultClass 返回结果类型
    * @return 角色对象信息
    */
-  <T> T selectRoleDetail(Long roleId, Class<T> resultClass);
-
-  /**
-   * 校验角色是否有数据权限
-   * <p>仅用于查询类接口(getInfo)的越权防护; 编辑类操作的前置检查已在各执行方法内部完成</p>
-   *
-   * @param roleId 角色id
-   */
-  void checkRoleDataScope(Long roleId);
+  <T> T selectRoleDetail(ActionContext context, Long roleId, Class<T> resultClass);
 
   /**
    * 通过角色ID查询角色使用数量
@@ -116,36 +109,40 @@ public interface ISystemRoleService {
   long insertRole(SysRoleAddReq role);
 
   /**
-   * 修改保存角色信息(内部已完成操作权限/数据权限/唯一性检查)
+   * 修改保存角色信息(内部已完成行准入/唯一性检查)
    *
+   * @param context   操作上下文, 含有当前用户信息
    * @param modifyReq 修改角色请求
    * @return 结果
    */
-  long updateRole(SysRoleModifyReq modifyReq);
+  long updateRole(ActionContext context, SysRoleModifyReq modifyReq);
 
   /**
-   * 修改角色状态(内部已完成操作权限/数据权限检查)
+   * 修改角色状态(内部已完成行准入检查)
    *
+   * @param context         操作上下文, 含有当前用户信息
    * @param changeStatusReq 角色状态变更请求
    * @return 结果
    */
-  long changeRoleStatus(SysRoleChangeStatusReq changeStatusReq);
+  long changeRoleStatus(ActionContext context, SysRoleChangeStatusReq changeStatusReq);
 
   /**
-   * 修改数据权限信息(内部已完成操作权限/数据权限检查)
+   * 修改数据权限信息(内部已完成行准入检查)
    *
+   * @param context            操作上下文, 含有当前用户信息
    * @param changeDataScopeReq 修改数据权限请求
    * @return 结果
    */
-  long authDataScope(SysRoleChangeDataScopeReq changeDataScopeReq);
+  long authDataScope(ActionContext context, SysRoleChangeDataScopeReq changeDataScopeReq);
 
   /**
    * 批量删除角色信息
    *
+   * @param context 操作上下文, 含有当前用户信息
    * @param roleIds 需要删除的角色ID
    * @return 结果
    */
-  long deleteRoleByIds(List<Long> roleIds);
+  long deleteRoleByIds(ActionContext context, List<Long> roleIds);
 
   /** 取消单个用户的角色授权 */
   void unassignUser(Long roleId, Long userId);
@@ -153,8 +150,8 @@ public interface ISystemRoleService {
   /** 批量取消授权用户角色 */
   void unassignUsers(Long roleId, List<Long> userIds);
 
-  /** 批量为角色授权用户(内部已完成数据权限检查) */
-  void assignUsers(Long roleId, List<Long> userIds);
+  /** 批量为角色授权用户(内部已完成行准入检查) */
+  void assignUsers(ActionContext context, Long roleId, List<Long> userIds);
 
   /**
    * 根据角色关键字查询角色信息
