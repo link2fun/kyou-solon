@@ -1,8 +1,9 @@
 package com.github.link2fun.framework.interceptor;
 
 import com.github.link2fun.support.annotation.RepeatSubmit;
-import com.github.link2fun.support.core.domain.R;
+import com.github.link2fun.support.constant.HttpStatus;
 import com.github.link2fun.support.context.cache.service.RedisCache;
+import com.github.link2fun.support.core.domain.Resp;
 import org.noear.solon.core.aspect.Interceptor;
 import org.noear.solon.core.aspect.Invocation;
 import org.noear.solon.core.handle.Context;
@@ -38,7 +39,7 @@ public abstract class RepeatSubmitInterceptor implements Interceptor {
     final Context context = Context.current();
     if (isRepeatSubmit(context, repeatSubmit)) {
       // 重复提交
-      return R.fail(repeatSubmit.message());
+      return Resp.error(HttpStatus.TOO_MANY_REQUESTS, repeatSubmit.message());
     }
 
     return inv.invoke();

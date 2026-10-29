@@ -46,8 +46,8 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @return 岗位列表
    */
   @Override
-  public List<SysPost> selectPostList(final SysPostSearchReq searchReq) {
-    return buildQuery(searchReq).toList();
+  public <T> List<T> selectPostList(final SysPostSearchReq searchReq, final Class<T> resultClass) {
+    return buildQuery(searchReq).selectAutoInclude(resultClass).toList();
   }
 
   /** 构造岗位列表查询 */
@@ -71,8 +71,8 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @return 分页结果
    */
   @Override
-  public Page<SysPost> pageSearch(final Page<SysPost> pageRequest, final SysPostSearchReq searchReq) {
-    return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
+  public <T> Page<T> pageSearch(final Page<T> pageRequest, final SysPostSearchReq searchReq, final Class<T> resultClass) {
+    return Page.of(pageRequest, buildQuery(searchReq).selectAutoInclude(resultClass).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**
@@ -81,8 +81,8 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @return 岗位列表
    */
   @Override
-  public List<SysPost> selectPostAll() {
-    return entityQuery.queryable(SysPost.class).toList();
+  public <T> List<T> selectPostAll(final Class<T> resultClass) {
+    return entityQuery.queryable(SysPost.class).selectAutoInclude(resultClass).toList();
   }
 
   /**
@@ -92,8 +92,8 @@ public class SystemPostServiceImpl implements ISystemPostService {
    * @return 角色对象信息
    */
   @Override
-  public SysPost selectPostById(final Long postId) {
-    return entityQuery.queryable(SysPost.class).whereById(postId).singleOrNull();
+  public <T> T selectPostById(final Long postId, final Class<T> resultClass) {
+    return entityQuery.queryable(SysPost.class).whereById(postId).selectAutoInclude(resultClass).singleOrNull();
   }
 
   /**

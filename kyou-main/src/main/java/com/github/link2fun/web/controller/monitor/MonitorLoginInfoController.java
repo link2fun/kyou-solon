@@ -4,12 +4,12 @@ package com.github.link2fun.web.controller.monitor;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.framework.auth.LoginGuard;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
-import com.github.link2fun.system.modular.logininfo.model.SysLoginInfo;
+import com.github.link2fun.system.modular.logininfo.model.dto.SysLoginInfoDTO;
 import com.github.link2fun.system.modular.logininfo.model.req.SysLoginInfoSearchReq;
 import com.github.link2fun.system.modular.logininfo.service.ISystemLoginInfoService;
 import org.noear.solon.annotation.Controller;
@@ -40,7 +40,7 @@ public class MonitorLoginInfoController {
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysLoginInfoSearchReq searchReq) {
 
-    Page<SysLoginInfo> list = loginInfoService.selectLoginInfoList(Page.ofCurrentContext(), searchReq);
+    Page<SysLoginInfoDTO> list = loginInfoService.selectLoginInfoList(Page.ofCurrentContext(), searchReq, SysLoginInfoDTO.class);
     return TableDataInfo.of(list);
   }
 
@@ -49,8 +49,8 @@ public class MonitorLoginInfoController {
   @SaCheckPermission(value = "monitor:logininfor:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context context, SysLoginInfoSearchReq searchReq) {
-    Page<SysLoginInfo> list = loginInfoService.selectLoginInfoList(Page.ofAll(), searchReq);
-    ExcelUtil<SysLoginInfo> util = new ExcelUtil<>(SysLoginInfo.class);
+    Page<SysLoginInfoDTO> list = loginInfoService.selectLoginInfoList(Page.ofAll(), searchReq, SysLoginInfoDTO.class);
+    ExcelUtil<SysLoginInfoDTO> util = new ExcelUtil<>(SysLoginInfoDTO.class);
     util.exportExcel(context, list.getRecords(), "登录日志");
   }
 
@@ -58,25 +58,25 @@ public class MonitorLoginInfoController {
   @SaCheckPermission(value = "monitor:logininfor:remove")
   @Log(title = "登录日志", businessType = BusinessType.DELETE)
   @Mapping(value = "/{infoIds}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> infoIds) {
-    return AjaxResult.ofAffected(loginInfoService.deleteLoginInfoByIds(infoIds));
+  public Resp<Void> remove(@Path List<Long> infoIds) {
+    return Resp.ofAffected(loginInfoService.deleteLoginInfoByIds(infoIds));
   }
 
   /** 清空登录日志 */
   @SaCheckPermission(value = "monitor:logininfor:remove")
   @Log(title = "登录日志", businessType = BusinessType.CLEAN)
   @Mapping(value = "/clean", method = MethodType.DELETE)
-  public AjaxResult clean() {
+  public Resp<Void> clean() {
     loginInfoService.cleanLoginInfo();
-    return AjaxResult.success();
+    return Resp.success();
   }
 
   /** 解锁账户: 清除该账号的密码重试计数 */
   @SaCheckPermission(value = "monitor:logininfor:unlock")
   @Log(title = "账户解锁", businessType = BusinessType.OTHER)
   @Mapping(value = "/unlock/{userName}", method = MethodType.GET)
-  public AjaxResult unlock(@Path("userName") String userName) {
+  public Resp<Void> unlock(@Path("userName") String userName) {
     loginGuard.unlock(userName);
-    return AjaxResult.success();
+    return Resp.success();
   }
 }

@@ -1,7 +1,7 @@
 package com.github.link2fun.web.controller.system;
 
 import com.github.link2fun.framework.auth.LoginGuard;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.domain.model.RegisterBody;
 import org.noear.solon.annotation.Body;
 import org.noear.solon.annotation.Controller;
@@ -23,8 +23,8 @@ public class SysRegisterController {
 
   /** 注册 */
   @Mapping(value = "/register", method = MethodType.POST)
-  public AjaxResult register(@Body RegisterBody user) {
+  public Resp<Void> register(@Body RegisterBody user) {
     loginGuard.register(user);
-    return AjaxResult.success();
+    return Resp.success();
   }
 }

@@ -6,6 +6,9 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
+/**
+ * {@link com.github.link2fun.support.core.domain.entity.SysDept }
+ */
 @Getter
 @Setter
 public class DeptDTO implements Serializable {

@@ -1,7 +1,7 @@
 package com.github.link2fun.system.modular.menu.service;
 
 import com.github.link2fun.support.core.domain.TreeSelect;
-import com.github.link2fun.support.core.domain.entity.SysMenu;
+import com.github.link2fun.support.core.domain.dto.SysMenuDTO;
 import com.github.link2fun.system.domain.vo.RouterVo;
 import com.github.link2fun.system.modular.menu.model.req.SysMenuAddReq;
 import com.github.link2fun.system.modular.menu.model.req.SysMenuModifyReq;
@@ -21,7 +21,7 @@ public interface ISystemMenuService {
    * @param userId 用户ID
    * @return 菜单列表
    */
-  List<SysMenu> selectMenuList(Long userId);
+  <T> List<T> selectMenuList(Long userId, Class<T> resultClass);
 
   /**
    * 根据用户查询系统菜单列表
@@ -30,7 +30,7 @@ public interface ISystemMenuService {
    * @param userId    用户ID
    * @return 菜单列表
    */
-  List<SysMenu> selectMenuList(SysMenuSearchReq searchReq, Long userId);
+  <T> List<T> selectMenuList(SysMenuSearchReq searchReq, Long userId, Class<T> resultClass);
 
   /**
    * 根据角色ID查询权限
@@ -50,7 +50,7 @@ public interface ISystemMenuService {
    * @param userId 用户ID
    * @return 菜单列表
    */
-  List<SysMenu> selectMenuTreeByUserId(Long userId);
+  List<SysMenuDTO> selectMenuTreeByUserId(Long userId);
 
   /**
    * 根据角色ID查询菜单树信息
@@ -66,7 +66,7 @@ public interface ISystemMenuService {
    * @param menus 菜单列表
    * @return 路由列表
    */
-  List<RouterVo> buildMenus(List<SysMenu> menus);
+  List<RouterVo> buildMenus(List<SysMenuDTO> menus);
 
   /**
    * 构建前端所需要树结构
@@ -74,7 +74,7 @@ public interface ISystemMenuService {
    * @param menus 菜单列表
    * @return 树结构列表
    */
-  List<SysMenu> buildMenuTree(List<SysMenu> menus);
+  List<SysMenuDTO> buildMenuTree(List<SysMenuDTO> menus);
 
   /**
    * 构建前端所需要下拉树结构
@@ -82,7 +82,7 @@ public interface ISystemMenuService {
    * @param menus 菜单列表
    * @return 下拉树结构列表
    */
-  List<TreeSelect> buildMenuTreeSelect(List<SysMenu> menus);
+  List<TreeSelect> buildMenuTreeSelect(List<SysMenuDTO> menus);
 
   /**
    * 根据菜单ID查询信息
@@ -90,7 +90,7 @@ public interface ISystemMenuService {
    * @param menuId 菜单ID
    * @return 菜单信息
    */
-  SysMenu selectMenuById(Long menuId);
+  <T> T selectMenuById(Long menuId, Class<T> resultClass);
 
   /**
    * 新增保存菜单信息
@@ -117,7 +117,7 @@ public interface ISystemMenuService {
   long deleteMenuById(Long menuId);
 
 
-  List<SysMenu> selectMenuTreeAll();
+  <T> List<T> selectMenuTreeAll(Class<T> resultClass);
 
 
   List<Long> selectMenuListByRoleId(Long roleId, boolean menuCheckStrictly);

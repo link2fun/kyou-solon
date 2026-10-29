@@ -2,7 +2,8 @@ package com.github.link2fun.web.controller.monitor;
 
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.framework.web.domain.Server;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.system.modular.server.service.IServerMonitorService;
 import org.noear.solon.annotation.Controller;
 import org.noear.solon.annotation.Inject;
@@ -24,7 +25,7 @@ public class MonitorServerController {
   /** 服务器指标 */
   @SaCheckPermission(value = {"monitor:server:list"})
   @Mapping(method = MethodType.GET)
-  public AjaxResult serverInfo() throws Exception {
-    return AjaxResult.successData(serverMonitorService.getServerInfo());
+  public Resp<Server> serverInfo() throws Exception {
+    return Resp.successData(serverMonitorService.getServerInfo());
   }
 }

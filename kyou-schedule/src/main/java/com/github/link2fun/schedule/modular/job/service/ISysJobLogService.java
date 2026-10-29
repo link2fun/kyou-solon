@@ -14,7 +14,7 @@ public interface ISysJobLogService {
    * @param searchReq 调度日志查询条件
    * @return 调度任务日志集合
    */
-  List<SysJobLog> selectJobLogList(SysJobLogSearchReq searchReq);
+  <T> List<T> selectJobLogList(SysJobLogSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 通过调度任务日志ID查询调度信息
@@ -22,7 +22,7 @@ public interface ISysJobLogService {
    * @param jobLogId 调度任务日志ID
    * @return 调度任务日志对象信息
    */
-  SysJobLog selectJobLogById(Long jobLogId);
+  <T> T selectJobLogById(Long jobLogId, Class<T> resultClass);
 
   /**
    * 新增任务日志
@@ -52,5 +52,5 @@ public interface ISysJobLogService {
    */
   void cleanJobLog();
 
-  Page<SysJobLog> pageSearchJobLog(Page<SysJobLog> pageRequest, SysJobLogSearchReq searchReq);
+  <T> Page<T> pageSearchJobLog(Page<T> pageRequest, SysJobLogSearchReq searchReq, Class<T> resultClass);
 }

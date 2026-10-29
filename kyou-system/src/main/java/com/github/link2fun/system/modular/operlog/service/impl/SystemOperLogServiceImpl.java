@@ -40,9 +40,9 @@ public class SystemOperLogServiceImpl implements ISystemOperLogService {
    * @return 操作日志集合
    */
   @Override
-  public Page<SysOperLog> selectOperLogList(final Page<SysOperLog> pageRequest, final SysOperLogSearchReq searchReq) {
+  public <T> Page<T> selectOperLogList(final Page<T> pageRequest, final SysOperLogSearchReq searchReq, final Class<T> resultClass) {
 
-    EasyPageResult<SysOperLog> pageResult = entityQuery.queryable(SysOperLog.class)
+    EasyPageResult<T> pageResult = entityQuery.queryable(SysOperLog.class)
       .where(operLog -> {
         operLog.operIp().like(StrUtil.isNotBlank(searchReq.getOperIp()), searchReq.getOperIp());
         operLog.title().like(StrUtil.isNotBlank(searchReq.getTitle()), searchReq.getTitle());
@@ -54,6 +54,7 @@ public class SystemOperLogServiceImpl implements ISystemOperLogService {
         operLog.operTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
 
       })
+      .selectAutoInclude(resultClass)
       .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
 
     return Page.of(pageRequest, pageResult);

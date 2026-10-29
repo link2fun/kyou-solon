@@ -3,13 +3,13 @@ package com.github.link2fun.web.controller.monitor;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.annotation.RateLimiter;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.enums.LimitType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
-import com.github.link2fun.system.modular.operlog.model.SysOperLog;
+import com.github.link2fun.system.modular.operlog.model.dto.SysOperLogDTO;
 import com.github.link2fun.system.modular.operlog.model.req.SysOperLogSearchReq;
 import com.github.link2fun.system.modular.operlog.service.ISystemOperLogService;
 import org.noear.solon.annotation.Controller;
@@ -38,7 +38,7 @@ public class MonitorOperlogController {
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysOperLogSearchReq searchReq) {
 
-    Page<SysOperLog> list = operLogService.selectOperLogList(Page.ofCurrentContext(), searchReq);
+    Page<SysOperLogDTO> list = operLogService.selectOperLogList(Page.ofCurrentContext(), searchReq, SysOperLogDTO.class);
     return TableDataInfo.of(list);
   }
 
@@ -46,23 +46,23 @@ public class MonitorOperlogController {
   @SaCheckPermission(value = "monitor:operlog:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context response, SysOperLogSearchReq searchReq) {
-    Page<SysOperLog> list = operLogService.selectOperLogList(Page.ofAll(), searchReq);
-    ExcelUtil<SysOperLog> util = new ExcelUtil<>(SysOperLog.class);
+    Page<SysOperLogDTO> list = operLogService.selectOperLogList(Page.ofAll(), searchReq, SysOperLogDTO.class);
+    ExcelUtil<SysOperLogDTO> util = new ExcelUtil<>(SysOperLogDTO.class);
     util.exportExcel(response, list.getRecords(), "操作日志");
   }
 
   @Log(title = "操作日志", businessType = BusinessType.DELETE)
   @SaCheckPermission(value = "monitor:operlog:remove")
   @Mapping(value = "/{operIds}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> operIds) {
-    return AjaxResult.ofAffected(operLogService.deleteOperLogByIds(operIds));
+  public Resp<Void> remove(@Path List<Long> operIds) {
+    return Resp.ofAffected(operLogService.deleteOperLogByIds(operIds));
   }
 
   @Log(title = "操作日志", businessType = BusinessType.CLEAN)
   @SaCheckPermission(value = "monitor:operlog:remove")
   @Mapping(value = "/clean", method = MethodType.DELETE)
-  public AjaxResult clean() {
+  public Resp<Void> clean() {
     operLogService.cleanOperLog();
-    return AjaxResult.success();
+    return Resp.success();
   }
 }

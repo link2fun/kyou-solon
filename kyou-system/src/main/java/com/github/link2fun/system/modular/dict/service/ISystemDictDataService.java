@@ -1,6 +1,6 @@
 package com.github.link2fun.system.modular.dict.service;
 
-import com.github.link2fun.support.core.domain.entity.SysDictData;
+import com.github.link2fun.support.core.domain.dto.SysDictDataDTO;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.system.modular.dict.model.req.SysDictDataAddReq;
 import com.github.link2fun.system.modular.dict.model.req.SysDictDataModifyReq;
@@ -20,7 +20,7 @@ public interface ISystemDictDataService {
    * @param searchReq 字典数据查询条件
    * @return 字典数据集合信息
    */
-  List<SysDictData> selectDictDataList(SysDictDataSearchReq searchReq);
+  <T> List<T> selectDictDataList(SysDictDataSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 根据条件查询字典数据并分页展示。
@@ -29,7 +29,7 @@ public interface ISystemDictDataService {
    * @param searchReq   字典数据查询条件
    * @return 分页结果
    */
-  Page<SysDictData> pageSearch(Page<SysDictData> pageRequest, SysDictDataSearchReq searchReq);
+  <T> Page<T> pageSearch(Page<T> pageRequest, SysDictDataSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 根据字典类型和字典键值查询字典数据信息
@@ -46,7 +46,7 @@ public interface ISystemDictDataService {
    * @param dictCode 字典数据ID
    * @return 字典数据
    */
-  SysDictData selectDictDataById(Long dictCode);
+  <T> T selectDictDataById(Long dictCode, Class<T> resultClass);
 
   /**
    * 批量删除字典数据信息
@@ -77,7 +77,7 @@ public interface ISystemDictDataService {
    * @param dictType 字典类型
    * @return 字典数据集合信息
    */
-  List<SysDictData> selectDictDataByType(String dictType);
+  List<SysDictDataDTO> selectDictDataByType(String dictType);
 
   /**
    * 根据字典类型查询字典数据是否存

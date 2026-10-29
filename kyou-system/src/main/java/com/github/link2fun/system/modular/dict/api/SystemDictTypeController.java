@@ -2,8 +2,8 @@ package com.github.link2fun.system.modular.dict.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.domain.AjaxResult;
-import com.github.link2fun.support.core.domain.entity.SysDictType;
+import com.github.link2fun.support.core.domain.Resp;
+import com.github.link2fun.support.core.domain.dto.SysDictTypeDTO;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
@@ -35,7 +35,7 @@ public class SystemDictTypeController {
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysDictTypeSearchReq searchReq) {
 
-    Page<SysDictType> list = dictTypeService.pageSearch(Page.ofCurrentContext(), searchReq);
+    Page<SysDictTypeDTO> list = dictTypeService.pageSearch(Page.ofCurrentContext(), searchReq, SysDictTypeDTO.class);
     return TableDataInfo.of(list);
   }
 
@@ -43,8 +43,8 @@ public class SystemDictTypeController {
   @SaCheckPermission("system:dict:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context response, SysDictTypeSearchReq searchReq) {
-    List<SysDictType> list = dictTypeService.selectDictTypeList(searchReq);
-    ExcelUtil<SysDictType> util = new ExcelUtil<>(SysDictType.class);
+    List<SysDictTypeDTO> list = dictTypeService.selectDictTypeList(searchReq, SysDictTypeDTO.class);
+    ExcelUtil<SysDictTypeDTO> util = new ExcelUtil<>(SysDictTypeDTO.class);
     util.exportExcel(response, list, "字典类型");
   }
 
@@ -53,8 +53,8 @@ public class SystemDictTypeController {
    */
   @SaCheckPermission("system:dict:query")
   @Mapping(value = "/{dictId}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path Long dictId) {
-    return AjaxResult.successData(dictTypeService.selectDictTypeById(dictId));
+  public Resp<SysDictTypeDTO> getInfo(@Path Long dictId) {
+    return Resp.successData(dictTypeService.selectDictTypeById(dictId, SysDictTypeDTO.class));
   }
 
   /**
@@ -63,8 +63,8 @@ public class SystemDictTypeController {
   @SaCheckPermission("system:dict:add")
   @Log(title = "字典类型", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysDictTypeAddReq addReq) {
-    return AjaxResult.ofAffected(dictTypeService.insertDictType(addReq));
+  public Resp<Void> add(@Validated @Body SysDictTypeAddReq addReq) {
+    return Resp.ofAffected(dictTypeService.insertDictType(addReq));
   }
 
   /**
@@ -73,8 +73,8 @@ public class SystemDictTypeController {
   @SaCheckPermission("system:dict:edit")
   @Log(title = "字典类型", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysDictTypeModifyReq modifyReq) {
-    return AjaxResult.ofAffected(dictTypeService.updateDictType(modifyReq));
+  public Resp<Void> edit(@Validated @Body SysDictTypeModifyReq modifyReq) {
+    return Resp.ofAffected(dictTypeService.updateDictType(modifyReq));
   }
 
   /**
@@ -83,9 +83,9 @@ public class SystemDictTypeController {
   @SaCheckPermission("system:dict:remove")
   @Log(title = "字典类型", businessType = BusinessType.DELETE)
   @Mapping(value = "/{dictIds}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> dictIds) {
+  public Resp<Void> remove(@Path List<Long> dictIds) {
     dictTypeService.deleteDictTypeByIds(dictIds);
-    return AjaxResult.success();
+    return Resp.success();
   }
 
   /**
@@ -94,17 +94,17 @@ public class SystemDictTypeController {
   @SaCheckPermission("system:dict:remove")
   @Log(title = "字典类型", businessType = BusinessType.CLEAN)
   @Mapping(value = "/refreshCache", method = MethodType.DELETE)
-  public AjaxResult refreshCache() {
+  public Resp<Void> refreshCache() {
     dictTypeService.resetDictCache();
-    return AjaxResult.success();
+    return Resp.success();
   }
 
   /**
    * 获取字典选择框列表
    */
   @Mapping(value = "/optionselect", method = MethodType.GET)
-  public AjaxResult optionselect() {
-    List<SysDictType> dictTypes = dictTypeService.selectDictTypeAll();
-    return AjaxResult.successData(dictTypes);
+  public Resp<List<SysDictTypeDTO>> optionselect() {
+    List<SysDictTypeDTO> dictTypes = dictTypeService.selectDictTypeAll(SysDictTypeDTO.class);
+    return Resp.successData(dictTypes);
   }
 }

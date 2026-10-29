@@ -4,7 +4,7 @@ import cn.hutool.core.text.NamingCase;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
-import com.github.link2fun.support.core.domain.entity.SysMenu;
+import com.github.link2fun.support.core.domain.dto.SysMenuDTO;
 import com.github.link2fun.support.core.tree.TreeBuilder;
 
 import java.util.List;
@@ -23,7 +23,7 @@ public class MenuUtils {
    * @param menu 菜单信息
    * @return 路由名称
    */
-  public static String getRouteName(SysMenu menu) {
+  public static String getRouteName(SysMenuDTO menu) {
     String routerName = NamingCase.toPascalCase(menu.getPath());
     // 非外链并且是一级目录（类型为目录）
     if (isMenuFrame(menu)) {
@@ -38,7 +38,7 @@ public class MenuUtils {
    * @param menu 菜单信息
    * @return 组件信息
    */
-  public static String getComponent(SysMenu menu) {
+  public static String getComponent(SysMenuDTO menu) {
     String component = UserConstants.LAYOUT;
     if (StrUtil.isNotBlank(menu.getComponent()) && !isMenuFrame(menu)) {
       component = menu.getComponent();
@@ -56,7 +56,7 @@ public class MenuUtils {
    * @param menu 菜单信息
    * @return 结果
    */
-  public static boolean isMenuFrame(SysMenu menu) {
+  public static boolean isMenuFrame(SysMenuDTO menu) {
     return menu.getParentId().intValue() == 0 && UserConstants.TYPE_MENU.equals(menu.getMenuType())
       && menu.getIsFrame().equals(UserConstants.NO_FRAME);
   }
@@ -67,7 +67,7 @@ public class MenuUtils {
    * @param menu 菜单信息
    * @return 结果
    */
-  public static boolean isInnerLink(SysMenu menu) {
+  public static boolean isInnerLink(SysMenuDTO menu) {
     return menu.getIsFrame().equals(UserConstants.NO_FRAME) && StrUtil.startWithAny(menu.getPath(), Constants.HTTP, Constants.HTTPS);
   }
 
@@ -77,7 +77,7 @@ public class MenuUtils {
    * @param menu 菜单信息
    * @return 结果
    */
-  public static boolean isParentView(SysMenu menu) {
+  public static boolean isParentView(SysMenuDTO menu) {
     return menu.getParentId().intValue() != 0 && UserConstants.TYPE_DIR.equals(menu.getMenuType());
   }
 
@@ -88,9 +88,9 @@ public class MenuUtils {
    * @param parentId 顶级节点的父ID
    * @return 路由树
    */
-  public static List<SysMenu> getChildPerms(List<SysMenu> list, Long parentId) {
+  public static List<SysMenuDTO> getChildPerms(List<SysMenuDTO> list, Long parentId) {
     return TreeBuilder.buildByRootParent(list, parentId,
-      SysMenu::getMenuId, SysMenu::getParentId, SysMenu::setChildren);
+      SysMenuDTO::getMenuId, SysMenuDTO::getParentId, SysMenuDTO::setChildren);
   }
 
   /**
@@ -112,7 +112,7 @@ public class MenuUtils {
    * @param menu 菜单信息
    * @return 路由地址
    */
-  public static String getRouterPath(SysMenu menu) {
+  public static String getRouterPath(SysMenuDTO menu) {
     String routerPath = menu.getPath();
     // 内链打开外网方式
     if (menu.getParentId().intValue() != 0 && isInnerLink(menu)) {

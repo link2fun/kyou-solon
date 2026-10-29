@@ -4,8 +4,8 @@ package com.github.link2fun.system.modular.dept.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.core.domain.AjaxResult;
-import com.github.link2fun.support.core.domain.entity.SysDept;
+import com.github.link2fun.support.core.domain.Resp;
+import com.github.link2fun.support.core.domain.dto.SysDeptDTO;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.system.modular.dept.model.req.SysDeptAddReq;
 import com.github.link2fun.system.modular.dept.model.req.SysDeptModifyReq;
@@ -34,12 +34,12 @@ public class SystemDeptController {
    */
   @SaCheckPermission("system:dept:list")
   @Mapping(value = "/list", method = MethodType.GET)
-  public AjaxResult list(SysDeptSearchReq searchReq) {
+  public Resp<List<SysDeptDTO>> list(SysDeptSearchReq searchReq) {
 
     final ActionContext context = ActionContext.current();
-    List<SysDept> deptList = deptService.selectDeptList(context, searchReq);
+    List<SysDeptDTO> deptList = deptService.selectDeptList(context, searchReq, SysDeptDTO.class);
 
-    return AjaxResult.successData(deptList);
+    return Resp.successData(deptList);
   }
 
   /**
@@ -47,8 +47,8 @@ public class SystemDeptController {
    */
   @SaCheckPermission("system:dept:list")
   @Mapping(value = "/list/exclude/{deptId}", method = MethodType.GET)
-  public AjaxResult excludeChild(@Path(value = "deptId") Long deptId) {
-    return AjaxResult.successData(deptService.selectDeptListExcludingSubtree(ActionContext.current(), deptId));
+  public Resp<List<SysDeptDTO>> excludeChild(@Path(value = "deptId") Long deptId) {
+    return Resp.successData(deptService.selectDeptListExcludingSubtree(ActionContext.current(), deptId));
   }
 
   /**
@@ -57,8 +57,8 @@ public class SystemDeptController {
 
   @SaCheckPermission("system:dept:query")
   @Mapping(value = "/{deptId}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path Long deptId) {
-    return AjaxResult.successData(deptService.selectDeptDetail(ActionContext.current(), deptId));
+  public Resp<SysDeptDTO> getInfo(@Path Long deptId) {
+    return Resp.successData(deptService.selectDeptDetail(ActionContext.current(), deptId));
   }
 
   /**
@@ -67,8 +67,8 @@ public class SystemDeptController {
   @SaCheckPermission("system:dept:add")
   @Log(title = "部门管理", businessType = BusinessType.INSERT, mask = true)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysDeptAddReq addReq) {
-    return AjaxResult.ofAffected(deptService.insertDept(addReq));
+  public Resp<Void> add(@Validated @Body SysDeptAddReq addReq) {
+    return Resp.ofAffected(deptService.insertDept(addReq));
   }
 
   /**
@@ -77,8 +77,8 @@ public class SystemDeptController {
   @SaCheckPermission("system:dept:edit")
   @Log(title = "部门管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysDeptModifyReq modifyReq) {
-    return AjaxResult.ofAffected(deptService.updateDept(ActionContext.current(), modifyReq));
+  public Resp<Void> edit(@Validated @Body SysDeptModifyReq modifyReq) {
+    return Resp.ofAffected(deptService.updateDept(ActionContext.current(), modifyReq));
   }
 
   /**
@@ -87,7 +87,7 @@ public class SystemDeptController {
   @SaCheckPermission("system:dept:remove")
   @Log(title = "部门管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{deptId}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path Long deptId) {
-    return AjaxResult.ofAffected(deptService.deleteDeptById(ActionContext.current(), deptId));
+  public Resp<Void> remove(@Path Long deptId) {
+    return Resp.ofAffected(deptService.deleteDeptById(ActionContext.current(), deptId));
   }
 }

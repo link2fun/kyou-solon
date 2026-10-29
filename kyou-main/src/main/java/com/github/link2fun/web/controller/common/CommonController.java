@@ -2,9 +2,10 @@ package com.github.link2fun.web.controller.common;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.github.link2fun.support.core.domain.AjaxResult;
-import com.github.link2fun.system.modular.file.model.vo.FileUploadVO;
+import com.github.link2fun.system.modular.file.model.dto.FileUploadDTO;
 import com.github.link2fun.system.modular.file.service.IFileService;
+import com.github.link2fun.web.model.vo.FileUploadResponse;
+import com.github.link2fun.web.model.vo.FileUploadsResponse;
 import org.noear.solon.annotation.Controller;
 import org.noear.solon.annotation.Inject;
 import org.noear.solon.annotation.Mapping;
@@ -53,14 +54,14 @@ public class CommonController {
   @SaCheckLogin
   @SaCheckPermission("common:upload")
   @Mapping(value = "/upload", method = MethodType.POST)
-  public AjaxResult uploadFile(UploadedFile file) throws IOException {
-    final FileUploadVO result = fileService.uploadFile(file);
-    AjaxResult ajax = AjaxResult.success();
-    ajax.put("url", result.getUrl());
-    ajax.put("fileName", result.getFileName());
-    ajax.put("newFileName", result.getNewFileName());
-    ajax.put("originalFilename", result.getOriginalFilename());
-    return ajax;
+  public FileUploadResponse uploadFile(UploadedFile file) throws IOException {
+    final FileUploadDTO result = fileService.uploadFile(file);
+    FileUploadResponse response = new FileUploadResponse();
+    response.setUrl(result.getUrl());
+    response.setFileName(result.getFileName());
+    response.setNewFileName(result.getNewFileName());
+    response.setOriginalFilename(result.getOriginalFilename());
+    return response;
   }
 
   /**
@@ -69,14 +70,14 @@ public class CommonController {
   @SaCheckLogin
   @SaCheckPermission("common:upload")
   @Mapping(value = "/uploads", method = MethodType.POST)
-  public AjaxResult uploadFiles(List<UploadedFile> files) throws IOException {
-    final List<FileUploadVO> results = fileService.uploadFiles(files);
-    AjaxResult ajax = AjaxResult.success();
-    ajax.put("urls", join(results, FileUploadVO::getUrl));
-    ajax.put("fileNames", join(results, FileUploadVO::getFileName));
-    ajax.put("newFileNames", join(results, FileUploadVO::getNewFileName));
-    ajax.put("originalFilenames", join(results, FileUploadVO::getOriginalFilename));
-    return ajax;
+  public FileUploadsResponse uploadFiles(List<UploadedFile> files) throws IOException {
+    final List<FileUploadDTO> results = fileService.uploadFiles(files);
+    FileUploadsResponse response = new FileUploadsResponse();
+    response.setUrls(join(results, FileUploadDTO::getUrl));
+    response.setFileNames(join(results, FileUploadDTO::getFileName));
+    response.setNewFileNames(join(results, FileUploadDTO::getNewFileName));
+    response.setOriginalFilenames(join(results, FileUploadDTO::getOriginalFilename));
+    return response;
   }
 
   /**
@@ -103,8 +104,8 @@ public class CommonController {
   }
 
   /** 按字段拼接为逗号分隔的字符串 */
-  private static String join(final List<FileUploadVO> results,
-                             final Function<FileUploadVO, String> field) {
+  private static String join(final List<FileUploadDTO> results,
+                             final Function<FileUploadDTO, String> field) {
     return results.stream().map(field).collect(Collectors.joining(FILE_DELIMITER));
   }
 }

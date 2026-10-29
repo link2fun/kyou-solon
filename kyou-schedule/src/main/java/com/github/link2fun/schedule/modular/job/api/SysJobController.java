@@ -2,11 +2,11 @@ package com.github.link2fun.schedule.modular.job.api;
 
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.github.link2fun.schedule.modular.job.model.SysJob;
+import com.github.link2fun.schedule.modular.job.model.dto.SysJobDTO;
 import com.github.link2fun.schedule.modular.job.model.req.*;
 import com.github.link2fun.schedule.modular.job.service.ISysJobService;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
@@ -35,7 +35,7 @@ public class SysJobController {
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysJobSearchReq sysJob) {
 
-    Page<SysJob> list = jobService.selectJobList(Page.ofCurrentContext(), sysJob);
+    Page<SysJobDTO> list = jobService.selectJobList(Page.ofCurrentContext(), sysJob, SysJobDTO.class);
     return TableDataInfo.of(list);
   }
 
@@ -46,8 +46,8 @@ public class SysJobController {
   @Log(title = "定时任务", businessType = BusinessType.EXPORT)
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context response, SysJobSearchReq sysJob) {
-    Page<SysJob> list = jobService.selectJobList(Page.ofAll(), sysJob);
-    ExcelUtil<SysJob> util = new ExcelUtil<>(SysJob.class);
+    Page<SysJobDTO> list = jobService.selectJobList(Page.ofAll(), sysJob, SysJobDTO.class);
+    ExcelUtil<SysJobDTO> util = new ExcelUtil<>(SysJobDTO.class);
     util.exportExcel(response, list.getRecords(), "定时任务");
   }
 
@@ -56,8 +56,8 @@ public class SysJobController {
    */
   @SaCheckPermission(value = {"monitor:job:query"})
   @Mapping(value = "/{jobId}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path("jobId") Long jobId) {
-    return AjaxResult.successData(jobService.selectJobById(jobId));
+  public Resp<SysJobDTO> getInfo(@Path("jobId") Long jobId) {
+    return Resp.successData(jobService.selectJobById(jobId, SysJobDTO.class));
   }
 
   /**
@@ -66,8 +66,8 @@ public class SysJobController {
   @SaCheckPermission(value = {"monitor:job:add"})
   @Log(title = "定时任务", businessType = BusinessType.INSERT)
   @Mapping(value = "/add", method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysJobAddReq addReq) throws TaskException {
-    return AjaxResult.ofAffected(jobService.insertJob(addReq));
+  public Resp<Void> add(@Validated @Body SysJobAddReq addReq) throws TaskException {
+    return Resp.ofAffected(jobService.insertJob(addReq));
   }
 
   /**
@@ -76,8 +76,8 @@ public class SysJobController {
   @SaCheckPermission(value = {"monitor:job:edit"})
   @Log(title = "定时任务", businessType = BusinessType.UPDATE)
   @Mapping(value = "", method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysJobModifyReq modifyReq) throws TaskException {
-    return AjaxResult.ofAffected(jobService.updateJob(modifyReq));
+  public Resp<Void> edit(@Validated @Body SysJobModifyReq modifyReq) throws TaskException {
+    return Resp.ofAffected(jobService.updateJob(modifyReq));
   }
 
   /**
@@ -86,8 +86,8 @@ public class SysJobController {
   @SaCheckPermission(value = {"monitor:job:changeStatus"})
   @Log(title = "定时任务", businessType = BusinessType.UPDATE)
   @Mapping(value = "/changeStatus", method = MethodType.PUT)
-  public AjaxResult changeStatus(@Validated @Body SysJobChangeStatusReq changeStatusReq) {
-    return AjaxResult.ofAffected(jobService.changeStatus(changeStatusReq));
+  public Resp<Void> changeStatus(@Validated @Body SysJobChangeStatusReq changeStatusReq) {
+    return Resp.ofAffected(jobService.changeStatus(changeStatusReq));
   }
 
   /**
@@ -96,9 +96,9 @@ public class SysJobController {
   @SaCheckPermission(value = {"monitor:job:changeStatus"})
   @Log(title = "定时任务", businessType = BusinessType.UPDATE)
   @Mapping(value = "/run", method = MethodType.PUT)
-  public AjaxResult run(@Validated @Body SysJobRunReq runReq) throws Throwable {
+  public Resp<Void> run(@Validated @Body SysJobRunReq runReq) throws Throwable {
     boolean result = jobService.run(runReq.getJobId());
-    return result ? AjaxResult.success() : AjaxResult.error("任务不存在或已过期！");
+    return result ? Resp.success() : Resp.error("任务不存在或已过期！");
   }
 
   /**
@@ -109,8 +109,8 @@ public class SysJobController {
   @SaCheckPermission(value = {"monitor:job:remove"})
   @Log(title = "定时任务", businessType = BusinessType.DELETE)
   @Mapping(value = "/{jobIds}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> jobIds) {
+  public Resp<Void> remove(@Path List<Long> jobIds) {
     jobService.deleteJobByIds(jobIds);
-    return AjaxResult.success();
+    return Resp.success();
   }
 }

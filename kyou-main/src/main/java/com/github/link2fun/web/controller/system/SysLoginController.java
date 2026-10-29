@@ -2,15 +2,16 @@ package com.github.link2fun.web.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.github.link2fun.framework.auth.LoginGuard;
-import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
+import com.github.link2fun.support.core.domain.dto.SysMenuDTO;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
-import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.support.core.domain.model.LoginBody;
-
+import com.github.link2fun.system.domain.vo.RouterVo;
 import com.github.link2fun.system.modular.menu.service.ISystemMenuService;
+import com.github.link2fun.web.model.vo.LoginInfoResponse;
+import com.github.link2fun.web.model.vo.LoginResponse;
 import org.noear.solon.annotation.Body;
 import org.noear.solon.annotation.Controller;
 import org.noear.solon.annotation.Inject;
@@ -41,19 +42,19 @@ public class SysLoginController {
    * @return 结果
    */
   @Mapping(value = "/login", method = MethodType.POST)
-  public AjaxResult login(@Validated @Body LoginBody loginBody) {
-    AjaxResult ajax = AjaxResult.success();
+  public LoginResponse login(@Validated @Body LoginBody loginBody) {
+    LoginResponse response = new LoginResponse();
     // 生成令牌
     String token = loginGuard.login(loginBody);
-    ajax.put(Constants.TOKEN, token);
-    return ajax;
+    response.setToken(token);
+    return response;
   }
 
   /** 注销方法 */
   @Mapping(value = "/logout", method = MethodType.POST)
-  public AjaxResult logout() {
+  public Resp<Void> logout() {
     loginGuard.logout();
-    return AjaxResult.success();
+    return Resp.success();
   }
 
   /**
@@ -63,17 +64,17 @@ public class SysLoginController {
    */
   @SaCheckLogin
   @Mapping(value = "getInfo", method = MethodType.GET)
-  public AjaxResult getInfo() {
+  public LoginInfoResponse getInfo() {
     final ActionContext context = ActionContext.current();
     final SysUserDTO userDTO = context.getCurrentUserNotNull().getUser();
     final Long userId = context.getUserId();
     List<String> roles = SaSessionBizTool.getRoleList(userId);
     List<String> permissions = SaSessionBizTool.getPermissionList(userId);
-    AjaxResult ajax = AjaxResult.success();
-    ajax.put("user", userDTO);
-    ajax.put("roles", roles);
-    ajax.put("permissions", permissions);
-    return ajax;
+    LoginInfoResponse response = new LoginInfoResponse();
+    response.setUser(userDTO);
+    response.setRoles(roles);
+    response.setPermissions(permissions);
+    return response;
   }
 
   /**
@@ -83,9 +84,9 @@ public class SysLoginController {
    */
   @SaCheckLogin
   @Mapping(value = "getRouters", method = MethodType.GET)
-  public AjaxResult getRouters() {
+  public Resp<List<RouterVo>> getRouters() {
     Long userId = ActionContext.current().getUserId();
-    List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
-    return AjaxResult.successData(menuService.buildMenus(menus));
+    List<SysMenuDTO> menus = menuService.selectMenuTreeByUserId(userId);
+    return Resp.successData(menuService.buildMenus(menus));
   }
 }

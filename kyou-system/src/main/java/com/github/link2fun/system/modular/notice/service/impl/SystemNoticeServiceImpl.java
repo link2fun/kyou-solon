@@ -32,8 +32,8 @@ public class SystemNoticeServiceImpl implements ISystemNoticeService {
    * @return 公告信息
    */
   @Override
-  public SysNotice selectNoticeById(final Long noticeId) {
-    return entityQuery.queryable(SysNotice.class).whereById(noticeId).singleOrNull();
+  public <T> T selectNoticeById(final Long noticeId, final Class<T> resultClass) {
+    return entityQuery.queryable(SysNotice.class).whereById(noticeId).selectAutoInclude(resultClass).singleOrNull();
   }
 
   /**
@@ -43,8 +43,8 @@ public class SystemNoticeServiceImpl implements ISystemNoticeService {
    * @return 公告集合
    */
   @Override
-  public List<SysNotice> selectNoticeList(final SysNoticeSearchReq searchReq) {
-    return buildQuery(searchReq).toList();
+  public <T> List<T> selectNoticeList(final SysNoticeSearchReq searchReq, final Class<T> resultClass) {
+    return buildQuery(searchReq).selectAutoInclude(resultClass).toList();
   }
 
   /** 构造公告列表查询 */
@@ -68,8 +68,8 @@ public class SystemNoticeServiceImpl implements ISystemNoticeService {
    * @return 分页结果
    */
   @Override
-  public Page<SysNotice> pageSearch(final Page<SysNotice> pageRequest, final SysNoticeSearchReq searchReq) {
-    return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
+  public <T> Page<T> pageSearch(final Page<T> pageRequest, final SysNoticeSearchReq searchReq, final Class<T> resultClass) {
+    return Page.of(pageRequest, buildQuery(searchReq).selectAutoInclude(resultClass).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**

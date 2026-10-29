@@ -2,12 +2,12 @@ package com.github.link2fun.system.modular.group.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
-import com.github.link2fun.system.modular.group.model.SysGroup;
+import com.github.link2fun.system.modular.group.model.dto.SysGroupDTO;
 import com.github.link2fun.system.modular.group.model.req.SysGroupAddReq;
 import com.github.link2fun.system.modular.group.model.req.SysGroupModifyReq;
 import com.github.link2fun.system.modular.group.model.req.SysGroupSearchReq;
@@ -39,7 +39,7 @@ public class SystemGroupController {
   @SaCheckPermission("system.group.list")
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysGroupSearchReq searchReq) {
-    final Page<SysGroup> page = groupService.pageSearchGroup(Page.ofCurrentContext(), searchReq);
+    final Page<SysGroupDTO> page = groupService.pageSearchGroup(Page.ofCurrentContext(), searchReq, SysGroupDTO.class);
 
     return TableDataInfo.of(page);
   }
@@ -50,8 +50,8 @@ public class SystemGroupController {
   @SaCheckPermission("system.group.export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context context, SysGroupSearchReq searchReq) {
-    final Page<SysGroup> page = groupService.pageSearchGroup(Page.ofAll(), searchReq);
-    ExcelUtil<SysGroup> util = new ExcelUtil<>(SysGroup.class);
+    final Page<SysGroupDTO> page = groupService.pageSearchGroup(Page.ofAll(), searchReq, SysGroupDTO.class);
+    ExcelUtil<SysGroupDTO> util = new ExcelUtil<>(SysGroupDTO.class);
     util.exportExcel(context, page.getRecords(), "群组数据");
   }
 
@@ -59,8 +59,8 @@ public class SystemGroupController {
   /** 根据群组编号获取详细信息 */
   @SaCheckPermission("system.group.query")
   @Mapping(value = "/{groupId}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path Long groupId) {
-    return AjaxResult.successData(groupService.getById(groupId));
+  public Resp<SysGroupDTO> getInfo(@Path Long groupId) {
+    return Resp.successData(groupService.getById(groupId, SysGroupDTO.class));
   }
 
 
@@ -68,31 +68,31 @@ public class SystemGroupController {
   @SaCheckPermission("system.group.add")
   @Mapping(value = "/add", method = MethodType.POST)
   @Log(title = "群组管理", businessType = BusinessType.INSERT)
-  public AjaxResult add(@Validated @Body SysGroupAddReq addReq) {
-    return AjaxResult.ofAffected(groupService.insertGroup(addReq));
+  public Resp<Void> add(@Validated @Body SysGroupAddReq addReq) {
+    return Resp.ofAffected(groupService.insertGroup(addReq));
   }
 
 
   /** 修改群组 */
   @SaCheckPermission("system.group.edit")
   @Mapping(value = "/edit", method = MethodType.POST)
-  public AjaxResult edit(@Validated @Body SysGroupModifyReq modifyReq) {
-    return AjaxResult.ofAffected(groupService.updateGroup(modifyReq));
+  public Resp<Void> edit(@Validated @Body SysGroupModifyReq modifyReq) {
+    return Resp.ofAffected(groupService.updateGroup(modifyReq));
   }
 
 
   /** 删除群组 */
   @SaCheckPermission("system.group.remove")
   @Mapping(value = "/{groupIds}", method = MethodType.DELETE)
-  public AjaxResult remove(List<Long> groupIds) {
-    return AjaxResult.ofAffected(groupService.deleteGroupByIds(groupIds));
+  public Resp<Void> remove(List<Long> groupIds) {
+    return Resp.ofAffected(groupService.deleteGroupByIds(groupIds));
   }
 
 
   /** 群组选择框列表 */
   @Mapping(value = "/optionSelect", method = MethodType.GET)
-  public AjaxResult optionSelect() {
-    return AjaxResult.successData(groupService.listAll());
+  public Resp<List<SysGroupDTO>> optionSelect() {
+    return Resp.successData(groupService.listAll(SysGroupDTO.class));
   }
 
 

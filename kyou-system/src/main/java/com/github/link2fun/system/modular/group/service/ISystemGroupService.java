@@ -1,7 +1,6 @@
 package com.github.link2fun.system.modular.group.service;
 
 import com.github.link2fun.support.core.page.Page;
-import com.github.link2fun.system.modular.group.model.SysGroup;
 import com.github.link2fun.system.modular.group.model.req.SysGroupAddReq;
 import com.github.link2fun.system.modular.group.model.req.SysGroupModifyReq;
 import com.github.link2fun.system.modular.group.model.req.SysGroupSearchReq;
@@ -18,7 +17,7 @@ public interface ISystemGroupService {
    * @param searchReq   搜索条件
    * @return 分页查询结果
    */
-  Page<SysGroup> pageSearchGroup(Page<SysGroup> pageRequest, SysGroupSearchReq searchReq);
+  <T> Page<T> pageSearchGroup(Page<T> pageRequest, SysGroupSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 新增群组(内部已完成名称唯一性检查)
@@ -49,7 +48,7 @@ public interface ISystemGroupService {
    *
    * @return 群组列表
    */
-  List<SysGroup> listAll();
+  <T> List<T> listAll(Class<T> resultClass);
 
-  SysGroup getById(Long groupId);
+  <T> T getById(Long groupId, Class<T> resultClass);
 }

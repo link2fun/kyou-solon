@@ -14,6 +14,7 @@ import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.domain.TreeSelect;
+import com.github.link2fun.support.core.domain.dto.SysMenuDTO;
 import com.github.link2fun.support.core.domain.entity.SysMenu;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.SysUser;
@@ -75,8 +76,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @return 菜单列表
    */
   @Override
-  public List<SysMenu> selectMenuList(final Long userId) {
-    return self.selectMenuList(new SysMenuSearchReq(), userId);
+  public <T> List<T> selectMenuList(final Long userId, final Class<T> resultClass) {
+    return self.selectMenuList(new SysMenuSearchReq(), userId, resultClass);
   }
 
   /**
@@ -87,7 +88,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @return 菜单列表
    */
   @Override
-  public List<SysMenu> selectMenuList(final SysMenuSearchReq searchReq, final Long userId) {
+  public <T> List<T> selectMenuList(final SysMenuSearchReq searchReq, final Long userId, final Class<T> resultClass) {
     if (SysUser.isSuperAdmin(userId)) {
       // 如果是超管，返回所有菜单
       return entityQuery.queryable(SysMenu.class)
@@ -96,6 +97,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
           menu.visible().eq(StrUtil.isNotBlank(searchReq.getVisible()), searchReq.getVisible());
           menu.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus());
         })
+        .selectAutoInclude(resultClass)
         .toList();
     }
 
@@ -115,7 +117,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
           });
         }
       })
-      .select(SysMenu.class)
+      .selectAutoInclude(resultClass)
       .toList();
 
   }
@@ -166,14 +168,14 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @return 菜单列表
    */
   @Override
-  public List<SysMenu> selectMenuTreeByUserId(final Long userId) {
-    final List<SysMenu> menuList;
+  public List<SysMenuDTO> selectMenuTreeByUserId(final Long userId) {
+    final List<SysMenuDTO> menuList;
     if (SysUser.isSuperAdmin(userId)) {
 
-      menuList = self.selectMenuTreeAll();
+      menuList = self.selectMenuTreeAll(SysMenuDTO.class);
 
     } else {
-      menuList = self.selectMenuList(userId);
+      menuList = self.selectMenuList(userId, SysMenuDTO.class);
     }
 
     return MenuUtils.getChildPerms(menuList, 0L);
@@ -204,9 +206,9 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @return 路由列表
    */
   @Override
-  public List<RouterVo> buildMenus(final List<SysMenu> menus) {
+  public List<RouterVo> buildMenus(final List<SysMenuDTO> menus) {
     List<RouterVo> routers = new LinkedList<>();
-    for (SysMenu menu : menus) {
+    for (SysMenuDTO menu : menus) {
       RouterVo router = new RouterVo();
       router.setHidden("1".equals(menu.getVisible()));
       router.setName(MenuUtils.getRouteName(menu));
@@ -215,7 +217,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
       router.setComponent(MenuUtils.getComponent(menu));
       router.setQuery(menu.getQuery());
       router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StrUtil.equals("1", menu.getIsCache()), menu.getPath()));
-      List<SysMenu> cMenus = menu.getChildren();
+      List<SysMenuDTO> cMenus = menu.getChildren();
       if (CollectionUtil.isNotEmpty(cMenus) && UserConstants.TYPE_DIR.equals(menu.getMenuType())) {
         router.setAlwaysShow(true);
         router.setRedirect("noRedirect");
@@ -256,8 +258,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @return 树结构列表
    */
   @Override
-  public List<SysMenu> buildMenuTree(final List<SysMenu> menus) {
-    return TreeBuilder.build(menus, SysMenu::getMenuId, SysMenu::getParentId, SysMenu::setChildren);
+  public List<SysMenuDTO> buildMenuTree(final List<SysMenuDTO> menus) {
+    return TreeBuilder.build(menus, SysMenuDTO::getMenuId, SysMenuDTO::getParentId, SysMenuDTO::setChildren);
   }
 
   /**
@@ -267,8 +269,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @return 下拉树结构列表
    */
   @Override
-  public List<TreeSelect> buildMenuTreeSelect(final List<SysMenu> menus) {
-    List<SysMenu> menuTrees = buildMenuTree(menus);
+  public List<TreeSelect> buildMenuTreeSelect(final List<SysMenuDTO> menus) {
+    List<SysMenuDTO> menuTrees = buildMenuTree(menus);
     return menuTrees.stream().map(TreeSelect::new).collect(Collectors.toList());
   }
 
@@ -279,8 +281,8 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
    * @return 菜单信息
    */
   @Override
-  public SysMenu selectMenuById(final Long menuId) {
-    return entityQuery.queryable(SysMenu.class).whereById(menuId).singleOrNull();
+  public <T> T selectMenuById(final Long menuId, final Class<T> resultClass) {
+    return entityQuery.queryable(SysMenu.class).whereById(menuId).selectAutoInclude(resultClass).singleOrNull();
   }
 
   /**
@@ -399,7 +401,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
 
   @Transaction(policy = TranPolicy.supports)
   @Override
-  public List<SysMenu> selectMenuTreeAll() {
+  public <T> List<T> selectMenuTreeAll(final Class<T> resultClass) {
     return entityQuery.queryable(SysMenu.class)
       .where(menu -> {
         menu.menuType().in(new String[]{"M", "C"});
@@ -409,6 +411,7 @@ public class SystemMenuServiceImpl implements ISystemMenuService {
         menu.parentId().asc();
         menu.orderNum().asc();
       })
+      .selectAutoInclude(resultClass)
       .toList();
   }
 

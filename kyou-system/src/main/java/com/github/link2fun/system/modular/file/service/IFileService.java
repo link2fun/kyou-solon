@@ -1,6 +1,6 @@
 package com.github.link2fun.system.modular.file.service;
 
-import com.github.link2fun.system.modular.file.model.vo.FileUploadVO;
+import com.github.link2fun.system.modular.file.model.dto.FileUploadDTO;
 import org.noear.solon.core.handle.UploadedFile;
 
 import java.io.IOException;
@@ -32,7 +32,7 @@ public interface IFileService {
    * @return 上传结果(访问地址、存储名、原文件名)
    * @throws java.io.IOException 落盘失败
    */
-  FileUploadVO uploadFile(UploadedFile file) throws IOException;
+  FileUploadDTO uploadFile(UploadedFile file) throws IOException;
 
   /**
    * 批量上传文件
@@ -41,7 +41,7 @@ public interface IFileService {
    * @return 每个文件的上传结果
    * @throws java.io.IOException 任一文件落盘失败
    */
-  List<FileUploadVO> uploadFiles(List<UploadedFile> files) throws IOException;
+  List<FileUploadDTO> uploadFiles(List<UploadedFile> files) throws IOException;
 
   /**
    * 下载本地资源(如 /profile 下的头像)

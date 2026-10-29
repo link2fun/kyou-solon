@@ -3,8 +3,8 @@ package com.github.link2fun.system.modular.dict.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.ObjectUtil;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.domain.AjaxResult;
-import com.github.link2fun.support.core.domain.entity.SysDictData;
+import com.github.link2fun.support.core.domain.Resp;
+import com.github.link2fun.support.core.domain.dto.SysDictDataDTO;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
@@ -39,7 +39,7 @@ public class SystemDictDataController {
   @SaCheckPermission("system:dict:list")
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysDictDataSearchReq searchReq) {
-    Page<SysDictData> page = dictDataService.pageSearch(Page.ofCurrentContext(), searchReq);
+    Page<SysDictDataDTO> page = dictDataService.pageSearch(Page.ofCurrentContext(), searchReq, SysDictDataDTO.class);
     return TableDataInfo.of(page);
   }
 
@@ -47,8 +47,8 @@ public class SystemDictDataController {
   @SaCheckPermission("system:dict:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context response, SysDictDataSearchReq searchReq) {
-    List<SysDictData> list = dictDataService.selectDictDataList(searchReq);
-    ExcelUtil<SysDictData> util = new ExcelUtil<>(SysDictData.class);
+    List<SysDictDataDTO> list = dictDataService.selectDictDataList(searchReq, SysDictDataDTO.class);
+    ExcelUtil<SysDictDataDTO> util = new ExcelUtil<>(SysDictDataDTO.class);
     util.exportExcel(response, list, "字典数据");
   }
 
@@ -57,20 +57,20 @@ public class SystemDictDataController {
    */
   @SaCheckPermission("system:dict:query")
   @Mapping(value = "/{dictCode}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path Long dictCode) {
-    return AjaxResult.successData(dictDataService.selectDictDataById(dictCode));
+  public Resp<SysDictDataDTO> getInfo(@Path Long dictCode) {
+    return Resp.successData(dictDataService.selectDictDataById(dictCode, SysDictDataDTO.class));
   }
 
   /**
    * 根据字典类型查询字典数据信息
    */
   @Mapping(value = "/type/{dictType}", method = MethodType.GET)
-  public AjaxResult dictType(@Path String dictType) {
-    List<SysDictData> data = dictTypeService.selectDictDataByType(dictType);
+  public Resp<List<SysDictDataDTO>> dictType(@Path String dictType) {
+    List<SysDictDataDTO> data = dictTypeService.selectDictDataByType(dictType);
     if (ObjectUtil.isNull(data)) {
       data = new ArrayList<>();
     }
-    return AjaxResult.successData(data);
+    return Resp.successData(data);
   }
 
   /**
@@ -79,8 +79,8 @@ public class SystemDictDataController {
   @SaCheckPermission("system:dict:add")
   @Log(title = "字典数据", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysDictDataAddReq addReq) {
-    return AjaxResult.ofAffected(dictDataService.insertDictData(addReq));
+  public Resp<Void> add(@Validated @Body SysDictDataAddReq addReq) {
+    return Resp.ofAffected(dictDataService.insertDictData(addReq));
   }
 
   /**
@@ -89,8 +89,8 @@ public class SystemDictDataController {
   @SaCheckPermission("system:dict:edit")
   @Log(title = "字典数据", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysDictDataModifyReq modifyReq) {
-    return AjaxResult.ofAffected(dictDataService.updateDictData(modifyReq));
+  public Resp<Void> edit(@Validated @Body SysDictDataModifyReq modifyReq) {
+    return Resp.ofAffected(dictDataService.updateDictData(modifyReq));
   }
 
   /**
@@ -99,8 +99,8 @@ public class SystemDictDataController {
   @SaCheckPermission("system:dict:remove")
   @Log(title = "字典类型", businessType = BusinessType.DELETE)
   @Mapping(value = "/{dictCodes}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> dictCodes) {
+  public Resp<Void> remove(@Path List<Long> dictCodes) {
     dictDataService.deleteDictDataByIds(dictCodes);
-    return AjaxResult.success();
+    return Resp.success();
   }
 }

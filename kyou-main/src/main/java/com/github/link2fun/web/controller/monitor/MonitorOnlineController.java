@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.annotation.RepeatSubmit;
 import com.github.link2fun.support.context.action.tool.SaSessionBizTool;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
@@ -40,8 +40,8 @@ public class MonitorOnlineController {
   @SaCheckPermission(value = {"monitor:online:forceLogout"})
   @Log(title = "在线用户", businessType = BusinessType.FORCE, mask = true)
   @Mapping(value = "/{tokenId}", method = MethodType.DELETE)
-  public AjaxResult forceLogout(@Path String tokenId) {
+  public Resp<Void> forceLogout(@Path String tokenId) {
     SaSessionBizTool.kickout(tokenId);
-    return AjaxResult.success();
+    return Resp.success();
   }
 }

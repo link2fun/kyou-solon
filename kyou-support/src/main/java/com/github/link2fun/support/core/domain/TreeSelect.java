@@ -3,8 +3,8 @@ package com.github.link2fun.support.core.domain;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.github.link2fun.support.core.domain.entity.SysDept;
-import com.github.link2fun.support.core.domain.entity.SysMenu;
+import com.github.link2fun.support.core.domain.dto.SysDeptDTO;
+import com.github.link2fun.support.core.domain.dto.SysMenuDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,13 +40,13 @@ public class TreeSelect implements Serializable {
 
   }
 
-  public TreeSelect(SysDept dept) {
+  public TreeSelect(SysDeptDTO dept) {
     this.id = dept.getDeptId();
     this.label = dept.getDeptName();
     this.children = dept.getChildren().stream().map(TreeSelect::new).collect(Collectors.toList());
   }
 
-  public TreeSelect(SysMenu menu) {
+  public TreeSelect(SysMenuDTO menu) {
     this.id = menu.getMenuId();
     this.label = menu.getMenuName();
     this.children = menu.getChildren().stream().map(TreeSelect::new).collect(Collectors.toList());

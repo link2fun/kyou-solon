@@ -28,7 +28,7 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
    * @return 调度任务日志集合
    */
   @Override
-  public List<SysJobLog> selectJobLogList(SysJobLogSearchReq searchReq) {
+  public <T> List<T> selectJobLogList(SysJobLogSearchReq searchReq, final Class<T> resultClass) {
 
     return entityQuery.queryable(SysJobLog.class)
       .where(jobLog -> {
@@ -39,6 +39,7 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
         jobLog.createTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime());
         jobLog.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
       })
+      .selectAutoInclude(resultClass)
       .toList();
   }
 
@@ -49,10 +50,11 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
    * @return 调度任务日志对象信息
    */
   @Override
-  public SysJobLog selectJobLogById(Long jobLogId) {
+  public <T> T selectJobLogById(Long jobLogId, final Class<T> resultClass) {
 //    return getBaseMapper().selectById(jobLogId);
     return entityQuery.queryable(SysJobLog.class)
       .whereById(jobLogId)
+      .selectAutoInclude(resultClass)
       .singleOrNull();
   }
 
@@ -104,9 +106,9 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
   }
 
   @Override
-  public Page<SysJobLog> pageSearchJobLog(final Page<SysJobLog> pageRequest, final SysJobLogSearchReq searchReq) {
+  public <T> Page<T> pageSearchJobLog(final Page<T> pageRequest, final SysJobLogSearchReq searchReq, final Class<T> resultClass) {
 
-    EasyPageResult<SysJobLog> pageResult = entityQuery.queryable(SysJobLog.class)
+    EasyPageResult<T> pageResult = entityQuery.queryable(SysJobLog.class)
       .where(jobLogQuery -> {
         jobLogQuery.jobName().like(StrUtil.isNotBlank(searchReq.getJobName()), searchReq.getJobName());
         jobLogQuery.jobGroup().eq(StrUtil.isNotBlank(searchReq.getJobGroup()), searchReq.getJobGroup());
@@ -116,6 +118,7 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
         jobLogQuery.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
       })
       .orderBy(jobLog -> jobLog.jobLogId().desc())
+      .selectAutoInclude(resultClass)
       .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
     return Page.of(pageRequest, pageResult);
   }

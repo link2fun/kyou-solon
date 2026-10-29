@@ -20,7 +20,7 @@ public interface ISysJobService {
    * @param searchReq   调度查询条件
    * @return 调度任务集合
    */
-  Page<SysJob> selectJobList(final Page<SysJob> pageRequest, SysJobSearchReq searchReq);
+  <T> Page<T> selectJobList(final Page<T> pageRequest, SysJobSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 通过调度任务ID查询调度信息
@@ -28,7 +28,7 @@ public interface ISysJobService {
    * @param jobId 调度任务ID
    * @return 调度任务对象信息
    */
-  SysJob selectJobById(Long jobId);
+  <T> T selectJobById(Long jobId, Class<T> resultClass);
 
   /**
    * 暂停任务

@@ -2,6 +2,7 @@ package com.github.link2fun.system.modular.dept.service;
 
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.TreeSelect;
+import com.github.link2fun.support.core.domain.dto.SysDeptDTO;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.system.modular.dept.model.req.SysDeptAddReq;
 import com.github.link2fun.system.modular.dept.model.req.SysDeptModifyReq;
@@ -23,7 +24,7 @@ public interface ISystemDeptService {
    * @param searchReq 部门查询条件
    * @return 部门信息集合
    */
-  List<SysDept> selectDeptList(final ActionContext context, SysDeptSearchReq searchReq);
+  <T> List<T> selectDeptList(final ActionContext context, SysDeptSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 查询部门树结构信息
@@ -44,7 +45,7 @@ public interface ISystemDeptService {
    * @param deptId  要排除的部门ID
    * @return 可选的部门列表
    */
-  List<SysDept> selectDeptListExcludingSubtree(final ActionContext context, Long deptId);
+  List<SysDeptDTO> selectDeptListExcludingSubtree(final ActionContext context, Long deptId);
 
   /**
    * 构建前端所需要树结构
@@ -52,7 +53,7 @@ public interface ISystemDeptService {
    * @param depts 部门列表
    * @return 树结构列表
    */
-  List<SysDept> buildDeptTree(List<SysDept> depts);
+  List<SysDeptDTO> buildDeptTree(List<SysDeptDTO> depts);
 
   /**
    * 构建前端所需要下拉树结构
@@ -60,7 +61,7 @@ public interface ISystemDeptService {
    * @param depts 部门列表
    * @return 下拉树结构列表
    */
-  List<TreeSelect> buildDeptTreeSelect(List<SysDept> depts);
+  List<TreeSelect> buildDeptTreeSelect(List<SysDeptDTO> depts);
 
   /**
    * 根据角色ID查询部门树信息
@@ -76,7 +77,7 @@ public interface ISystemDeptService {
    * @param deptId 部门ID
    * @return 部门信息
    */
-  SysDept selectDeptById(Long deptId);
+  SysDeptDTO selectDeptById(Long deptId);
 
   /**
    * 按部门ID查询部门信息, 内部先做数据权限校验
@@ -88,7 +89,7 @@ public interface ISystemDeptService {
    * @param deptId  部门ID
    * @return 部门信息
    */
-  SysDept selectDeptDetail(ActionContext context, Long deptId);
+  SysDeptDTO selectDeptDetail(ActionContext context, Long deptId);
 
   /**
    * 新增保存部门信息(内部已完成部门名称唯一性检查)

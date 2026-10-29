@@ -2,17 +2,15 @@ package com.github.link2fun.system.modular.config.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
 import com.github.link2fun.support.utils.poi.ExcelUtil;
-import com.github.link2fun.system.modular.config.model.SysConfig;
+import com.github.link2fun.system.modular.config.model.dto.SysConfigDTO;
 import com.github.link2fun.system.modular.config.model.req.SysConfigAddReq;
 import com.github.link2fun.system.modular.config.model.req.SysConfigModifyReq;
 import com.github.link2fun.system.modular.config.model.req.SysConfigSearchReq;
-import com.github.link2fun.system.modular.config.model.vo.SysConfigDetailVO;
-import com.github.link2fun.system.modular.config.model.vo.SysConfigPageVO;
 import com.github.link2fun.system.modular.config.service.ISystemConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.annotation.*;
@@ -36,7 +34,7 @@ public class SystemConfigController {
   @SaCheckPermission("system:config:list")
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysConfigSearchReq searchReq) {
-    Page<SysConfigPageVO> page = configService.pageSearchConfig(Page.ofCurrentContext(), searchReq, SysConfigPageVO.class);
+    Page<SysConfigDTO> page = configService.pageSearchConfig(Page.ofCurrentContext(), searchReq, SysConfigDTO.class);
     return TableDataInfo.of(page);
   }
 
@@ -45,8 +43,8 @@ public class SystemConfigController {
   @SaCheckPermission("system:config:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context context, SysConfigSearchReq searchReq) {
-    List<SysConfigDetailVO> list = configService.selectConfigList(searchReq, SysConfigDetailVO.class);
-    ExcelUtil<SysConfigDetailVO> util = new ExcelUtil<>(SysConfigDetailVO.class);
+    List<SysConfigDTO> list = configService.selectConfigList(searchReq, SysConfigDTO.class);
+    ExcelUtil<SysConfigDTO> util = new ExcelUtil<>(SysConfigDTO.class);
     util.exportExcel(context, list, "参数数据");
   }
 
@@ -55,17 +53,17 @@ public class SystemConfigController {
    */
   @SaCheckPermission("system:config:query")
   @Mapping(value = "/{configId}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path Integer configId) {
-    SysConfig config = configService.findOneByConfigId(configId, SysConfig.class);
-    return AjaxResult.successData(config);
+  public Resp<SysConfigDTO> getInfo(@Path Integer configId) {
+    SysConfigDTO config = configService.findOneByConfigId(configId, SysConfigDTO.class);
+    return Resp.successData(config);
   }
 
   /**
    * 根据参数键名查询参数值
    */
   @Mapping(value = "/configKey/{configKey}", method = MethodType.GET)
-  public AjaxResult getConfigKey(@Path String configKey) {
-    return AjaxResult.successData(configService.selectConfigByKey(configKey));
+  public Resp<String> getConfigKey(@Path String configKey) {
+    return Resp.successData(configService.selectConfigByKey(configKey));
   }
 
   /**
@@ -74,8 +72,8 @@ public class SystemConfigController {
   @SaCheckPermission("system:config:add")
   @Log(title = "参数管理", businessType = BusinessType.INSERT, mask = true)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysConfigAddReq addReq) {
-    return AjaxResult.ofAffected(configService.insertConfig(addReq));
+  public Resp<Void> add(@Validated @Body SysConfigAddReq addReq) {
+    return Resp.ofAffected(configService.insertConfig(addReq));
   }
 
   /**
@@ -84,8 +82,8 @@ public class SystemConfigController {
   @SaCheckPermission("system:config:edit")
   @Log(title = "参数管理", businessType = BusinessType.UPDATE, mask = true)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysConfigModifyReq modifyReq) {
-    return AjaxResult.ofAffected(configService.updateConfig(modifyReq));
+  public Resp<Void> edit(@Validated @Body SysConfigModifyReq modifyReq) {
+    return Resp.ofAffected(configService.updateConfig(modifyReq));
   }
 
   /**
@@ -94,9 +92,9 @@ public class SystemConfigController {
   @SaCheckPermission("system:config:remove")
   @Log(title = "参数管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{configIds}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> configIds) {
+  public Resp<Void> remove(@Path List<Long> configIds) {
     configService.deleteConfigByIds(configIds);
-    return AjaxResult.success();
+    return Resp.success();
   }
 
   /**
@@ -105,9 +103,9 @@ public class SystemConfigController {
   @SaCheckPermission("system:config:remove")
   @Log(title = "参数管理", businessType = BusinessType.CLEAN)
   @Mapping(value = "/refreshCache", method = MethodType.DELETE)
-  public AjaxResult refreshCache() {
+  public Resp<Void> refreshCache() {
     configService.resetConfigCache();
-    return AjaxResult.success();
+    return Resp.success();
   }
 
 }

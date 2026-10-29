@@ -8,6 +8,7 @@ import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.constant.UserConstants;
+import com.github.link2fun.support.core.domain.dto.SysDictDataDTO;
 import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDictDataProxy;
 import com.github.link2fun.support.core.page.Page;
@@ -37,8 +38,8 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
    * @return 字典数据集合信息
    */
   @Override
-  public List<SysDictData> selectDictDataList(final SysDictDataSearchReq searchReq) {
-    return buildQuery(searchReq).toList();
+  public <T> List<T> selectDictDataList(final SysDictDataSearchReq searchReq, final Class<T> resultClass) {
+    return buildQuery(searchReq).selectAutoInclude(resultClass).toList();
   }
 
   /** 构造字典数据列表查询 */
@@ -65,8 +66,8 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
    * @return 分页结果
    */
   @Override
-  public Page<SysDictData> pageSearch(final Page<SysDictData> pageRequest, final SysDictDataSearchReq searchReq) {
-    return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
+  public <T> Page<T> pageSearch(final Page<T> pageRequest, final SysDictDataSearchReq searchReq, final Class<T> resultClass) {
+    return Page.of(pageRequest, buildQuery(searchReq).selectAutoInclude(resultClass).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**
@@ -93,10 +94,11 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
    * @return 字典数据
    */
   @Override
-  public SysDictData selectDictDataById(final Long dictId) {
+  public <T> T selectDictDataById(final Long dictId, final Class<T> resultClass) {
 //    return getBaseMapper().selectById(dictId);
     return entityQuery.queryable(SysDictData.class)
       .whereById(dictId)
+      .selectAutoInclude(resultClass)
       .singleOrNull();
   }
 
@@ -126,7 +128,7 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
 
     // 逐类型按读路径口径(仅正常状态)回填缓存, 无剩余数据时只失效不回填
     for (final String dictType : dictTypeList) {
-      final List<SysDictData> dataList = selectDictDataByType(dictType);
+      final List<SysDictDataDTO> dataList = selectDictDataByType(dictType);
       if (CollectionUtil.isNotEmpty(dataList)) {
         DictUtils.setDictCache(dictType, dataList);
       } else {
@@ -177,11 +179,12 @@ public class SystemDictDataServiceImpl implements ISystemDictDataService {
    * @return 字典数据集合信息
    */
   @Override
-  public List<SysDictData> selectDictDataByType(final String dictType) {
+  public List<SysDictDataDTO> selectDictDataByType(final String dictType) {
     return entityQuery.queryable(SysDictData.class)
       .where(dictData -> dictData.dictType().eq(dictType))
       .where(dictData -> dictData.status().eq(UserConstants.DICT_NORMAL))
       .orderBy(dictData -> dictData.dictSort().asc())
+      .selectAutoInclude(SysDictDataDTO.class)
       .toList();
   }
 

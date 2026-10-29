@@ -26,7 +26,7 @@ public interface ISystemLoginInfoService {
    * @param searchReq   登录日志查询条件
    * @return 登录记录集合
    */
-  Page<SysLoginInfo> selectLoginInfoList(final Page<SysLoginInfo> pageRequest, SysLoginInfoSearchReq searchReq);
+  <T> Page<T> selectLoginInfoList(final Page<T> pageRequest, SysLoginInfoSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 批量删除系统登录日志

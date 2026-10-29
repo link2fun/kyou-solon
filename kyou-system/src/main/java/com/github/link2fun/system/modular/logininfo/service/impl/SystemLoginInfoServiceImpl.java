@@ -39,9 +39,9 @@ public class SystemLoginInfoServiceImpl implements ISystemLoginInfoService {
    * @return 登录记录集合
    */
   @Override
-  public Page<SysLoginInfo> selectLoginInfoList(final Page<SysLoginInfo> pageRequest, final SysLoginInfoSearchReq searchReq) {
+  public <T> Page<T> selectLoginInfoList(final Page<T> pageRequest, final SysLoginInfoSearchReq searchReq, final Class<T> resultClass) {
 
-    EasyPageResult<SysLoginInfo> pageResult = entityQuery.queryable(SysLoginInfo.class)
+    EasyPageResult<T> pageResult = entityQuery.queryable(SysLoginInfo.class)
       .where(s -> {
         s.ipaddr().like(StrUtil.isNotBlank(searchReq.getIpaddr()), searchReq.getIpaddr());
         s.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus());
@@ -49,6 +49,7 @@ public class SystemLoginInfoServiceImpl implements ISystemLoginInfoService {
         s.loginTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime());
         s.loginTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
       })
+      .selectAutoInclude(resultClass)
       .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
 
     return Page.of(pageRequest, pageResult);

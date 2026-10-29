@@ -41,7 +41,7 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
    */
   @Override
   @Transaction(policy = TranPolicy.supports)
-  public <T> T findOneByConfigId(final Integer configId, Class<T> resultClass) {
+  public <T> T findOneByConfigId(final Integer configId, final Class<T> resultClass) {
     Preconditions.checkNotNull(configId, "configId is null");
 
     return entityQuery.queryable(SysConfig.class)

@@ -3,15 +3,11 @@ package com.github.link2fun.support.utils.poi;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.*;
 import com.github.link2fun.support.annotation.Excel;
 import com.github.link2fun.support.annotation.Excels;
 import com.github.link2fun.support.config.KyouProperties;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.exception.UtilException;
 import com.github.link2fun.support.utils.DateUtils;
 import com.github.link2fun.support.utils.DictUtils;
@@ -140,7 +136,7 @@ public class ExcelUtil<T> {
   /**
    * 统计列表
    */
-  private Map<Integer, Double> statistics = new HashMap<>();
+  private final Map<Integer, Double> statistics = new HashMap<>();
 
   /**
    * 数字格式
@@ -393,7 +389,7 @@ public class ExcelUtil<T> {
    * @param sheetName 工作表的名称
    * @return 结果
    */
-  public AjaxResult exportExcel(List<T> list, String sheetName) {
+  public Resp<String> exportExcel(List<T> list, String sheetName) {
     return exportExcel(list, sheetName, StrUtil.EMPTY);
   }
 
@@ -405,7 +401,7 @@ public class ExcelUtil<T> {
    * @param title     标题
    * @return 结果
    */
-  public AjaxResult exportExcel(List<T> list, String sheetName, String title) {
+  public Resp<String> exportExcel(List<T> list, String sheetName, String title) {
     this.init(list, sheetName, title, Excel.Type.EXPORT);
     return exportExcel();
   }
@@ -440,7 +436,7 @@ public class ExcelUtil<T> {
    * @param sheetName 工作表的名称
    * @return 结果
    */
-  public AjaxResult importTemplateExcel(String sheetName) {
+  public Resp<String> importTemplateExcel(String sheetName) {
     return importTemplateExcel(sheetName, StrUtil.EMPTY);
   }
 
@@ -451,7 +447,7 @@ public class ExcelUtil<T> {
    * @param title     标题
    * @return 结果
    */
-  public AjaxResult importTemplateExcel(String sheetName, String title) {
+  public Resp<String> importTemplateExcel(String sheetName, String title) {
     this.init(null, sheetName, title, Excel.Type.IMPORT);
     return exportExcel();
   }
@@ -506,7 +502,7 @@ public class ExcelUtil<T> {
    *
    * @return 结果
    */
-  public AjaxResult exportExcel() {
+  public Resp<String> exportExcel() {
     OutputStream out = null;
     try {
       writeSheet();
@@ -514,7 +510,7 @@ public class ExcelUtil<T> {
       out = new FileOutputStream(getAbsoluteFile(filename));
 
       wb.write(Context.current().outputStream());
-      return AjaxResult.successData(filename);
+      return Resp.successData(filename);
     } catch (Exception e) {
       log.error("导出Excel异常{}", e.getMessage());
       throw new UtilException("导出Excel失败，请联系网站管理员！");
@@ -1049,7 +1045,7 @@ public class ExcelUtil<T> {
   public String dataFormatHandlerAdapter(Object value, Excel excel, Cell cell) {
     try {
       Object instance = excel.handler().newInstance();
-      Method formatMethod = excel.handler().getMethod("format", new Class[]{Object.class, String[].class, Cell.class, Workbook.class});
+      Method formatMethod = excel.handler().getMethod("format", Object.class, String[].class, Cell.class, Workbook.class);
       value = formatMethod.invoke(instance, value, excel.args(), cell, this.wb);
     } catch (Exception e) {
       log.error("不能格式化数据{} {}", e.getMessage(), excel.handler());
@@ -1420,7 +1416,7 @@ public class ExcelUtil<T> {
     getMethodName.append(name.substring(1));
     Method method = null;
     try {
-      method = pojoClass.getMethod(getMethodName.toString(), new Class[]{});
+      method = pojoClass.getMethod(getMethodName.toString());
     } catch (Exception e) {
       log.error("获取对象异常{}", e.getMessage());
     }

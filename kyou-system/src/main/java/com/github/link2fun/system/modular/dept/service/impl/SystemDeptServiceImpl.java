@@ -13,6 +13,7 @@ import com.github.link2fun.support.aggregatedelete.AggregateDeleter;
 import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.TreeSelect;
+import com.github.link2fun.support.core.domain.dto.SysDeptDTO;
 import com.github.link2fun.support.core.domain.entity.SysDept;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDeptProxy;
@@ -74,7 +75,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @return 部门信息集合
    */
   @Override
-  public List<SysDept> selectDeptList(final ActionContext context, final SysDeptSearchReq searchReq) {
+  public <T> List<T> selectDeptList(final ActionContext context, final SysDeptSearchReq searchReq, final Class<T> resultClass) {
 
     final DataScope dataScope = DataScope.of(entityQuery, context);
     return entityQuery.queryable(SysDept.class).asAlias(SysDept.TABLE_ALIAS)
@@ -88,6 +89,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
         dept.parentId().asc();
         dept.orderNum().asc();
       })
+      .selectAutoInclude(resultClass)
       .toList();
   }
 
@@ -100,7 +102,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    */
   @Override
   public List<TreeSelect> selectDeptTreeList(final ActionContext context, final SysDeptSearchReq searchReq) {
-    final List<SysDept> deptList = selectDeptList(context, searchReq);
+    final List<SysDeptDTO> deptList = selectDeptList(context, searchReq, SysDeptDTO.class);
     return self.buildDeptTreeSelect(deptList);
   }
 
@@ -112,8 +114,8 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @return 可选的部门列表
    */
   @Override
-  public List<SysDept> selectDeptListExcludingSubtree(final ActionContext context, final Long deptId) {
-    final List<SysDept> deptList = selectDeptList(context, new SysDeptSearchReq());
+  public List<SysDeptDTO> selectDeptListExcludingSubtree(final ActionContext context, final Long deptId) {
+    final List<SysDeptDTO> deptList = selectDeptList(context, new SysDeptSearchReq(), SysDeptDTO.class);
     // 自身 + ancestors 链中含该部门的即为子孙
     deptList.removeIf(dept -> deptId.equals(dept.getDeptId()) || containsAncestor(dept.getAncestors(), deptId));
     return deptList;
@@ -126,8 +128,8 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @return 树结构列表
    */
   @Override
-  public List<SysDept> buildDeptTree(final List<SysDept> depts) {
-    return TreeBuilder.build(depts, SysDept::getDeptId, SysDept::getParentId, SysDept::setChildren);
+  public List<SysDeptDTO> buildDeptTree(final List<SysDeptDTO> depts) {
+    return TreeBuilder.build(depts, SysDeptDTO::getDeptId, SysDeptDTO::getParentId, SysDeptDTO::setChildren);
   }
 
   /**
@@ -137,8 +139,8 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @return 下拉树结构列表
    */
   @Override
-  public List<TreeSelect> buildDeptTreeSelect(final List<SysDept> depts) {
-    final List<SysDept> deptTreeList = self.buildDeptTree(depts);
+  public List<TreeSelect> buildDeptTreeSelect(final List<SysDeptDTO> depts) {
+    final List<SysDeptDTO> deptTreeList = self.buildDeptTree(depts);
     return deptTreeList.stream().map(TreeSelect::new).toList();
   }
 
@@ -177,9 +179,10 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @return 部门信息
    */
   @Override
-  public SysDept selectDeptById(final Long deptId) {
+  public SysDeptDTO selectDeptById(final Long deptId) {
     return entityQuery.queryable(SysDept.class)
       .whereById(deptId)
+      .selectAutoInclude(SysDeptDTO.class)
       .singleOrNull();
   }
 
@@ -191,7 +194,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
    * @return 部门信息
    */
   @Override
-  public SysDept selectDeptDetail(final ActionContext context, final Long deptId) {
+  public SysDeptDTO selectDeptDetail(final ActionContext context, final Long deptId) {
     dataScopeRowGuard.assertDeptVisible(context, deptId);
     return selectDeptById(deptId);
   }
@@ -264,7 +267,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
     final SysDept dept = BeanUtil.toBean(addReq, SysDept.class);
     checkDeptNameUnique("新增", dept);
 
-    final SysDept parentDept = self.selectDeptById(dept.getParentId());
+    final SysDeptDTO parentDept = self.selectDeptById(dept.getParentId());
     if (ObjectUtil.isNull(parentDept)) {
       throw new ServiceException("上级部门不存在");
     }
@@ -304,7 +307,7 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
     if (dept.getParentId() == 0L) {
       // 根部门（parentId=0）没有上级记录, ancestors 固定为 "0"；但子孙的 ancestors 仍要跟着改写,
       // 否则 find_in_set 会继续沿旧父链命中, 部门树与数据权限都会错乱
-      final SysDept oldDept = self.selectDeptById(deptId);
+      final SysDeptDTO oldDept = self.selectDeptById(deptId);
       dept.setAncestors("0");
       if (ObjectUtil.isNotNull(oldDept)) {
         updateDeptChildren(deptId, "0", oldDept.getAncestors());
@@ -312,8 +315,8 @@ public class SystemDeptServiceImpl implements ISystemDeptService {
       return entityQuery.updatable(dept).setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS).executeRows();
     }
 
-    SysDept newParentDept = self.selectDeptById(dept.getParentId());
-    SysDept oldDept = self.selectDeptById(dept.getDeptId());
+    SysDeptDTO newParentDept = self.selectDeptById(dept.getParentId());
+    SysDeptDTO oldDept = self.selectDeptById(dept.getDeptId());
     if (ObjectUtil.isNull(newParentDept)) {
       throw new ServiceException("修改部门'" + dept.getDeptName() + "'失败，上级部门不存在");
     }

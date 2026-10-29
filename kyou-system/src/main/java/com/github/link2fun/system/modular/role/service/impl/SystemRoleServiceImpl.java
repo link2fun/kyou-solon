@@ -23,6 +23,7 @@ import com.github.link2fun.support.easyquery.DataScope;
 import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.uuid.IdUtils;
+import com.github.link2fun.system.modular.role.model.dto.SysRoleListDTO;
 import com.github.link2fun.system.modular.role.model.req.*;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.system.modular.roledept.RoleDeptRelation;
@@ -167,8 +168,8 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @return 角色列表
    */
   @Override
-  public List<SysRole> selectRoleAll(ActionContext context) {
-    return selectRoleList(context, Page.ofAll(), new SysRoleSearchReq(), SysRole.class).getRecords();
+  public <T> List<T> selectRoleAll(ActionContext context, final Class<T> resultClass) {
+    return selectRoleList(context, Page.ofAll(), new SysRoleSearchReq(), resultClass).getRecords();
   }
 
   /**
@@ -179,8 +180,8 @@ public class SystemRoleServiceImpl implements ISystemRoleService {
    * @return 可分配的角色列表
    */
   @Override
-  public List<SysRole> selectAssignableRoles(final ActionContext context, final Long userId) {
-    final List<SysRole> roles = selectRoleAll(context);
+  public List<SysRoleListDTO> selectAssignableRoles(final ActionContext context, final Long userId) {
+    final List<SysRoleListDTO> roles = selectRoleAll(context, SysRoleListDTO.class);
     if (SysUser.isSuperAdmin(userId)) {
       return roles;
     }

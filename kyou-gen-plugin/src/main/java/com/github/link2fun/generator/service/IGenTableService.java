@@ -2,6 +2,7 @@ package com.github.link2fun.generator.service;
 
 
 import com.github.link2fun.generator.domain.GenTable;
+import com.github.link2fun.generator.domain.dto.GenTableDTO;
 import com.github.link2fun.generator.domain.req.GenTableModifyReq;
 import com.github.link2fun.generator.domain.req.GenTableSearchReq;
 import com.github.link2fun.support.core.page.Page;
@@ -22,7 +23,7 @@ public interface IGenTableService {
    * @param searchReq   查询条件
    * @return 业务集合
    */
-  Page<GenTable> selectGenTableList(final Page<GenTable> pageRequest, GenTableSearchReq searchReq);
+  <T> Page<T> selectGenTableList(final Page<T> pageRequest, GenTableSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 查询据库列表
@@ -32,7 +33,7 @@ public interface IGenTableService {
    * @param searchReq 查询条件
    * @return 数据库表集合
    */
-  Page<GenTable> selectDbTableList(GenTableSearchReq searchReq);
+  Page<GenTableDTO> selectDbTableList(GenTableSearchReq searchReq);
 
   /**
    * 查询据库列表

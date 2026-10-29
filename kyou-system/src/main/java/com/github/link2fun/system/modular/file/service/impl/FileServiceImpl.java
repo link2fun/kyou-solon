@@ -8,7 +8,7 @@ import com.github.link2fun.support.constant.HttpStatus;
 import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.support.utils.file.FileUploadUtils;
 import com.github.link2fun.support.utils.file.FileUtils;
-import com.github.link2fun.system.modular.file.model.vo.FileUploadVO;
+import com.github.link2fun.system.modular.file.model.dto.FileUploadDTO;
 import com.github.link2fun.system.modular.file.service.IFileService;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Inject;
@@ -68,7 +68,7 @@ public class FileServiceImpl implements IFileService {
    * @return 上传结果(访问地址、存储名、原文件名)
    */
   @Override
-  public FileUploadVO uploadFile(final UploadedFile file) throws IOException {
+  public FileUploadDTO uploadFile(final UploadedFile file) throws IOException {
     final String fileName = FileUploadUtils.upload(kyouProperties.getUploadPath(), file);
     return toResult(file, fileName);
   }
@@ -80,8 +80,8 @@ public class FileServiceImpl implements IFileService {
    * @return 每个文件的上传结果
    */
   @Override
-  public List<FileUploadVO> uploadFiles(final List<UploadedFile> files) throws IOException {
-    final List<FileUploadVO> results = new ArrayList<>(files.size());
+  public List<FileUploadDTO> uploadFiles(final List<UploadedFile> files) throws IOException {
+    final List<FileUploadDTO> results = new ArrayList<>(files.size());
     for (final UploadedFile file : files) {
       results.add(uploadFile(file));
     }
@@ -124,8 +124,8 @@ public class FileServiceImpl implements IFileService {
   }
 
   /** 组装上传结果 */
-  private FileUploadVO toResult(final UploadedFile file, final String fileName) {
-    final FileUploadVO result = new FileUploadVO();
+  private FileUploadDTO toResult(final UploadedFile file, final String fileName) {
+    final FileUploadDTO result = new FileUploadDTO();
     result.setUrl(serverConfig.getUrl() + fileName);
     result.setFileName(fileName);
     result.setNewFileName(FileUtils.getName(fileName));

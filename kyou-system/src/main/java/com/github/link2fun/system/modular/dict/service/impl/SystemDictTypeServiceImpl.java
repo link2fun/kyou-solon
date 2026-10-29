@@ -8,7 +8,7 @@ import com.easy.query.api.proxy.entity.select.EntityQueryable;
 import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.support.constant.UserConstants;
-import com.github.link2fun.support.core.domain.entity.SysDictData;
+import com.github.link2fun.support.core.domain.dto.SysDictDataDTO;
 import com.github.link2fun.support.core.domain.entity.SysDictType;
 import com.github.link2fun.support.core.domain.entity.proxy.SysDictTypeProxy;
 import com.github.link2fun.support.core.page.Page;
@@ -64,8 +64,8 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @return 字典类型集合信息
    */
   @Override
-  public List<SysDictType> selectDictTypeList(final SysDictTypeSearchReq searchReq) {
-    return buildQuery(searchReq).toList();
+  public <T> List<T> selectDictTypeList(final SysDictTypeSearchReq searchReq, final Class<T> resultClass) {
+    return buildQuery(searchReq).selectAutoInclude(resultClass).toList();
   }
 
   /** 构造字典类型列表查询 */
@@ -90,8 +90,8 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @return 字典类型分页数据
    */
   @Override
-  public Page<SysDictType> pageSearch(final Page<SysDictType> pageRequest, final SysDictTypeSearchReq searchReq) {
-    return Page.of(pageRequest, buildQuery(searchReq).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
+  public <T> Page<T> pageSearch(final Page<T> pageRequest, final SysDictTypeSearchReq searchReq, final Class<T> resultClass) {
+    return Page.of(pageRequest, buildQuery(searchReq).selectAutoInclude(resultClass).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal()));
   }
 
   /**
@@ -100,8 +100,8 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @return 字典类型集合信息
    */
   @Override
-  public List<SysDictType> selectDictTypeAll() {
-    return entityQuery.queryable(SysDictType.class).toList();
+  public <T> List<T> selectDictTypeAll(final Class<T> resultClass) {
+    return entityQuery.queryable(SysDictType.class).selectAutoInclude(resultClass).toList();
   }
 
   /**
@@ -111,15 +111,15 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @return 字典数据集合信息
    */
   @Override
-  public List<SysDictData> selectDictDataByType(final String dictType) {
+  public List<SysDictDataDTO> selectDictDataByType(final String dictType) {
 
     // 有缓存则取缓存
-    final List<SysDictData> dictDataList = DictUtils.getDictCache(dictType);
+    final List<SysDictDataDTO> dictDataList = DictUtils.getDictCache(dictType);
     if (CollectionUtil.isNotEmpty(dictDataList)) {
       return dictDataList;
     }
     // 无缓存则查询数据库
-    List<SysDictData> dictDataListFromDb = dictDataService.selectDictDataByType(dictType);
+    List<SysDictDataDTO> dictDataListFromDb = dictDataService.selectDictDataByType(dictType);
     if (CollectionUtil.isNotEmpty(dictDataListFromDb)) {
       DictUtils.setDictCache(dictType, dictDataListFromDb);
       return dictDataListFromDb;
@@ -135,22 +135,10 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
    * @return 字典类型
    */
   @Override
-  public SysDictType selectDictTypeById(final Long dictId) {
+  public <T> T selectDictTypeById(final Long dictId, final Class<T> resultClass) {
     return entityQuery.queryable(SysDictType.class)
       .whereById(dictId)
-      .singleOrNull();
-  }
-
-  /**
-   * 根据字典类型查询信息
-   *
-   * @param dictType 字典类型
-   * @return 字典类型
-   */
-  @Override
-  public SysDictType selectDictTypeByType(final String dictType) {
-    return entityQuery.queryable(SysDictType.class)
-      .where(_dictType -> _dictType.dictType().eq(dictType))
+      .selectAutoInclude(resultClass)
       .singleOrNull();
   }
 
@@ -187,10 +175,10 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
 
     final SysDictDataSearchReq searchReq = new SysDictDataSearchReq();
     searchReq.setStatus(UserConstants.DICT_NORMAL);
-    final List<SysDictData> dictDataList = dictDataService.selectDictDataList(searchReq);
+    final List<SysDictDataDTO> dictDataList = dictDataService.selectDictDataList(searchReq, SysDictDataDTO.class);
     dictDataList.stream()
-      .sorted(Comparator.comparing(SysDictData::getDictSort))
-      .collect(Collectors.groupingBy(SysDictData::getDictType))
+      .sorted(Comparator.comparing(SysDictDataDTO::getDictSort))
+      .collect(Collectors.groupingBy(SysDictDataDTO::getDictType))
       .forEach(DictUtils::setDictCache);
     log.info("字典缓存数据加载成功");
   }
@@ -253,7 +241,7 @@ public class SystemDictTypeServiceImpl implements ISystemDictTypeService {
 //    final int row = getBaseMapper().updateById(dictTypeNew);
     final long row = entityQuery.updatable(dictTypeNew).setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS).executeRows();
     if (row > 0) {
-      final List<SysDictData> dataList = dictDataService.selectDictDataByType(dictTypeNew.getDictType());
+      final List<SysDictDataDTO> dataList = dictDataService.selectDictDataByType(dictTypeNew.getDictType());
       DictUtils.setDictCache(dictTypeNew.getDictType(), dataList);
     }
 

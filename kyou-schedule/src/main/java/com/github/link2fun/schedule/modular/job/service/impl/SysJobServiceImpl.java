@@ -9,6 +9,7 @@ import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.schedule.constant.ScheduleConstants;
 import com.github.link2fun.schedule.modular.job.model.SysJob;
 import com.github.link2fun.schedule.modular.job.model.SysJobLog;
+import com.github.link2fun.schedule.modular.job.model.dto.SysJobDTO;
 import com.github.link2fun.schedule.modular.job.model.req.SysJobAddReq;
 import com.github.link2fun.schedule.modular.job.model.req.SysJobChangeStatusReq;
 import com.github.link2fun.schedule.modular.job.model.req.SysJobModifyReq;
@@ -96,14 +97,15 @@ public class SysJobServiceImpl implements ISysJobService {
    * @return 调度任务集合
    */
   @Override
-  public Page<SysJob> selectJobList(final Page<SysJob> pageRequest, SysJobSearchReq searchReq) {
-    EasyPageResult<SysJob> pageResult = entityQuery.queryable(SysJob.class)
+  public <T> Page<T> selectJobList(final Page<T> pageRequest, SysJobSearchReq searchReq, final Class<T> resultClass) {
+    EasyPageResult<T> pageResult = entityQuery.queryable(SysJob.class)
       .where(job -> {
         job.jobName().like(StrUtil.isNotBlank(searchReq.getJobName()), searchReq.getJobName());
         job.jobGroup().eq(StrUtil.isNotBlank(searchReq.getJobGroup()), searchReq.getJobGroup());
         job.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus());
         job.invokeTarget().like(StrUtil.isNotBlank(searchReq.getInvokeTarget()), searchReq.getInvokeTarget());
       })
+      .selectAutoInclude(resultClass)
       .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal());
     return Page.of(pageRequest, pageResult);
   }
@@ -115,9 +117,10 @@ public class SysJobServiceImpl implements ISysJobService {
    * @return 调度任务对象信息
    */
   @Override
-  public SysJob selectJobById(Long jobId) {
+  public <T> T selectJobById(Long jobId, final Class<T> resultClass) {
     return entityQuery.queryable(SysJob.class)
       .where(job -> job.jobId().eq(jobId))
+      .selectAutoInclude(resultClass)
       .singleOrNull();
   }
 
@@ -129,7 +132,7 @@ public class SysJobServiceImpl implements ISysJobService {
   @Override
   @Transaction
   public long pauseJob(Long jobId) {
-    final SysJob job = selectJobById(jobId);
+    final SysJobDTO job = selectJobById(jobId, SysJobDTO.class);
     if (job == null) {
       throw new ServiceException("任务不存在或已过期");
     }
@@ -153,7 +156,7 @@ public class SysJobServiceImpl implements ISysJobService {
   @Override
   @Transaction
   public long resumeJob(Long jobId) {
-    final SysJob job = selectJobById(jobId);
+    final SysJobDTO job = selectJobById(jobId, SysJobDTO.class);
     if (job == null) {
       throw new ServiceException("任务不存在或已过期");
     }
@@ -187,7 +190,7 @@ public class SysJobServiceImpl implements ISysJobService {
   @Override
   @Transaction
   public long deleteJob(Long jobId) {
-    final SysJob job = selectJobById(jobId);
+    final SysJobDTO job = selectJobById(jobId, SysJobDTO.class);
     if (job == null) {
       return 0;
     }
@@ -234,7 +237,7 @@ public class SysJobServiceImpl implements ISysJobService {
       return pauseJob(jobId);
     }
     // 状态值非法时任务也必须存在, 与既有语义一致
-    if (selectJobById(jobId) == null) {
+    if (selectJobById(jobId, SysJobDTO.class) == null) {
       throw new ServiceException("任务不存在或已过期");
     }
     return 0;

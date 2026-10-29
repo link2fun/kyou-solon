@@ -2,8 +2,8 @@ package com.github.link2fun.system.modular.post.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.domain.AjaxResult;
-import com.github.link2fun.support.core.domain.entity.SysPost;
+import com.github.link2fun.support.core.domain.Resp;
+import com.github.link2fun.support.core.domain.dto.SysPostDTO;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
@@ -36,7 +36,7 @@ public class SystemPostController {
   @SaCheckPermission("system:post:list")
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysPostSearchReq searchReq) {
-    final Page<SysPost> list = postService.pageSearch(Page.ofCurrentContext(), searchReq);
+    final Page<SysPostDTO> list = postService.pageSearch(Page.ofCurrentContext(), searchReq, SysPostDTO.class);
     return TableDataInfo.of(list);
   }
 
@@ -44,8 +44,8 @@ public class SystemPostController {
   @SaCheckPermission("system:post:export")
   @Mapping(value = "/export", method = MethodType.POST)
   public void export(Context response, SysPostSearchReq searchReq) {
-    List<SysPost> list = postService.selectPostList(searchReq);
-    ExcelUtil<SysPost> util = new ExcelUtil<>(SysPost.class);
+    List<SysPostDTO> list = postService.selectPostList(searchReq, SysPostDTO.class);
+    ExcelUtil<SysPostDTO> util = new ExcelUtil<>(SysPostDTO.class);
     util.exportExcel(response, list, "岗位数据");
   }
 
@@ -54,8 +54,8 @@ public class SystemPostController {
    */
   @SaCheckPermission("system:post:query")
   @Mapping(value = "/{postId}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path Long postId) {
-    return AjaxResult.successData(postService.selectPostById(postId));
+  public Resp<SysPostDTO> getInfo(@Path Long postId) {
+    return Resp.successData(postService.selectPostById(postId, SysPostDTO.class));
   }
 
   /**
@@ -64,8 +64,8 @@ public class SystemPostController {
   @SaCheckPermission("system:post:add")
   @Log(title = "岗位管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysPostAddReq addReq) {
-    return AjaxResult.ofAffected(postService.insertPost(addReq));
+  public Resp<Void> add(@Validated @Body SysPostAddReq addReq) {
+    return Resp.ofAffected(postService.insertPost(addReq));
   }
 
   /**
@@ -74,8 +74,8 @@ public class SystemPostController {
   @SaCheckPermission("system:post:edit")
   @Log(title = "岗位管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysPostModifyReq modifyReq) {
-    return AjaxResult.ofAffected(postService.updatePost(modifyReq));
+  public Resp<Void> edit(@Validated @Body SysPostModifyReq modifyReq) {
+    return Resp.ofAffected(postService.updatePost(modifyReq));
   }
 
   /**
@@ -84,16 +84,16 @@ public class SystemPostController {
   @SaCheckPermission("system:post:remove")
   @Log(title = "岗位管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{postIds}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> postIds) {
-    return AjaxResult.ofAffected(postService.deletePostByIds(postIds));
+  public Resp<Void> remove(@Path List<Long> postIds) {
+    return Resp.ofAffected(postService.deletePostByIds(postIds));
   }
 
   /**
    * 获取岗位选择框列表
    */
   @Mapping(value = "/optionselect", method = MethodType.GET)
-  public AjaxResult optionselect() {
-    List<SysPost> posts = postService.selectPostAll();
-    return AjaxResult.successData(posts);
+  public Resp<List<SysPostDTO>> optionselect() {
+    List<SysPostDTO> posts = postService.selectPostAll(SysPostDTO.class);
+    return Resp.successData(posts);
   }
 }

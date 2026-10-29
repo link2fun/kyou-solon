@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.link2fun.generator.constant.GenConstants;
 import com.github.link2fun.generator.domain.GenTable;
 import com.github.link2fun.generator.domain.GenTableColumn;
+import com.github.link2fun.generator.domain.dto.GenTableDTO;
 import com.github.link2fun.generator.domain.proxy.GenTableProxy;
 import com.github.link2fun.generator.domain.req.GenTableModifyReq;
 import com.github.link2fun.generator.domain.req.GenTableSearchReq;
@@ -98,16 +99,18 @@ public class GenTableServiceImpl implements IGenTableService {
    * @return 业务集合
    */
   @Override
-  public Page<GenTable> selectGenTableList(final Page<GenTable> pageRequest, GenTableSearchReq searchReq) {
+  public <T> Page<T> selectGenTableList(final Page<T> pageRequest, GenTableSearchReq searchReq, final Class<T> resultClass) {
 
 
-    EasyPageResult<GenTable> pageResult = entityQuery.queryable(GenTable.class)
+    EasyPageResult<T> pageResult = entityQuery.queryable(GenTable.class)
       .where(proxy -> {
         proxy.tableName().like(StrUtil.isNotBlank(searchReq.getTableName()), searchReq.getTableName());
         proxy.tableComment().like(StrUtil.isNotBlank(searchReq.getTableComment()), searchReq.getTableComment());
         proxy.createTime().ge(Objects.nonNull(searchReq.getParams().getBeginTime()), searchReq.getParams().getBeginTime());
         proxy.createTime().le(Objects.nonNull(searchReq.getParams().getEndTime()), searchReq.getParams().getEndTime());
-      }).toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal());
+      })
+      .selectAutoInclude(resultClass)
+      .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize(), pageRequest.getTotal());
     return Page.of(pageRequest, pageResult);
   }
 
@@ -118,16 +121,16 @@ public class GenTableServiceImpl implements IGenTableService {
    * @return 数据库表集合
    */
   @Override
-  public Page<GenTable> selectDbTableList(GenTableSearchReq searchReq) {
+  public Page<GenTableDTO> selectDbTableList(GenTableSearchReq searchReq) {
 
     String anylineServiceName = Solon.context().getWrapsOfType(DataSource.class).stream().filter(BeanWrap::typed)
       .findFirst().map(BeanWrap::name).orElse("default");
 
     var tables = ServiceProxy.service(anylineServiceName).metadata().tables();
-    List<GenTable> dataList = tables.values().stream()
+    List<GenTableDTO> dataList = tables.values().stream()
       .filter(info -> !StrUtil.containsAny(info.getName(), "qrtz_", "gen_"))
       .map(t -> {
-        GenTable genT = new GenTable();
+        GenTableDTO genT = new GenTableDTO();
         genT.setTableName(t.getName());
         genT.setTableComment(t.getComment());
         genT.setCreateTime(LocalDateTimeUtil.of(t.getCreateTime()));
@@ -142,7 +145,7 @@ public class GenTableServiceImpl implements IGenTableService {
 
 
     // 构建返回结果
-    Page<GenTable> _page = new Page<>();
+    Page<GenTableDTO> _page = new Page<>();
     _page.setTotal(dataList.size());
     _page.setRecords(dataList);
     _page.setCurrent(_page.getCurrent());
@@ -293,7 +296,7 @@ public class GenTableServiceImpl implements IGenTableService {
     // 查询表信息
     GenTable table = entityQuery.queryable(GenTable.class)
       .whereById(tableId)
-      .selectAutoInclude(GenTable.class)
+      .include(GenTableProxy::columns)
       .singleNotNull();
     // 设置主子表信息
     setSubTable(table);
@@ -341,7 +344,7 @@ public class GenTableServiceImpl implements IGenTableService {
     // 查询表信息
     GenTable table = entityQuery.queryable(GenTable.class)
       .where(proxy -> proxy.tableName().eq(tableName))
-      .selectAutoInclude(GenTable.class)
+      .include(GenTableProxy::columns)
       .singleNotNull();
     // 设置主子表信息
     setSubTable(table);

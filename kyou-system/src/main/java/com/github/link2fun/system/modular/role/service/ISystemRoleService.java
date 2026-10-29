@@ -4,6 +4,7 @@ import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.system.modular.role.model.dto.SysRoleListDTO;
 import com.github.link2fun.system.modular.role.model.req.*;
 
 import java.util.List;
@@ -55,7 +56,7 @@ public interface ISystemRoleService {
    *
    * @return 角色列表
    */
-  List<SysRole> selectRoleAll(ActionContext context);
+  <T> List<T> selectRoleAll(ActionContext context, Class<T> resultClass);
 
   /**
    * 查询可授予目标用户的角色
@@ -67,7 +68,7 @@ public interface ISystemRoleService {
    * @param userId  目标用户ID
    * @return 可分配的角色列表
    */
-  List<SysRole> selectAssignableRoles(ActionContext context, Long userId);
+  List<SysRoleListDTO> selectAssignableRoles(ActionContext context, Long userId);
 
 
   /**

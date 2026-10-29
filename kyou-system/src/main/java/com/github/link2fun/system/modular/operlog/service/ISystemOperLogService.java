@@ -26,7 +26,7 @@ public interface ISystemOperLogService {
    * @param searchReq   查询条件
    * @return 操作日志集合
    */
-  Page<SysOperLog> selectOperLogList(final Page<SysOperLog> pageRequest, SysOperLogSearchReq searchReq);
+  <T> Page<T> selectOperLogList(final Page<T> pageRequest, SysOperLogSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 批量删除系统操作日志

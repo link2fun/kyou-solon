@@ -20,7 +20,7 @@ public interface ISystemPostService {
    * @param searchReq 查询条件
    * @return 岗位列表
    */
-  List<SysPost> selectPostList(SysPostSearchReq searchReq);
+  <T> List<T> selectPostList(SysPostSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 根据搜索条件进行分页查询岗位信息。
@@ -29,14 +29,14 @@ public interface ISystemPostService {
    * @param searchReq   搜索条件
    * @return 分页结果
    */
-  Page<SysPost> pageSearch(Page<SysPost> pageRequest, SysPostSearchReq searchReq);
+  <T> Page<T> pageSearch(Page<T> pageRequest, SysPostSearchReq searchReq, Class<T> resultClass);
 
   /**
    * 查询所有岗位
    *
    * @return 岗位列表
    */
-  List<SysPost> selectPostAll();
+  <T> List<T> selectPostAll(Class<T> resultClass);
 
   /**
    * 通过岗位ID查询岗位信息
@@ -44,7 +44,7 @@ public interface ISystemPostService {
    * @param postId 岗位ID
    * @return 角色对象信息
    */
-  SysPost selectPostById(Long postId);
+  <T> T selectPostById(Long postId, Class<T> resultClass);
 
   /**
    * 根据用户ID获取岗位选择框列表

@@ -4,8 +4,8 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.link2fun.support.constant.CacheConstants;
-import com.github.link2fun.support.core.domain.entity.SysDictData;
 import com.github.link2fun.support.context.cache.service.RedisCache;
+import com.github.link2fun.support.core.domain.dto.SysDictDataDTO;
 import org.noear.solon.Solon;
 
 import java.util.List;
@@ -29,7 +29,7 @@ public class DictUtils {
    * @param key          参数键
    * @param dictDataList 字典数据列表
    */
-  public static void setDictCache(String key, List<SysDictData> dictDataList) {
+  public static void setDictCache(String key, List<SysDictDataDTO> dictDataList) {
     Solon.context().getBean(RedisCache.class).set(getCacheKey(key), dictDataList);
   }
 
@@ -39,8 +39,8 @@ public class DictUtils {
    * @param key 参数键
    * @return dictDatas 字典数据列表
    */
-  public static List<SysDictData> getDictCache(String key) {
-    List<SysDictData> arrayCache = Solon.context().getBean(RedisCache.class).get(getCacheKey(key));
+  public static List<SysDictDataDTO> getDictCache(String key) {
+    List<SysDictDataDTO> arrayCache = Solon.context().getBean(RedisCache.class).get(getCacheKey(key));
     if (ObjectUtil.isNotNull(arrayCache)) {
       return arrayCache;
     }
@@ -79,11 +79,11 @@ public class DictUtils {
    */
   public static String getDictLabel(String dictType, String dictValue, String separator) {
     StringBuilder propertyString = new StringBuilder();
-    List<SysDictData> datas = getDictCache(dictType);
+    List<SysDictDataDTO> datas = getDictCache(dictType);
 
     if (ObjectUtil.isNotNull(datas)) {
       if (StrUtil.containsAny(separator, dictValue)) {
-        for (SysDictData dict : datas) {
+        for (SysDictDataDTO dict : datas) {
           for (String value : dictValue.split(separator)) {
             if (value.equals(dict.getDictValue())) {
               propertyString.append(dict.getDictLabel()).append(separator);
@@ -92,7 +92,7 @@ public class DictUtils {
           }
         }
       } else {
-        for (SysDictData dict : datas) {
+        for (SysDictDataDTO dict : datas) {
           if (dictValue.equals(dict.getDictValue())) {
             return dict.getDictLabel();
           }
@@ -112,13 +112,13 @@ public class DictUtils {
    */
   public static String getDictValue(String dictType, String dictLabel, String separator) {
     StringBuilder propertyString = new StringBuilder();
-    List<SysDictData> datas = getDictCache(dictType);
+    List<SysDictDataDTO> datas = getDictCache(dictType);
     if (CollectionUtil.isEmpty(datas)) {
       return StrUtil.EMPTY;
     }
 
     if (StrUtil.containsAny(separator, dictLabel) && CollectionUtil.isNotEmpty(datas)) {
-      for (SysDictData dict : datas) {
+      for (SysDictDataDTO dict : datas) {
         for (String label : dictLabel.split(separator)) {
           if (label.equals(dict.getDictLabel())) {
             propertyString.append(dict.getDictValue()).append(separator);
@@ -127,7 +127,7 @@ public class DictUtils {
         }
       }
     } else {
-      for (SysDictData dict : datas) {
+      for (SysDictDataDTO dict : datas) {
         if (dictLabel.equals(dict.getDictLabel())) {
           return dict.getDictValue();
         }

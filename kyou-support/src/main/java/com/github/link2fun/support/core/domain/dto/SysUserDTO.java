@@ -7,9 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.github.link2fun.support.annotation.Excel;
 import com.github.link2fun.support.annotation.Excels;
-import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.entity.SysUser;
-import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,9 +16,14 @@ import lombok.experimental.FieldNameConstants;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 用户响应
+ * {@link com.github.link2fun.support.core.domain.entity.SysUser }
+ */
 @Getter
 @Setter
 @FieldNameConstants
@@ -90,9 +93,9 @@ public class SysUserDTO implements Serializable {
   private Date loginDate;
 
   private String createBy;
-  private Date createTime;
+  private LocalDateTime createTime;
   private String updateBy;
-  private Date updateTime;
+  private LocalDateTime updateTime;
   private String remark;
 
 
@@ -105,13 +108,7 @@ public class SysUserDTO implements Serializable {
   private DeptDTO dept;
 
   /** 角色对象 */
-  @Navigate(value = RelationTypeEnum.ManyToMany,
-    mappingClass = SysUserRole.class,
-    selfProperty = SysUser.Fields.userId,
-    targetProperty = SysRole.Fields.roleId,
-    selfMappingProperty = SysUser.Fields.userId,
-    targetMappingProperty = SysUserRole.Fields.roleId
-  )
+  @Navigate(value = RelationTypeEnum.ManyToMany)
   private List<RoleDTO> roles;
 
 

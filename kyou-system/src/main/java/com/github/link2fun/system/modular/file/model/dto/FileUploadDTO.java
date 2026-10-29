@@ -1,4 +1,4 @@
-package com.github.link2fun.system.modular.file.model.vo;
+package com.github.link2fun.system.modular.file.model.dto;
 
 import lombok.Data;
 
@@ -6,7 +6,7 @@ import lombok.Data;
  * 单个文件的上传结果
  */
 @Data
-public class FileUploadVO {
+public class FileUploadDTO {
 
   /** 可访问地址 */
   private String url;

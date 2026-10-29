@@ -1,16 +1,17 @@
 package com.github.link2fun.system.modular.user.model.dto;
 
 import com.easy.query.core.annotation.EntityProxy;
-import com.easy.query.core.annotation.NavigateFlat;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
-import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 
+/**
+ * 已分配用户
+ * {@link com.github.link2fun.support.core.domain.entity.SysUser }
+ */
 @Data
 @EntityProxy
 public class AllocatedUserDTO implements Serializable {
@@ -23,6 +24,7 @@ public class AllocatedUserDTO implements Serializable {
   @JsonSerialize(using = ToStringSerializer.class)
   private Long deptId;
 
+  @SuppressWarnings("EasyQueryFieldMissMatch")
   private String deptName;
 
   /** 用户名 */

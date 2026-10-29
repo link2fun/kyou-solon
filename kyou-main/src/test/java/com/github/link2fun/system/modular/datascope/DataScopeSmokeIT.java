@@ -4,6 +4,7 @@ import com.github.link2fun.KyouApp;
 import com.github.link2fun.framework.auth.DataScopeRowGuard;
 import com.github.link2fun.support.context.action.ActionContext;
 import com.github.link2fun.support.core.domain.dto.RoleDTO;
+import com.github.link2fun.support.core.domain.dto.SysDeptDTO;
 import com.github.link2fun.support.core.domain.dto.SysUserDTO;
 import com.github.link2fun.support.core.domain.entity.SysRole;
 import com.github.link2fun.support.core.domain.model.SessionUser;
@@ -126,7 +127,7 @@ public class DataScopeSmokeIT {
   public void selfScopeSeesNoDeptOnDeptList() {
     final ActionContext context = contextOf(ORDINARY_USER_ID, ORDINARY_USER_DEPT_ID, 999L, "5");
 
-    assertTrue(deptService.selectDeptList(context, new SysDeptSearchReq()).isEmpty(), "本人轴在部门查询上给不出条件, 应过滤到空");
+    assertTrue(deptService.selectDeptList(context, new SysDeptSearchReq(), SysDeptDTO.class).isEmpty(), "本人轴在部门查询上给不出条件, 应过滤到空");
   }
 
   @Test

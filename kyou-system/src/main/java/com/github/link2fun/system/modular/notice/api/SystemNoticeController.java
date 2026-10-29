@@ -2,11 +2,11 @@ package com.github.link2fun.system.modular.notice.api;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
 import com.github.link2fun.support.enums.BusinessType;
-import com.github.link2fun.system.modular.notice.model.SysNotice;
+import com.github.link2fun.system.modular.notice.model.dto.SysNoticeDTO;
 import com.github.link2fun.system.modular.notice.model.req.SysNoticeAddReq;
 import com.github.link2fun.system.modular.notice.model.req.SysNoticeModifyReq;
 import com.github.link2fun.system.modular.notice.model.req.SysNoticeSearchReq;
@@ -35,7 +35,7 @@ public class SystemNoticeController {
   @SaCheckPermission("system:notice:list")
   @Mapping(value = "/list", method = MethodType.GET)
   public TableDataInfo list(SysNoticeSearchReq searchReq) {
-    Page<SysNotice> list = noticeService.pageSearch(Page.ofCurrentContext(), searchReq);
+    Page<SysNoticeDTO> list = noticeService.pageSearch(Page.ofCurrentContext(), searchReq, SysNoticeDTO.class);
     return TableDataInfo.of(list);
   }
 
@@ -44,8 +44,8 @@ public class SystemNoticeController {
    */
   @SaCheckPermission("system:notice:query")
   @Mapping(value = "/{noticeId}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path Long noticeId) {
-    return AjaxResult.successData(noticeService.selectNoticeById(noticeId));
+  public Resp<SysNoticeDTO> getInfo(@Path Long noticeId) {
+    return Resp.successData(noticeService.selectNoticeById(noticeId, SysNoticeDTO.class));
   }
 
   /**
@@ -54,8 +54,8 @@ public class SystemNoticeController {
   @SaCheckPermission("system:notice:add")
   @Log(title = "通知公告", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysNoticeAddReq addReq) {
-    return AjaxResult.ofAffected(noticeService.insertNotice(addReq));
+  public Resp<Void> add(@Validated @Body SysNoticeAddReq addReq) {
+    return Resp.ofAffected(noticeService.insertNotice(addReq));
   }
 
   /**
@@ -64,8 +64,8 @@ public class SystemNoticeController {
   @SaCheckPermission("system:notice:edit")
   @Log(title = "通知公告", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysNoticeModifyReq modifyReq) {
-    return AjaxResult.ofAffected(noticeService.updateNotice(modifyReq));
+  public Resp<Void> edit(@Validated @Body SysNoticeModifyReq modifyReq) {
+    return Resp.ofAffected(noticeService.updateNotice(modifyReq));
   }
 
   /**
@@ -74,7 +74,7 @@ public class SystemNoticeController {
   @SaCheckPermission("system:notice:remove")
   @Log(title = "通知公告", businessType = BusinessType.DELETE)
   @Mapping(value = "/{noticeIds}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> noticeIds) {
-    return AjaxResult.ofAffected(noticeService.deleteNoticeByIds(noticeIds));
+  public Resp<Void> remove(@Path List<Long> noticeIds) {
+    return Resp.ofAffected(noticeService.deleteNoticeByIds(noticeIds));
   }
 }

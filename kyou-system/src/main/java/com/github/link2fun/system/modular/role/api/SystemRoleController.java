@@ -3,7 +3,7 @@ package com.github.link2fun.system.modular.role.api;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.github.link2fun.support.annotation.Log;
 import com.github.link2fun.support.context.action.ActionContext;
-import com.github.link2fun.support.core.domain.AjaxResult;
+import com.github.link2fun.support.core.domain.Resp;
 import com.github.link2fun.support.core.domain.entity.SysUserRole;
 import com.github.link2fun.support.core.page.Page;
 import com.github.link2fun.support.core.page.TableDataInfo;
@@ -13,8 +13,10 @@ import com.github.link2fun.system.modular.dept.model.req.SysDeptSearchReq;
 import com.github.link2fun.system.modular.dept.service.ISystemDeptService;
 import com.github.link2fun.system.modular.role.model.dto.SysRoleDetailDTO;
 import com.github.link2fun.system.modular.role.model.dto.SysRoleExcelDTO;
+import com.github.link2fun.system.modular.role.model.dto.SysRoleListDTO;
 import com.github.link2fun.system.modular.role.model.dto.SysRolePageDTO;
 import com.github.link2fun.system.modular.role.model.req.*;
+import com.github.link2fun.system.modular.role.model.vo.RoleDeptTreeResponse;
 import com.github.link2fun.system.modular.role.service.ISystemRoleService;
 import com.github.link2fun.system.modular.user.model.dto.AllocatedUserDTO;
 import com.github.link2fun.system.modular.user.model.req.SysUserSearchReq;
@@ -67,9 +69,9 @@ public class SystemRoleController {
    */
   @SaCheckPermission("system:role:query")
   @Mapping(value = "/{roleId}", method = MethodType.GET)
-  public AjaxResult getInfo(@Path Long roleId) {
+  public Resp<SysRoleDetailDTO> getInfo(@Path Long roleId) {
     SysRoleDetailDTO role = roleService.selectRoleDetail(ActionContext.current(), roleId, SysRoleDetailDTO.class);
-    return AjaxResult.successData(role);
+    return Resp.successData(role);
   }
 
   /**
@@ -78,8 +80,8 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:add")
   @Log(title = "角色管理", businessType = BusinessType.INSERT)
   @Mapping(method = MethodType.POST)
-  public AjaxResult add(@Validated @Body SysRoleAddReq addReq) {
-    return AjaxResult.ofAffected(roleService.insertRole(addReq));
+  public Resp<Void> add(@Validated @Body SysRoleAddReq addReq) {
+    return Resp.ofAffected(roleService.insertRole(addReq));
 
   }
 
@@ -89,8 +91,8 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:edit")
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(method = MethodType.PUT)
-  public AjaxResult edit(@Validated @Body SysRoleModifyReq modifyReq) {
-    return AjaxResult.ofAffected(roleService.updateRole(ActionContext.current(), modifyReq));
+  public Resp<Void> edit(@Validated @Body SysRoleModifyReq modifyReq) {
+    return Resp.ofAffected(roleService.updateRole(ActionContext.current(), modifyReq));
   }
 
   /**
@@ -99,8 +101,8 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:edit")
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/dataScope", method = MethodType.PUT)
-  public AjaxResult dataScope(@Validated @Body SysRoleChangeDataScopeReq changeDataScopeReq) {
-    return AjaxResult.ofAffected(roleService.authDataScope(ActionContext.current(), changeDataScopeReq));
+  public Resp<Void> dataScope(@Validated @Body SysRoleChangeDataScopeReq changeDataScopeReq) {
+    return Resp.ofAffected(roleService.authDataScope(ActionContext.current(), changeDataScopeReq));
   }
 
   /**
@@ -109,8 +111,8 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:edit")
   @Log(title = "角色管理", businessType = BusinessType.UPDATE)
   @Mapping(value = "/changeStatus", method = MethodType.PUT)
-  public AjaxResult changeStatus(@Validated @Body SysRoleChangeStatusReq changeStatusReq) {
-    return AjaxResult.ofAffected(roleService.changeRoleStatus(ActionContext.current(), changeStatusReq));
+  public Resp<Void> changeStatus(@Validated @Body SysRoleChangeStatusReq changeStatusReq) {
+    return Resp.ofAffected(roleService.changeRoleStatus(ActionContext.current(), changeStatusReq));
   }
 
   /**
@@ -119,8 +121,8 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:remove")
   @Log(title = "角色管理", businessType = BusinessType.DELETE)
   @Mapping(value = "/{roleIds}", method = MethodType.DELETE)
-  public AjaxResult remove(@Path List<Long> roleIds) {
-    return AjaxResult.ofAffected(roleService.deleteRoleByIds(ActionContext.current(), roleIds));
+  public Resp<Void> remove(@Path List<Long> roleIds) {
+    return Resp.ofAffected(roleService.deleteRoleByIds(ActionContext.current(), roleIds));
   }
 
   /**
@@ -128,9 +130,9 @@ public class SystemRoleController {
    */
   @SaCheckPermission("system:role:query")
   @Mapping(value = "/optionselect", method = MethodType.GET)
-  public AjaxResult optionselect() {
+  public Resp<List<SysRoleListDTO>> optionselect() {
     ActionContext context = ActionContext.current();
-    return AjaxResult.successData(roleService.selectRoleAll(context));
+    return Resp.successData(roleService.selectRoleAll(context, SysRoleListDTO.class));
   }
 
   /**
@@ -163,9 +165,9 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:edit")
   @Log(title = "角色管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authUser/cancel", method = MethodType.PUT)
-  public AjaxResult cancelAuthUser(@Body SysUserRole userRole) {
+  public Resp<Void> cancelAuthUser(@Body SysUserRole userRole) {
     roleService.unassignUser(userRole.getRoleId(), userRole.getUserId());
-    return AjaxResult.success();
+    return Resp.success();
   }
 
   /**
@@ -174,9 +176,9 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:edit")
   @Log(title = "角色管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authUser/cancelAll", method = MethodType.PUT)
-  public AjaxResult cancelAuthUserAll(Long roleId, List<Long> userIds) {
+  public Resp<Void> cancelAuthUserAll(Long roleId, List<Long> userIds) {
     roleService.unassignUsers(roleId, userIds);
-    return AjaxResult.success();
+    return Resp.success();
   }
 
   /**
@@ -185,9 +187,9 @@ public class SystemRoleController {
   @SaCheckPermission("system:role:edit")
   @Log(title = "角色管理", businessType = BusinessType.GRANT)
   @Mapping(value = "/authUser/selectAll", method = MethodType.PUT)
-  public AjaxResult selectAuthUserAll(Long roleId, List<Long> userIds) {
+  public Resp<Void> selectAuthUserAll(Long roleId, List<Long> userIds) {
     roleService.assignUsers(ActionContext.current(), roleId, userIds);
-    return AjaxResult.success();
+    return Resp.success();
   }
 
   /**
@@ -195,11 +197,11 @@ public class SystemRoleController {
    */
   @SaCheckPermission("system:role:query")
   @Mapping(value = "/deptTree/{roleId}", method = MethodType.GET)
-  public AjaxResult deptTree(@Path("roleId") Long roleId) {
+  public RoleDeptTreeResponse deptTree(@Path("roleId") Long roleId) {
     final ActionContext context = ActionContext.current();
-    AjaxResult ajax = AjaxResult.success();
-    ajax.put("checkedKeys", deptService.selectDeptListByRoleId(roleId));
-    ajax.put("depts", deptService.selectDeptTreeList(context, new SysDeptSearchReq()));
-    return ajax;
+    RoleDeptTreeResponse response = new RoleDeptTreeResponse();
+    response.setCheckedKeys(deptService.selectDeptListByRoleId(roleId));
+    response.setDepts(deptService.selectDeptTreeList(context, new SysDeptSearchReq()));
+    return response;
   }
 }

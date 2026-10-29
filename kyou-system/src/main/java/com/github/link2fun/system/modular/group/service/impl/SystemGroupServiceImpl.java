@@ -42,11 +42,12 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
    * 根据搜索条件分页查询系统群组信息。
    */
   @Override
-  public Page<SysGroup> pageSearchGroup(Page<SysGroup> pageRequest, SysGroupSearchReq searchReq) {
+  public <T> Page<T> pageSearchGroup(Page<T> pageRequest, SysGroupSearchReq searchReq, final Class<T> resultClass) {
 
-    EasyPageResult<SysGroup> pageResult = entityQuery.queryable(SysGroup.class)
+    EasyPageResult<T> pageResult = entityQuery.queryable(SysGroup.class)
       .where(group -> group.groupName().like(StrUtil.isNotBlank(searchReq.getGroupName()), searchReq.getGroupName()))
       .where(group -> group.status().eq(StrUtil.isNotBlank(searchReq.getStatus()), searchReq.getStatus()))
+      .selectAutoInclude(resultClass)
       .toPageResult(pageRequest.getPageNum(), pageRequest.getPageSize());
     return Page.of(pageRequest, pageResult);
   }
@@ -107,13 +108,13 @@ public class SystemGroupServiceImpl implements ISystemGroupService {
    * 查询所有群组
    */
   @Override
-  public List<SysGroup> listAll() {
-    return entityQuery.queryable(SysGroup.class).toList();
+  public <T> List<T> listAll(final Class<T> resultClass) {
+    return entityQuery.queryable(SysGroup.class).selectAutoInclude(resultClass).toList();
   }
 
   @Override
-  public SysGroup getById(Long groupId) {
+  public <T> T getById(Long groupId, final Class<T> resultClass) {
     return entityQuery.queryable(SysGroup.class)
-      .whereById(groupId).singleOrNull();
+      .whereById(groupId).selectAutoInclude(resultClass).singleOrNull();
   }
 }

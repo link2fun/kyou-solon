@@ -7,7 +7,7 @@ package com.github.link2fun.support.constant;
  */
 @SuppressWarnings("unused")
 public class HttpStatus {
-  /** 操作成功   */
+  /** 操作成功 */
   public static final int SUCCESS = 200;
 
   /** 对象创建成功 */
@@ -19,7 +19,7 @@ public class HttpStatus {
   /** 操作已经执行成功，但是没有返回数据 */
   public static final int NO_CONTENT = 204;
 
-  /** 资源已被移除  */
+  /** 资源已被移除 */
   public static final int MOVED_PERM = 301;
 
   /** 重定向 */
@@ -34,17 +34,20 @@ public class HttpStatus {
   /** 未授权 */
   public static final int UNAUTHORIZED = 401;
 
-  /** 访问受限，授权过期  */
+  /** 访问受限，授权过期 */
   public static final int FORBIDDEN = 403;
 
   /** 资源，服务未找到 */
   public static final int NOT_FOUND = 404;
 
-  /** 不允许的http方法  */
+  /** 不允许的http方法 */
   public static final int BAD_METHOD = 405;
 
   /** 资源冲突，或者资源被锁 */
   public static final int CONFLICT = 409;
+
+  /** 请求过于频繁 */
+  public static final int TOO_MANY_REQUESTS = 429;
 
   /** 不支持的数据，媒体类型 */
   public static final int UNSUPPORTED_TYPE = 415;
@@ -52,9 +55,6 @@ public class HttpStatus {
   /** 系统内部错误 */
   public static final int ERROR = 500;
 
-  /** 接口未实现  */
+  /** 接口未实现 */
   public static final int NOT_IMPLEMENTED = 501;
-
-  /** 系统警告消息 */
-  public static final int WARN = 601;
 }
