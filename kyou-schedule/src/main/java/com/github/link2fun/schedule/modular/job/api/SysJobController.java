@@ -93,12 +93,12 @@ public class SysJobController {
   /**
    * 定时任务立即执行一次
    */
-  @SaCheckPermission(value = {"monitor:job:changeStatus"})
+  @SaCheckPermission(value = "monitor:job:changeStatus")
   @Log(title = "定时任务", businessType = BusinessType.UPDATE)
   @Mapping(value = "/run", method = MethodType.PUT)
   public Resp<Void> run(@Validated @Body SysJobRunReq runReq) throws Throwable {
-    boolean result = jobService.run(runReq.getJobId());
-    return result ? Resp.success() : Resp.error("任务不存在或已过期！");
+    jobService.run(runReq.getJobId());
+    return Resp.success();
   }
 
   /**

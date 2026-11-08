@@ -1,6 +1,9 @@
 package com.github.link2fun.schedule.modular.job.model;
 
-import com.easy.query.core.annotation.*;
+import com.easy.query.core.annotation.Column;
+import com.easy.query.core.annotation.EasyAlias;
+import com.easy.query.core.annotation.EntityProxy;
+import com.easy.query.core.annotation.Table;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
 import com.github.link2fun.schedule.modular.job.model.proxy.SysJobLogProxy;
 import com.github.link2fun.support.annotation.Excel;
@@ -12,7 +15,6 @@ import lombok.Setter;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 
 /**
@@ -33,7 +35,7 @@ public class SysJobLog extends QueryEntity implements ProxyEntityAvailable<SysJo
 
   /** ID */
   @Excel(name = "日志序号")
-  @Column(value = "job_log_id",primaryKey = true)
+  @Column(value = "job_log_id", primaryKey = true)
   private Long jobLogId;
 
   /** 任务名称 */
@@ -71,13 +73,5 @@ public class SysJobLog extends QueryEntity implements ProxyEntityAvailable<SysJo
   @Excel(name = "创建时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
   @Column(value = "create_time")
   private LocalDateTime createTime;
-
-  /** 开始时间 */
-  @ColumnIgnore
-  private LocalDateTime startTime;
-
-  /** 停止时间 */
-  @ColumnIgnore
-  private LocalDateTime stopTime;
 
 }

@@ -1,24 +1,19 @@
 package com.github.link2fun.schedule.modular.job.model;
 
-import cn.hutool.core.util.StrUtil;
 import com.easy.query.core.annotation.Column;
 import com.easy.query.core.annotation.EntityProxy;
 import com.easy.query.core.annotation.Table;
 import com.easy.query.core.proxy.ProxyEntityAvailable;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.github.link2fun.schedule.constant.ScheduleConstants;
 import com.github.link2fun.schedule.modular.job.model.proxy.SysJobProxy;
 import com.github.link2fun.support.annotation.Excel;
 import com.github.link2fun.support.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.noear.java_cron.CronUtils;
 import org.noear.solon.validation.annotation.Length;
 import org.noear.solon.validation.annotation.NotBlank;
 
 import java.io.Serial;
-import java.text.ParseException;
-import java.util.Date;
 
 
 /**
@@ -83,17 +78,5 @@ public class SysJob extends BaseEntity implements ProxyEntityAvailable<SysJob, S
   /** 备注 */
   @Column(value = "remark")
   private String remark;
-
-  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-  public Date getNextValidTime() {
-    if (StrUtil.isNotBlank(cronExpression)) {
-      try {
-        CronUtils.getNextTime(cronExpression, new Date());
-      } catch (ParseException e) {
-        return null;
-      }
-    }
-    return null;
-  }
 
 }

@@ -1,92 +1,57 @@
 package com.github.link2fun.schedule.modular.job.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.easy.query.api.proxy.client.EasyEntityQuery;
 import com.easy.query.core.api.pagination.EasyPageResult;
+import com.easy.query.core.enums.SQLExecuteStrategyEnum;
 import com.easy.query.solon.annotation.Db;
 import com.github.link2fun.schedule.constant.ScheduleConstants;
+import com.github.link2fun.schedule.modular.job.engine.JobBinding;
 import com.github.link2fun.schedule.modular.job.model.SysJob;
-import com.github.link2fun.schedule.modular.job.model.SysJobLog;
 import com.github.link2fun.schedule.modular.job.model.dto.SysJobDTO;
 import com.github.link2fun.schedule.modular.job.model.req.SysJobAddReq;
 import com.github.link2fun.schedule.modular.job.model.req.SysJobChangeStatusReq;
 import com.github.link2fun.schedule.modular.job.model.req.SysJobModifyReq;
 import com.github.link2fun.schedule.modular.job.model.req.SysJobSearchReq;
-import com.github.link2fun.schedule.modular.job.service.ISysJobLogService;
 import com.github.link2fun.schedule.modular.job.service.ISysJobService;
 import com.github.link2fun.schedule.util.JobInvokeUtil;
-import com.github.link2fun.schedule.util.ScheduleUtils;
-import com.github.link2fun.support.constant.Constants;
-import com.github.link2fun.support.constant.UserConstants;
 import com.github.link2fun.support.core.page.Page;
+import com.github.link2fun.support.easyquery.UniqueChecker;
 import com.github.link2fun.support.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.noear.java_cron.CronUtils;
-import org.noear.solon.Solon;
 import org.noear.solon.annotation.Component;
 import org.noear.solon.annotation.Init;
 import org.noear.solon.annotation.Inject;
-import org.noear.solon.core.handle.Context;
 import org.noear.solon.data.annotation.Transaction;
-import org.noear.solon.scheduling.ScheduledAnno;
-import org.noear.solon.scheduling.scheduled.JobHolder;
-import org.noear.solon.scheduling.scheduled.manager.IJobManager;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
 @Component
 public class SysJobServiceImpl implements ISysJobService {
 
-  @Inject(required = false)
-  IJobManager jobManager;
-
   @Inject
-  private ISysJobService self;
+  private JobBinding jobBinding;
 
   @Db
   private EasyEntityQuery entityQuery;
 
-  @Inject
-  private ISysJobLogService jobLogService;
 
-
-  /**
-   * 项目启动时，初始化定时器 主要是防止手动修改数据库导致未同步到定时任务处理（注：不能手动修改数据库ID和任务组名，否则会导致脏数据）
-   */
+  /** 项目启动时初始化定时器, 同步手动改库造成的漂移; 单行脏数据(如非法 cron)只跳过该行并记日志, 不阻断启动 */
   @Init
   public void init() {
-
-    Solon.context().getBeanAsync(IJobManager.class, _jobManager -> {
-      // 调用 jobManager.jobGetAll() 获取所有任务, 然后停止
-      final Map<String, JobHolder> jobAll = _jobManager.jobGetAll();
-      jobAll.keySet()
-        .forEach(_jobManager::jobRemove);
-
-      List<SysJob> jobList = entityQuery.queryable(SysJob.class).toList();
-      for (final SysJob job : jobList) {
-
-        final ScheduledAnno scheduled = new ScheduledAnno();
-        scheduled.cron(job.getCronExpression());
-        scheduled.enable(Objects.equals(job.getStatus(), UserConstants.NORMAL));
-
-        _jobManager.jobAdd(job.getJobName(), scheduled, ctx -> {
-          log.info("定时任务执行: {}", job.getJobName());
-          JobInvokeUtil.invokeMethod(job);
-          log.info("定时任务执行完成: {}", job.getJobName());
-        });
+    jobBinding.clearAll();
+    for (final SysJob job : entityQuery.queryable(SysJob.class).toList()) {
+      try {
+        jobBinding.bind(job);
+      } catch (Exception e) {
+        jobBinding.unbind(job.getJobName());
+        log.warn("[定时任务] 启动期绑定失败, 已跳过: jobName={}, cron={}", job.getJobName(), job.getCronExpression(), e);
       }
-    });
-
-
+    }
   }
 
   /**
@@ -136,14 +101,13 @@ public class SysJobServiceImpl implements ISysJobService {
     if (job == null) {
       throw new ServiceException("任务不存在或已过期");
     }
-//    int rows = getBaseMapper().updateById(job);
     long rows = entityQuery.updatable(SysJob.class)
       .where(s -> s.jobId().eq(jobId))
       .setColumns(s -> s.status().set(ScheduleConstants.Status.PAUSE.getValue()))
       .executeRows();
 
     if (rows > 0) {
-      jobManager.jobStop(job.getJobName());
+      jobBinding.stop(job.getJobName());
     }
     return rows;
   }
@@ -165,15 +129,7 @@ public class SysJobServiceImpl implements ISysJobService {
       .setColumns(s -> s.status().set(ScheduleConstants.Status.NORMAL.getValue()))
       .executeRows();
     if (rows > 0) {
-      final String beanName = JobInvokeUtil.getBeanName(job.getInvokeTarget());
-      final String methodName = JobInvokeUtil.getMethodName(job.getInvokeTarget());
-      final List<Object[]> methodParams = JobInvokeUtil.getMethodParams(job.getInvokeTarget());
-      final Class<?> beanClass = Solon.context().getBean(JobInvokeUtil.getBeanName(job.getInvokeTarget())).getClass();
-      final Method[] declaredMethods = beanClass.getDeclaredMethods();
-      final Method method = Arrays.stream(declaredMethods).filter(_method -> _method.getName().equals(methodName)).findFirst().orElseThrow(() -> new RuntimeException("未找到对应方法"));
-      for (final Parameter parameter : method.getParameters()) {
-      }
-      jobManager.jobStart(job.getJobName(), null);
+      jobBinding.start(job.getJobName());
     }
     return rows;
   }
@@ -199,7 +155,7 @@ public class SysJobServiceImpl implements ISysJobService {
       .allowDeleteStatement(true)
       .executeRows();
     if (rows > 0) {
-      jobManager.jobRemove(job.getJobName());
+      jobBinding.unbind(job.getJobName());
 
     }
     return rows;
@@ -244,52 +200,21 @@ public class SysJobServiceImpl implements ISysJobService {
   }
 
   /**
-   * 立即运行任务
+   * 立即运行任务: 任务不存在时抛业务异常, 计时与日志由拦截器统一记录
    *
    * @param jobId 任务ID
    */
   @Override
   @Transaction
-  public boolean run(Long jobId) throws Throwable {
-//    final SysJob sysJob = getBaseMapper().selectById(job.getJobId());
+  public void run(Long jobId) throws Throwable {
     final SysJob sysJob = entityQuery.queryable(SysJob.class)
       .where(s -> s.jobId().eq(jobId))
-      .singleNotNull();
-
-    final String jobName = sysJob.getJobName();
-    final JobHolder jobHolder = jobManager.jobGet(jobName);
-
-    final LocalDateTime startTime = LocalDateTime.now();
-
-    final SysJob _job = self.jobGet(jobName);
-
-    final SysJobLog jobLog = new SysJobLog();
-//    jobLog.setJobLogId();
-    jobLog.setJobName(jobName);
-    jobLog.setJobGroup(_job.getJobGroup());
-    jobLog.setInvokeTarget(_job.getInvokeTarget());
-
-
-    try {
-      jobHolder.getHandler().handle(Context.current());
-      jobLog.setJobMessage("任务执行成功");
-      jobLog.setStatus("0");
-      jobLog.setCreateTime(startTime);
-      jobLog.setStartTime(startTime);
-      jobLog.setStopTime(LocalDateTime.now());
-    } catch (Exception e) {
-      jobLog.setJobMessage(e.getMessage());
-      jobLog.setStatus("1");
-      jobLog.setExceptionInfo(ExceptionUtil.unwrap(e).toString());
-      jobLog.setCreateTime(startTime);
-      jobLog.setStartTime(startTime);
-      jobLog.setStopTime(LocalDateTime.now());
-    } finally {
-      // 记录日志
-      jobLogService.addJobLog(jobLog);
+      .singleOrNull();
+    if (sysJob == null) {
+      throw new ServiceException("任务不存在或已过期！");
     }
 
-    return true;
+    jobBinding.triggerNow(sysJob.getJobName());
   }
 
   /**
@@ -301,22 +226,22 @@ public class SysJobServiceImpl implements ISysJobService {
   @Transaction
   public long insertJob(SysJobAddReq addReq) {
     final SysJob job = BeanUtil.toBean(addReq, SysJob.class);
+    if (StrUtil.isBlank(job.getJobGroup())) {
+      // 库里落 NULL 会让列表的组筛选漏掉该行, 先归一到默认组
+      job.setJobGroup(ScheduleConstants.DEFAULT_GROUP);
+    }
     checkJobFields("新增", job);
+    checkJobNameUnique("新增", job);
     job.setStatus(ScheduleConstants.Status.PAUSE.getValue());
-//    int rows = getBaseMapper().insert(job);
     long rows = entityQuery.insertable(job).executeRows();
     if (rows > 0) {
-      jobManager.jobAdd(job.getJobName(), new ScheduledAnno().cron(job.getCronExpression()), ctx -> {
-//        log.info("定时任务执行: {}", job.getJobName());
-        JobInvokeUtil.invokeMethod(job);
-//        log.info("定时任务执行完成: {}", job.getJobName());
-      });
+      jobBinding.bind(job);
     }
     return rows;
   }
 
   /**
-   * 更新任务的时间表达式
+   * 更新任务定义: 按旧名+旧组解绑再重绑(旧键 holder 不会自行消失), 只写提交的列, 空组名视为未提交保持库中原组
    *
    * @param modifyReq 修改任务请求
    */
@@ -324,49 +249,33 @@ public class SysJobServiceImpl implements ISysJobService {
   @Transaction
   public long updateJob(SysJobModifyReq modifyReq) {
     final SysJob job = BeanUtil.toBean(modifyReq, SysJob.class);
+    if (StrUtil.isBlank(job.getJobGroup())) {
+      job.setJobGroup(null);
+    }
     checkJobFields("修改", job);
-    long rows = entityQuery.updatable(job).executeRows();
+    checkJobNameUnique("修改", job);
+    // 改名前的行: 旧键的 holder 不会自行消失, 需要按旧名解绑
+    final SysJob current = entityQuery.queryable(SysJob.class)
+      .where(s -> s.jobId().eq(job.getJobId()))
+      .singleOrNull();
+    if (current == null) {
+      return 0;
+    }
+    // 只写请求提交的列: 未带 status 时库里状态保持不变, 不会被写成 NULL
+    long rows = entityQuery.updatable(job)
+      .setSQLStrategy(SQLExecuteStrategyEnum.ONLY_NOT_NULL_COLUMNS)
+      .executeRows();
     if (rows > 0) {
-      updateSchedulerJob(job);
+      // bind 自带同名自愈, 这里只需把旧名字的注册清掉
+      jobBinding.unbind(current.getJobName());
+      jobBinding.bind(entityQuery.queryable(SysJob.class)
+        .where(s -> s.jobId().eq(job.getJobId()))
+        .singleNotNull());
     }
     return rows;
   }
 
-  /**
-   * 更新任务
-   *
-   * @param job 任务对象
-   */
-  public void updateSchedulerJob(SysJob job) {
-    // 判断是否存在
-    if (jobManager.jobExists(job.getJobName())) {
-      // 防止创建时存在数据问题 先移除，然后在执行创建操作
-      jobManager.jobRemove(job.getJobName());
-    }
-    jobManager.jobAdd(job.getJobName(), new ScheduledAnno().cron(job.getCronExpression()), ctx -> {
-//      log.info("定时任务执行: {}", job.getJobName());
-      JobInvokeUtil.invokeMethod(job);
-//      log.info("定时任务执行完成: {}", job.getJobName());
-    });
-  }
-
-  /**
-   * 校验cron表达式是否有效
-   *
-   * @param cronExpression 表达式
-   * @return 结果
-   */
-  @Override
-  public boolean checkCronExpressionIsValid(String cronExpression) {
-    return CronUtils.isValid(cronExpression);
-  }
-
-  /**
-   * 校验 Cron 表达式与调用目标字符串, 不合法时抛业务异常
-   *
-   * <p>调用目标能被反射执行任意 Bean 方法, 因此除白名单外还要逐条拦掉协议前缀,
-   * 避免用 rmi/ldap/http 把定时任务变成出站通道。
-   */
+  /** 校验 Cron 表达式与调用目标(判据统一走 {@link JobInvokeUtil#violation}), 杜绝「存得下、跑不了」 */
   private void checkJobFields(final String action, final SysJob job) {
     final String prefix = action + "任务'" + job.getJobName() + "'失败，";
     final String cronExpression = job.getCronExpression();
@@ -374,34 +283,32 @@ public class SysJobServiceImpl implements ISysJobService {
     if (!CronUtils.isValid(cronExpression)) {
       throw new ServiceException(prefix + "Cron表达式不正确");
     }
-    if (StrUtil.containsIgnoreCase(invokeTarget, ScheduleConstants.LOOKUP_RMI)) {
-      throw new ServiceException(prefix + "目标字符串不允许'rmi'调用");
-    }
-    if (StrUtil.containsAnyIgnoreCase(invokeTarget, ScheduleConstants.LOOKUP_LDAP, ScheduleConstants.LOOKUP_LDAPS)) {
-      throw new ServiceException(prefix + "目标字符串不允许'ldap(s)'调用");
-    }
-    if (StrUtil.containsAnyIgnoreCase(invokeTarget, Constants.HTTP, Constants.HTTPS)) {
-      throw new ServiceException(prefix + "目标字符串不允许'http(s)'调用");
-    }
-    if (StrUtil.containsAnyIgnoreCase(invokeTarget, ScheduleConstants.JOB_ERROR_STR)) {
-      throw new ServiceException(prefix + "目标字符串存在违规");
-    }
-    if (!ScheduleUtils.whiteList(invokeTarget)) {
-      throw new ServiceException(prefix + "目标字符串不在白名单内");
+    final String violation = JobInvokeUtil.violation(invokeTarget);
+    if (violation != null) {
+      throw new ServiceException(prefix + violation);
     }
   }
 
   /**
-   * 根据任务名称 获取任务
+   * 根据任务名称获取任务(任务名全局唯一)
    *
    * @param jobName 任务名称
    * @return 任务信息
    */
   @Override
   public SysJob jobGet(final String jobName) {
-//    return lambdaQuery().eq(SysJob::getJobName, jobName).one();
     return entityQuery.queryable(SysJob.class)
       .where(s -> s.jobName().eq(jobName))
       .singleOrNull();
+  }
+
+  /** 校验任务名全局唯一: 引擎键即任务名, 重名行会让点查抛多行异常、绑定互相顶掉 */
+  private void checkJobNameUnique(final String action, final SysJob job) {
+    UniqueChecker.checkOccupied(entityQuery.queryable(SysJob.class)
+        .where(_job -> {
+          _job.jobName().eq(job.getJobName());
+          _job.jobId().ne(Objects.nonNull(job.getJobId()), job.getJobId());
+        }).any(),
+      () -> action + "任务'" + job.getJobName() + "'失败，任务名称已存在");
   }
 }

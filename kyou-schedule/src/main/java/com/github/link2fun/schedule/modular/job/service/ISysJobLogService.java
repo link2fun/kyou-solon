@@ -40,14 +40,6 @@ public interface ISysJobLogService {
   long deleteJobLogByIds(List<Long> logIds);
 
   /**
-   * 删除任务日志
-   *
-   * @param jobId 调度日志ID
-   * @return 结果
-   */
-  long deleteJobLogById(Long jobId);
-
-  /**
    * 清空任务日志
    */
   void cleanJobLog();

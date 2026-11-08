@@ -2,7 +2,9 @@ package com.github.link2fun.schedule.util;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.github.link2fun.schedule.constant.ScheduleConstants;
 import com.github.link2fun.schedule.modular.job.model.SysJob;
+import com.github.link2fun.support.constant.Constants;
 import com.github.link2fun.support.exception.job.TaskException;
 import org.noear.solon.Solon;
 
@@ -32,21 +34,46 @@ public class JobInvokeUtil {
    */
   public static void invokeMethod(SysJob sysJob) throws Exception {
     String invokeTarget = sysJob.getInvokeTarget();
+    final String violation = violation(invokeTarget);
+    if (violation != null) {
+      throw new TaskException(violation, TaskException.Code.CONFIG_ERROR);
+    }
     String beanName = getBeanName(invokeTarget);
     String methodName = getMethodName(invokeTarget);
     List<Object[]> methodParams = getMethodParams(invokeTarget);
 
-    if (isValidClassName(beanName)) {
-      throw new TaskException("不支持类名形式的调用目标：" + invokeTarget, TaskException.Code.CONFIG_ERROR);
-    }
-    if (!METHOD_WHITELIST.contains(beanName + "#" + methodName)) {
-      throw new TaskException("调用目标不在方法白名单内：" + invokeTarget, TaskException.Code.CONFIG_ERROR);
-    }
     Object bean = Solon.context().getBean(beanName);
     if (ObjectUtil.isNull(bean)) {
       throw new TaskException("调用目标 bean 不存在：" + beanName, TaskException.Code.CONFIG_ERROR);
     }
     invokeMethod(bean, methodName, methodParams);
+  }
+
+  /** 判定调用目标是否违规: 违规返回原因文案, 通过返回 null; 保存期与运行期共用, 避免「存得下、跑不了」 */
+  public static String violation(final String invokeTarget) {
+    if (StrUtil.isBlank(invokeTarget)) {
+      return "调用目标不能为空";
+    }
+    if (StrUtil.containsIgnoreCase(invokeTarget, ScheduleConstants.LOOKUP_RMI)) {
+      return "目标字符串不允许'rmi'调用";
+    }
+    if (StrUtil.containsAnyIgnoreCase(invokeTarget, ScheduleConstants.LOOKUP_LDAP, ScheduleConstants.LOOKUP_LDAPS)) {
+      return "目标字符串不允许'ldap(s)'调用";
+    }
+    if (StrUtil.containsAnyIgnoreCase(invokeTarget, Constants.HTTP, Constants.HTTPS)) {
+      return "目标字符串不允许'http(s)'调用";
+    }
+    if (StrUtil.containsAnyIgnoreCase(invokeTarget, ScheduleConstants.JOB_ERROR_STR)) {
+      return "目标字符串存在违规";
+    }
+    final String beanName = getBeanName(invokeTarget);
+    if (isValidClassName(beanName)) {
+      return "不支持类名形式的调用目标：" + invokeTarget;
+    }
+    if (!METHOD_WHITELIST.contains(beanName + "#" + getMethodName(invokeTarget))) {
+      return "调用目标不在方法白名单内：" + invokeTarget;
+    }
+    return null;
   }
 
   /**

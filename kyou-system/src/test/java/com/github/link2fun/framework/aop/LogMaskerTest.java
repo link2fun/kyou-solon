@@ -75,12 +75,12 @@ class LogMaskerTest {
   void masksConfigValueAndDeptContacts() {
     SysConfig config = new SysConfig();
     config.setConfigKey("sys.oss.secretKey");
-    config.setConfigValue("AKIAIOSFODNN7EXAMPLE");
+    config.setConfigValue("EXAMPLE-VALUE-123456");
 
     String configJson = interceptor.toMaskedJson(config, Set.of());
-    assertFalse(configJson.contains("AKIAIOSFODNN7EXAMPLE"), configJson);
+    assertFalse(configJson.contains("EXAMPLE-VALUE-123456"), configJson);
     // 配置值属于 PARTIAL：保留前 3 后 4（20 字符 -> 中间 13 位打码）
-    assertTrue(configJson.contains("\"configValue\":\"AKI*************MPLE\""), configJson);
+    assertTrue(configJson.contains("\"configValue\":\"EXA*************3456\""), configJson);
     assertTrue(configJson.contains("\"configKey\":\"sys.oss.secretKey\""), configJson);
 
     SysDept dept = new SysDept();
@@ -101,28 +101,36 @@ class LogMaskerTest {
   }
 
   static class SubReq extends BaseReq {
-    public String password = "P@ssw0rd!";
+    public String password;
+
+    SubReq(String password) {
+      this.password = password;
+    }
   }
 
   @Test
   @DisplayName("运行时是子类时，按实际序列化内容打码，不受声明类型影响")
   void masksSubclassFields() {
-    String json = interceptor.toMaskedJson(new SubReq(), Set.of());
+    String json = interceptor.toMaskedJson(new SubReq("fake-pass1"), Set.of());
 
-    assertFalse(json.contains("P@ssw0rd!"), json);
-    assertTrue(json.contains("\"password\":\"P*******!\""), json);
+    assertFalse(json.contains("fake-pass1"), json);
+    assertTrue(json.contains("\"password\":\"f********1\""), json);
     assertTrue(json.contains("\"userName\":\"tom\""), json);
   }
 
   static class Inner {
     public String nickName = "汤姆";
-    public String password = "P@ssw0rd!";
+    public String password;
+
+    Inner(String password) {
+      this.password = password;
+    }
   }
 
   static class UnwrappedReq {
     public String userName = "tom";
     @com.fasterxml.jackson.annotation.JsonUnwrapped
-    public Inner inner = new Inner();
+    public Inner inner = new Inner("fake-pass1");
   }
 
   @Test
@@ -130,8 +138,8 @@ class LogMaskerTest {
   void unwrappedPropertyStillMasked() {
     String json = interceptor.toMaskedJson(new UnwrappedReq(), Set.of());
 
-    assertFalse(json.contains("P@ssw0rd!"), json);
-    assertTrue(json.contains("\"password\":\"P*******!\""), json);
+    assertFalse(json.contains("fake-pass1"), json);
+    assertTrue(json.contains("\"password\":\"f********1\""), json);
     assertTrue(json.contains("\"nickName\":\"汤姆\""), json);
   }
 
@@ -144,12 +152,12 @@ class LogMaskerTest {
   @DisplayName("集合元素声明为干净类型、运行时混入子类，同样打码")
   void masksSubclassElementInList() {
     HoldingList holding = new HoldingList();
-    holding.items.add(new SubReq());
+    holding.items.add(new SubReq("fake-pass1"));
 
     String json = interceptor.toMaskedJson(holding, Set.of());
 
-    assertFalse(json.contains("P@ssw0rd!"), json);
-    assertTrue(json.contains("\"password\":\"P*******!\""), json);
+    assertFalse(json.contains("fake-pass1"), json);
+    assertTrue(json.contains("\"password\":\"f********1\""), json);
     assertTrue(json.contains("\"name\":\"outer\""), json);
   }
 
@@ -199,14 +207,14 @@ class LogMaskerTest {
   @Test
   @DisplayName("集合入参按实际内容逐个打码")
   void masksListElements() {
-    SubReq a = new SubReq();
+    SubReq a = new SubReq("fake-pass1");
     a.userName = "a";
-    SubReq b = new SubReq();
+    SubReq b = new SubReq("fake-pass1");
     b.userName = "b";
 
     String json = interceptor.toMaskedJson(List.of(a, b), Set.of());
 
-    assertFalse(json.contains("P@ssw0rd!"), json);
+    assertFalse(json.contains("fake-pass1"), json);
     assertTrue(json.contains("\"userName\":\"a\""), json);
     assertTrue(json.contains("\"userName\":\"b\""), json);
   }
@@ -215,14 +223,14 @@ class LogMaskerTest {
   @DisplayName("打码保留首尾字符：口令只留各 1 位，联系方式/证件留前 3 后 4")
   void maskKeepsEdgesByLevel() {
     Map<String, Object> params = Map.of(
-      "password", "P@ssw0rd!",
+      "password", "fake-pass1",
       "phonenumber", "13800001111",
       "idCardNo", "110101199001011234"
     );
 
     String json = interceptor.toMaskedJson(params, Set.of());
 
-    assertTrue(json.contains("\"password\":\"P*******!\""), json);
+    assertTrue(json.contains("\"password\":\"f********1\""), json);
     assertTrue(json.contains("\"phonenumber\":\"138****1111\""), json);
     assertTrue(json.contains("\"idCardNo\":\"110***********1234\""), json);
   }

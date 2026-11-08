@@ -59,13 +59,13 @@ public class BuildInfoContext {
           buildInfo.load(inputStream);
         } finally {
           // 关闭输入流和JAR文件，释放资源
-          IoUtil.closeIfPosible(inputStream);
-          IoUtil.closeIfPosible(jarFile);
+          IoUtil.closeIfPossible(inputStream);
+          IoUtil.closeIfPossible(jarFile);
         }
       } else {
         // 如果不是从JAR包中运行，则从文件系统中加载
         File buildPropFile = new File(new File(path).getParentFile(),
-            "generated/build-metadata/build.properties");
+          "generated/build-metadata/build.properties");
         // 检查文件是否存在
         if (FileUtil.exist(buildPropFile)) {
           // 使用try-with-resources语句自动关闭文件输入流

@@ -85,19 +85,6 @@ public class SysJobLogServiceImpl implements ISysJobLogService {
   }
 
   /**
-   * 删除任务日志
-   *
-   * @param jobId 调度日志ID
-   */
-  @Override
-  public long deleteJobLogById(Long jobId) {
-    return entityQuery.deletable(SysJobLog.class)
-      .allowDeleteStatement(true)
-      .whereById(jobId)
-      .executeRows();
-  }
-
-  /**
    * 清空任务日志
    */
   @Override

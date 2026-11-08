@@ -37,10 +37,15 @@
       <artifactId>lombok</artifactId>
       <scope>provided</scope>
     </dependency>
-      <dependency>
-          <groupId>com.github.link2fun</groupId>
-          <artifactId>kyou-tlog-solon-plugin</artifactId>
-      </dependency>
+    <dependency>
+      <groupId>com.github.link2fun</groupId>
+      <artifactId>kyou-tlog-solon-plugin</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-test-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>

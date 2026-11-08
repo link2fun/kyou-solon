@@ -40,6 +40,12 @@
       <artifactId>solon-scheduling</artifactId>
       <scope>provided</scope>
     </dependency>
+    <!-- 任务入口挂起残留事务用(TranManager), 应用侧由 sql-solon-plugin 传递引入 -->
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-data</artifactId>
+      <scope>provided</scope>
+    </dependency>
 
   </dependencies>
 

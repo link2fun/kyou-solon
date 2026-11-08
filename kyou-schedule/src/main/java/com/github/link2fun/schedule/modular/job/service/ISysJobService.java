@@ -70,12 +70,11 @@ public interface ISysJobService {
   long changeStatus(SysJobChangeStatusReq changeStatusReq);
 
   /**
-   * 立即运行任务
+   * 立即运行任务: 经调度绑定触发, 计时与日志由拦截器统一记录
    *
    * @param jobId 任务ID
-   * @return 结果
    */
-  boolean run(Long jobId) throws Throwable;
+  void run(Long jobId) throws Throwable;
 
   /**
    * 新增任务
@@ -93,17 +92,9 @@ public interface ISysJobService {
    */
   long updateJob(SysJobModifyReq modifyReq) throws TaskException;
 
-  /**
-   * 校验cron表达式是否有效
-   *
-   * @param cronExpression 表达式
-   * @return 结果
-   */
-  boolean checkCronExpressionIsValid(String cronExpression);
-
 
   /**
-   * 根据任务名称 获取任务
+   * 根据任务名称获取任务(任务名全局唯一)
    *
    * @param jobName 任务名称
    * @return 任务信息

@@ -40,8 +40,4 @@ public class SysJobLogDTO implements Serializable {
   /** 创建时间 */
   @Excel(name = "创建时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
   private LocalDateTime createTime;
-  /** 开始时间 */
-  private LocalDateTime startTime;
-  /** 停止时间 */
-  private LocalDateTime stopTime;
 }
