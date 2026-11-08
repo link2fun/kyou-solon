@@ -134,11 +134,13 @@ const Login: React.FC = () => {
   const handleSubmit = async (values: Record<string, any>) => {
     try {
       // 登录只发后端声明的字段: type/autoLogin/mobile/captcha 是前端 UI 状态
+      // 验证码关闭时后端不校验 code/uuid, 也不发送
       const msg = await ApiCommon.login({
         username: values.username,
         password: values.password,
-        code: values.code,
-        uuid: captchaImage.uuid,
+        ...(captchaImage.captchaEnabled
+          ? { code: values.code, uuid: captchaImage.uuid }
+          : {}),
       });
       if (msg.success) {
         const { token } = msg;
@@ -251,28 +253,30 @@ const Login: React.FC = () => {
                   },
                 ]}
               />
-              <ProFormText
-                name={'code'}
-                placeholder={'验证码: '}
-                fieldProps={{
-                  size: 'large',
-                  prefix: captchaImage.imgBase64 ? (
-                    <img
-                      style={{ height: 24 }}
-                      className={'cursor-pointer'}
-                      src={captchaImage.imgBase64}
-                      onClick={captchaImage.refreshCaptcha}
-                      alt={'img'}
-                    />
-                  ) : null,
-                }}
-                rules={[
-                  {
-                    required: true,
-                    message: '请输入验证码！',
-                  },
-                ]}
-              />
+              {captchaImage.captchaEnabled && (
+                <ProFormText
+                  name={'code'}
+                  placeholder={'验证码: '}
+                  fieldProps={{
+                    size: 'large',
+                    prefix: captchaImage.imgBase64 ? (
+                      <img
+                        style={{ height: 24 }}
+                        className={'cursor-pointer'}
+                        src={captchaImage.imgBase64}
+                        onClick={captchaImage.refreshCaptcha}
+                        alt={'img'}
+                      />
+                    ) : null,
+                  }}
+                  rules={[
+                    {
+                      required: true,
+                      message: '请输入验证码！',
+                    },
+                  ]}
+                />
+              )}
             </>
           )}
 
