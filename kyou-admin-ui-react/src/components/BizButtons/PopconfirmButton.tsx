@@ -14,6 +14,8 @@ interface PopconfirmButtonProps extends PopconfirmProps {
   >;
   /** 所需权限,eg: ['monitor:online:forceLogout'], 传 [] 的视作不需要权限, 默认不需要权限 */
   permissionsRequired?: string[];
+  /** 权限或角色: 任一命中即通过 */
+  orRole?: string[];
   /** 按钮的操作提示 */
   tooltip?: string;
   /** 点击事件默认不向上传递 */
@@ -26,6 +28,7 @@ const PopconfirmButton: React.FC<PopconfirmButtonProps> = memo(
     buttonText,
     buttonProps,
     permissionsRequired = [],
+    orRole,
     tooltip,
     stopPropagation = true,
     ...popconfirmProps
@@ -33,7 +36,7 @@ const PopconfirmButton: React.FC<PopconfirmButtonProps> = memo(
     const access = useAccess();
 
     // 没有权限的情况下直接不显示
-    if (!access.hasPermission(permissionsRequired)) {
+    if (!access.hasPermissionOrRole(permissionsRequired, orRole)) {
       return null;
     }
 

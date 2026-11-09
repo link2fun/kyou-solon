@@ -10,6 +10,8 @@ type RouteProps = Array<{
   wrappers?: Array<string> | undefined;
   access?: 'permissionFilter';
   permissionRequired?: string[];
+  /** 权限或角色: 任一命中即通过 */
+  orRole?: string[];
 }>;
 /**
  * @name umi 的路由配置
@@ -91,7 +93,8 @@ const routes: RouteProps = [
       'system:dict:list',
       'system:config:list',
       'system:notice:list',
-      'system:log:list',
+      'monitor:operlog:list',
+      'monitor:logininfor:list',
     ],
     routes: [
       {
@@ -180,21 +183,21 @@ const routes: RouteProps = [
         name: '日志管理',
         path: '/system/log',
         access: 'permissionFilter',
-        permissionRequired: ['system:log:list'],
+        permissionRequired: ['monitor:operlog:list', 'monitor:logininfor:list'],
         routes: [
           {
             name: '操作日志',
             path: '/system/log/operlog',
             component: './monitor/operlog/index',
             access: 'permissionFilter',
-            permissionRequired: ['system:log:list'],
+            permissionRequired: ['monitor:operlog:list'],
           },
           {
             name: '登录日志',
             path: '/system/log/logininfor',
             component: './monitor/logininfor/index',
             access: 'permissionFilter',
-            permissionRequired: ['system:log:list'],
+            permissionRequired: ['monitor:logininfor:list'],
           },
           {
             path: '*',
@@ -270,17 +273,23 @@ const routes: RouteProps = [
   {
     name: '系统工具',
     path: '/tool',
+    access: 'permissionFilter',
+    permissionRequired: ['tool:gen:list', 'tool:gen:query'],
     routes: [
       {
         name: '代码生成',
         path: '/tool/gen',
         component: './tool/gen/ToolGenIndex',
+        access: 'permissionFilter',
+        permissionRequired: ['tool:gen:list'],
       },
       {
         name: '修改生成配置',
         path: '/tool/genEdit',
         component: './tool/gen/ToolGenEditIndex',
         hideInMenu: true,
+        access: 'permissionFilter',
+        permissionRequired: ['tool:gen:query'],
       },
       {
         path: '*',

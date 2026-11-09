@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.github.link2fun.support.constant.CacheConstants;
 import com.github.link2fun.support.context.cache.service.RedisCache;
+import com.github.link2fun.support.exception.ServiceException;
 import com.github.link2fun.system.domain.SysCache;
 import com.github.link2fun.system.modular.cache.service.IMonitorCacheService;
 import org.noear.solon.Solon;
@@ -22,6 +23,31 @@ import java.util.*;
  */
 @Component
 public class MonitorCacheServiceImpl implements IMonitorCacheService {
+
+  /** 可写的业务命名空间 */
+  private static final List<String> BUSINESS_NAMESPACES = List.of(
+    CacheConstants.SYS_CONFIG_KEY,
+    CacheConstants.SYS_DICT_KEY,
+    CacheConstants.CAPTCHA_CODE_KEY,
+    CacheConstants.REPEAT_SUBMIT_KEY,
+    CacheConstants.RATE_LIMIT_KEY,
+    CacheConstants.PWD_ERR_CNT_KEY
+  );
+
+  /** 业务命名空间清单 */
+  static List<String> businessNamespaces() {
+    return BUSINESS_NAMESPACES;
+  }
+
+  /** 判断命名空间是否属于业务族 */
+  static boolean isBusinessNamespace(final String cacheName) {
+    return cacheName != null && BUSINESS_NAMESPACES.contains(cacheName);
+  }
+
+  /** 判断键是否属于业务族 */
+  static boolean isBusinessKey(final String cacheKey) {
+    return cacheKey != null && BUSINESS_NAMESPACES.stream().anyMatch(cacheKey::startsWith);
+  }
 
   /** Redis 单节点句柄 */
   @Inject
@@ -111,30 +137,36 @@ public class MonitorCacheServiceImpl implements IMonitorCacheService {
   }
 
   /**
-   * 按命名空间前缀批量删除
+   * 按业务命名空间批量删除
    *
-   * @param cacheName 命名空间前缀
+   * @param cacheName 业务命名空间
    */
   @Override
   public void clearCacheByName(final String cacheName) {
+    if (!isBusinessNamespace(cacheName)) {
+      throw new ServiceException("只能清理业务缓存, 不允许清理: " + cacheName);
+    }
     redisCache.del(redisCache.keys(cacheName + "*"));
   }
 
   /**
-   * 删除单个缓存键
+   * 删除单个业务缓存键
    *
-   * @param cacheKey 键名
+   * @param cacheKey 业务缓存键名
    */
   @Override
   public void clearCacheByKey(final String cacheKey) {
+    if (!isBusinessKey(cacheKey)) {
+      throw new ServiceException("只能清理业务缓存键, 不允许清理: " + cacheKey);
+    }
     redisCache.del(cacheKey);
   }
 
   /**
-   * 清空当前库的全部缓存
+   * 清空全部业务缓存
    */
   @Override
   public void clearAllCache() {
-    redisCache.del(redisCache.keys("*"));
+    businessNamespaces().forEach(namespace -> redisCache.del(redisCache.keys(namespace + "*")));
   }
 }

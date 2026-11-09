@@ -46,6 +46,11 @@
       <artifactId>solon-data</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.noear</groupId>
+      <artifactId>solon-test-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 

@@ -85,12 +85,14 @@ const ToolGenIndex = () => {
                     title={'预览'}
                     type={'link'}
                     icon={<EyeOutlined />}
+                    permissionsRequired={['tool:gen:preview']}
                     onClick={() => previewModal.onPreview(record.tableId)}
                   ></PermissionButton>
                   <PermissionButton
                     title={'修改生成配置'}
                     icon={<EditOutlined />}
                     type={'link'}
+                    permissionsRequired={['tool:gen:query']}
                     onClick={() => {
                       history.push(`/tool/genEdit?tableId=${record.tableId}`);
                     }}
@@ -98,11 +100,13 @@ const ToolGenIndex = () => {
                   <TableRowDelButton
                     actionControl={actionControl}
                     record={record}
+                    permissionsRequired={['tool:gen:remove']}
                   />
                   <PermissionButton
                     title={'同步'}
                     icon={<SyncOutlined />}
                     type={'link'}
+                    permissionsRequired={['tool:gen:edit']}
                     loading={actionControl.loading.value}
                     onClick={() =>
                       actionControl.loading.wrap({
@@ -116,6 +120,7 @@ const ToolGenIndex = () => {
                     title={'生成代码'}
                     icon={<CloudDownloadOutlined />}
                     type={'link'}
+                    permissionsRequired={['tool:gen:code']}
                     loading={actionControl.loading.value}
                     onClick={() =>
                       actionControl.loading.wrap({

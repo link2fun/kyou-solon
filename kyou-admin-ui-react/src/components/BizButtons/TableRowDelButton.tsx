@@ -10,6 +10,8 @@ interface TableRowDelButtonProps {
   record: Record<string, any>;
   /** 所需权限,eg: ['monitor:online:forceLogout'], 传 [] 的视作不需要权限, 默认不需要权限 */
   permissionsRequired?: string[];
+  /** 权限或角色: 任一命中即通过 */
+  orRole?: string[];
   /** 按钮的文字, 默认为空 即只显示图标 */
   buttonText?: string;
   /** 按钮的提示文本 */
@@ -25,6 +27,7 @@ const TableRowDelButton: React.FC<TableRowDelButtonProps> = memo(
     actionControl,
     record,
     permissionsRequired = [],
+    orRole,
     buttonText = '',
     tooltip = '删除',
     disabled,
@@ -38,6 +41,7 @@ const TableRowDelButton: React.FC<TableRowDelButtonProps> = memo(
       <PopconfirmButton
         tooltip={tooltip}
         permissionsRequired={permissionsRequired}
+        orRole={orRole}
         buttonText={buttonText}
         title="删除后不可恢复, 确认删除吗?"
         disabled={disabled}

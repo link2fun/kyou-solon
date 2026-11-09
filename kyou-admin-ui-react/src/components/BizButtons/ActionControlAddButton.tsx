@@ -5,12 +5,15 @@ import type { UseActionControlReturnType } from '@/hooks/useActionControl';
 interface ActionControlAddButtonProps {
   actionControl: UseActionControlReturnType;
   permissionsRequired?: string[];
+  /** 权限或角色: 任一命中即通过 */
+  orRole?: string[];
   initData?: Record<string, any>;
 }
 
 const ActionControlAddButton = ({
   actionControl,
   permissionsRequired = [],
+  orRole,
   initData = {},
 }: ActionControlAddButtonProps) => {
   const handleClick = () => {
@@ -22,6 +25,7 @@ const ActionControlAddButton = ({
       loading={actionControl.loading.value}
       icon={<PlusOutlined />}
       permissionsRequired={permissionsRequired}
+      orRole={orRole}
       type="primary"
       onClick={handleClick}
     >

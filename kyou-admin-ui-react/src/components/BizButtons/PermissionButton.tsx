@@ -6,6 +6,8 @@ import React, { memo } from 'react';
 interface PermissionButtonProps extends ButtonProps {
   /** 需要的权限列表 */
   permissionsRequired?: string[];
+  /** 权限或角色: 任一命中即通过 */
+  orRole?: string[];
 }
 
 /**
@@ -13,11 +15,11 @@ interface PermissionButtonProps extends ButtonProps {
  * 根据用户权限决定是否显示按钮
  */
 const PermissionButton: React.FC<PermissionButtonProps> = memo(
-  ({ permissionsRequired, children, ...buttonProps }) => {
+  ({ permissionsRequired, orRole, children, ...buttonProps }) => {
     const access = useAccess();
 
     // 如果没有所需权限,则不渲染按钮
-    if (!access.hasPermission(permissionsRequired)) {
+    if (!access.hasPermissionOrRole(permissionsRequired, orRole)) {
       return null;
     }
 

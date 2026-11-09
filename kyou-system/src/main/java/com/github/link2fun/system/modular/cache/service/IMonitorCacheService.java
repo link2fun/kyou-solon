@@ -42,21 +42,21 @@ public interface IMonitorCacheService {
   SysCache getCacheValue(String cacheName, String cacheKey);
 
   /**
-   * 按命名空间前缀批量删除
+   * 按业务命名空间批量删除
    *
-   * @param cacheName 命名空间前缀
+   * @param cacheName 业务命名空间
    */
   void clearCacheByName(String cacheName);
 
   /**
-   * 删除单个缓存键
+   * 删除单个业务缓存键
    *
-   * @param cacheKey 键名
+   * @param cacheKey 业务缓存键名
    */
   void clearCacheByKey(String cacheKey);
 
   /**
-   * 清空当前库的全部缓存
+   * 清空全部业务缓存
    */
   void clearAllCache();
 }

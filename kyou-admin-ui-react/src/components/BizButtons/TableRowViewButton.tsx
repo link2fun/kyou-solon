@@ -10,6 +10,8 @@ interface TableRowViewButtonProps {
   record: Record<string, any>;
   /** 所需权限,eg: ['monitor:online:forceLogout'], 传 [] 的视作不需要权限, 默认不需要权限 */
   permissionsRequired?: string[];
+  /** 权限或角色: 任一命中即通过 */
+  orRole?: string[];
   /** 按钮的文字, 默认为空 即只显示图标 */
   buttonText?: string;
   /** 按钮的提示文本 */
@@ -21,6 +23,7 @@ const TableRowViewButton: React.FC<TableRowViewButtonProps> = memo(
     actionControl,
     record,
     permissionsRequired = [],
+    orRole,
     buttonText = '',
     tooltip = '查看详情',
   }) => {
@@ -31,6 +34,7 @@ const TableRowViewButton: React.FC<TableRowViewButtonProps> = memo(
     return (
       <PermissionButton
         permissionsRequired={permissionsRequired}
+        orRole={orRole}
         title={tooltip}
         icon={<EyeOutlined />}
         type="link"

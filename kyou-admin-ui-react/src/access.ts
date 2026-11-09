@@ -6,6 +6,35 @@ export default (initialState: InitialState) => {
   const permissionMenuList = currentUser?.permissions || [];
   const permissionRoleList = currentUser?.roles || [];
 
+  /** 权限或角色: 任一命中即通过 */
+  const hasPermissionOrRole = (
+    permissionsRequired?: string[],
+    orRole?: string[],
+  ) => {
+    const rolesRequired = orRole || [];
+    if (CollectionTool.isNotEmpty(rolesRequired)) {
+      if (CollectionTool.containsAny(permissionRoleList, rolesRequired)) {
+        return true;
+      }
+      if (CollectionTool.isEmpty(permissionsRequired || [])) {
+        // 只配了角色且未命中
+        return false;
+      }
+    } else if (CollectionTool.isEmpty(permissionsRequired || [])) {
+      // 权限与角色都没配 => 不校验
+      return true;
+    }
+    if (CollectionTool.isEmpty(permissionMenuList)) {
+      return false;
+    }
+    if (
+      CollectionTool.containsAny(permissionMenuList, permissionsRequired || [])
+    ) {
+      return true;
+    }
+    return CollectionTool.containsAny(permissionMenuList, ['*:*:*']);
+  };
+
   // 在这里按照初始化数据定义项目中的权限，统一管理
   // 参考文档 https://umijs.org/docs/max/access
 
@@ -84,9 +113,15 @@ export default (initialState: InitialState) => {
     },
     permissionFilter: ({
       permissionRequired,
+      orRole,
     }: {
       permissionRequired: string[];
+      orRole?: string[];
     }) => {
+      if (CollectionTool.isNotEmpty(orRole || [])) {
+        // 配了 orRole 按权限或角色判定
+        return hasPermissionOrRole(permissionRequired, orRole);
+      }
       if (permissionRequired === undefined) {
         return true;
       }
@@ -137,5 +172,7 @@ export default (initialState: InitialState) => {
       }
       return false;
     },
+    /** 权限或角色: 任一命中即通过 */
+    hasPermissionOrRole,
   };
 };

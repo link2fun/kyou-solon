@@ -11,16 +11,13 @@ import org.noear.solon.core.Plugin;
  */
 @Slf4j
 public class XPluginImp implements Plugin {
-  /**
-   * 启动（保留，为兼容性过度）
-   *
-   * @param context 应用上下文
-   */
+  /** 启动: 注册本插件包内的 bean */
   @Override
   public void start(final AppContext context) throws Throwable {
+    // 与宿主扫描重复时, 容器按 Class 去重
+    context.beanScan(XPluginImp.class);
 
-    // 这里无需注入， 也不能注入， 因为一个注解只能添加一个拦截器，项目中已经为 Mapping.class 添加了日志拦截器
-    // 上下文的日志链路信息通过 Filter 进行处理
+    // TLogWebInterceptor 不在此处注册, 日志链路信息由 Filter 处理
 //    final TLogWebInterceptor tLogWebInterceptor = new TLogWebInterceptor();
 //    context.beanInterceptorAdd(Mapping.class, tLogWebInterceptor);
 //    context.beanInterceptorAdd();

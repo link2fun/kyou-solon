@@ -24,6 +24,7 @@ import { useToggle } from 'ahooks';
 import { Button, Space, Spin, Tabs } from 'antd';
 import { createStyles } from 'antd-style';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import PermissionButton from '@/components/BizButtons/PermissionButton';
 import useLoadingState from '@/hooks/useLoadingState';
 import SystemMenuSelect from '@/pages/system/menu/references/SystemMenuSelect';
 import ToolGenPreviewModal from '@/pages/tool/gen/components/ToolGenPreviewModal';
@@ -206,21 +207,23 @@ const ToolGenEditIndex = () => {
         <Button type={'default'} onClick={closeActiveTab}>
           关闭
         </Button>
-        <Button
+        <PermissionButton
           type={'primary'}
           icon={<SaveOutlined />}
+          permissionsRequired={['tool:gen:edit']}
           loading={loadingState.value}
           onClick={handleSave}
         >
           保存
-        </Button>
-        <Button
+        </PermissionButton>
+        <PermissionButton
           icon={<EyeOutlined />}
+          permissionsRequired={['tool:gen:preview']}
           loading={loadingState.value}
           onClick={() => previewModal.onPreview(tableId)}
         >
           预览
-        </Button>
+        </PermissionButton>
       </Space>
 
       <Tabs
